@@ -107,13 +107,15 @@
     ['Turn 前奏', 'SQLite Session'], ['Turn 收尾', 'SQLite Session']
   ];
 
+  // Warm, nature-harmonized palette for a dark-green dashboard background.
+  // Fills are dark desaturated greens/greys; strokes provide the accent.
   var COLORS = {
-    external: {fill: '#1e293b', stroke: '#94a3b8'},
-    gateway: {fill: '#172554', stroke: '#60a5fa'},
-    pipeline: {fill: '#431407', stroke: '#fb923c'},
-    memory: {fill: '#064e3b', stroke: '#34d399'},
-    hy: {fill: '#3b0764', stroke: '#c084fc'},
-    storage: {fill: '#082f49', stroke: '#38bdf8'}
+    external: {fill: '#1c2621', stroke: '#d4c5a9'},
+    gateway: {fill: '#242718', stroke: '#e6c875'},
+    pipeline: {fill: '#33231e', stroke: '#f4a68e'},
+    memory: {fill: '#142d21', stroke: '#8fc9a3'},
+    hy: {fill: '#1f2330', stroke: '#a8b8e6'},
+    storage: {fill: '#132728', stroke: '#7dd3d8'}
   };
 
   var SOURCE_BASE = (typeof window.__HERMES_SOURCE_BASE__ === 'string' && window.__HERMES_SOURCE_BASE__)
@@ -180,7 +182,7 @@
         key: 'link-' + i,
         d: d,
         fill: 'none',
-        stroke: '#475569',
+        stroke: '#5a7169',
         strokeWidth: 1,
         opacity: 0.7,
         markerEnd: 'url(#eh-arrow)'
@@ -223,11 +225,11 @@
       {label: 'Storage', color: COLORS.storage.stroke}
     ];
     var legend = h('g', {transform: 'translate(1330, 880)'},
-      h('rect', {x: -10, y: -14, width: 260, height: 44, rx: 6, fill: '#0f172a', stroke: '#334155', strokeWidth: 1}),
+      h('rect', {x: -10, y: -14, width: 260, height: 44, rx: 6, fill: '#0f2922', stroke: '#2a4a40', strokeWidth: 1}),
       legendItems.map(function (item, i) {
         return h('g', {key: 'legend-' + i, transform: 'translate(' + (i % 3 * 85) + ',' + (Math.floor(i / 3) * 18) + ')'},
           h('rect', {x: 0, y: -4, width: 8, height: 8, rx: 2, fill: item.color}),
-          h('text', {x: 12, y: 3, fill: '#94a3b8', fontSize: 9, fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"}, item.label)
+          h('text', {x: 12, y: 3, fill: '#a3b5ab', fontSize: 9, fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"}, item.label)
         );
       })
     );
@@ -235,15 +237,15 @@
     return h('svg', {className: 'eh-arch', viewBox: '0 0 1600 920', width: '1600', height: '920'},
       h('defs', null,
         h('pattern', {id: 'eh-grid', width: 40, height: 40, patternUnits: 'userSpaceOnUse'},
-          h('path', {d: 'M 40 0 L 0 0 0 40', fill: 'none', stroke: '#1e293b', strokeWidth: 0.5, opacity: 0.4})
+          h('path', {d: 'M 40 0 L 0 0 0 40', fill: 'none', stroke: '#163b33', strokeWidth: 0.5, opacity: 0.4})
         ),
         h('marker', {id: 'eh-arrow', markerWidth: 8, markerHeight: 8, refX: 7, refY: 3, orient: 'auto'},
-          h('path', {d: 'M0,0 L8,3 L0,6 L2,3 z', fill: '#475569'})
+          h('path', {d: 'M0,0 L8,3 L0,6 L2,3 z', fill: '#5a7169'})
         )
       ),
-      h('rect', {width: '100%', height: '100%', fill: '#0b0f19'}),
+      h('rect', {width: '100%', height: '100%', fill: '#0a1f1a'}),
       h('rect', {width: '100%', height: '100%', fill: 'url(#eh-grid)'}),
-      h('text', {x: 800, y: 36, textAnchor: 'middle', fill: '#64748b', fontSize: 13,
+      h('text', {x: 800, y: 36, textAnchor: 'middle', fill: '#8a9e94', fontSize: 13,
         fontFamily: "ui-monospace,'SF Mono',Menlo,monospace", letterSpacing: '0.16em'},
         'HERMES · HY MEMORY EVOLUTION ARCHITECTURE'),
       clusters,

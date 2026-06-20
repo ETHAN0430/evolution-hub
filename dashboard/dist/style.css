@@ -1,9 +1,9 @@
 .tab-content[data-tab="/evolution-hub"] {
-  --eh-bg: var(--background, #0b0f19);
-  --eh-card: var(--color-card, #111827);
-  --eh-border: var(--color-border, #1f2937);
-  --eh-muted: var(--color-muted-foreground, #9ca3af);
-  --eh-text: var(--foreground, #e5e7eb);
+  --eh-bg: var(--background, #0a1f1a);
+  --eh-card: var(--color-card, #0f2922);
+  --eh-border: var(--color-border, #1f3b33);
+  --eh-muted: var(--color-muted-foreground, #8a9e94);
+  --eh-text: var(--foreground, #e8f5f0);
 }
 
 .eh-page {
@@ -253,7 +253,7 @@
   font-size: 12px;
   line-height: 1.5;
   color: var(--eh-text);
-  background: #0b0f19;
+  background: #0a1f1a;
   white-space: pre;
   overflow-wrap: normal;
   overflow-x: auto;
