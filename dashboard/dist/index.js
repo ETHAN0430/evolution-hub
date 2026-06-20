@@ -34,7 +34,7 @@
     'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 560, y: 780, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
 
     // ── Hermes Turn Engine / AIAgent runtime (single vertical spine) ─────────
-    'Agent Init': {file: 'agent/agent_init.py', x: 520, y: 150, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：设置 platform、构建并缓存 system prompt、组装工具列表等。'},
+    'Agent Init': {file: 'agent/agent_init.py', x: 520, y: 150, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：1. 设置 platform（cli/tui/api_server/...）；2. 构建并缓存 system prompt；3. 组装可用工具列表（含 MCP）；4. 初始化会话状态（session_id、source、model 等）。'},
     '输入清洗': {file: 'turn_context.py', x: 520, y: 270, group: 'pipeline', desc: '每轮 Turn 的入口。清洗用户输入（如去掉非法 surrogate 字符），并把用户消息追加到对话历史中。'},
     '记忆预取': {file: 'turn_context.py', x: 620, y: 330, group: 'pipeline', desc: '用当前用户消息向 MemoryManager 发起 prefetch，把相关记忆（MEMORY.md、USER.md、HY Memory 等）提前查出来，供后续 prompt 使用。'},
     '预压缩': {file: 'turn_context.py', x: 620, y: 390, group: 'pipeline', desc: '在真正调用 LLM 前，如果发现上下文太长，先做一次预压缩（preflight compression），防止请求超出模型窗口。'},
