@@ -191,7 +191,7 @@
       var dashed = c[2] === 'dashed';
       // Gateway/API Server -> Agent Init: exit right, rise in the corridor, then right into Agent Init
       var isGatewayToAgent = (c[0] === 'Messaging Gateway' || c[0] === 'TUI Gateway' || c[0] === 'API Server') && c[1] === 'Agent Init';
-      // Hermes CLI -> Agent Init: should also turn in the external corridor and enter from the left
+      // Hermes CLI -> Agent Init: should also turn in the gateway corridor and enter from the left
       var isCLIToAgent = c[0] === 'Hermes CLI' && c[1] === 'Agent Init';
       // External surface -> Gateway: exit right, run in the corridor, then turn right
       var isExternalToGateway = a.group === 'external' && (c[1] === 'Messaging Gateway' || c[1] === 'TUI Gateway');
@@ -220,7 +220,7 @@
         y1 = a.y;
         x2 = b.x - 65;
         y2 = b.y;
-        var cliCorridorX = 200;
+        var cliCorridorX = 410;
         d = 'M' + x1 + ',' + y1 + ' L' + cliCorridorX + ',' + y1 + ' L' + cliCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (x1 === x2 || y1 === y2) {
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
