@@ -153,7 +153,7 @@
     var CLUSTERS = [
       {name: 'User', x: 20, y: 90, w: 170, h: 640, color: '#d4c5a9'},
       {name: 'Gateway', x: 210, y: 90, w: 190, h: 640, color: '#e6c875'},
-      {name: 'Turn Engine', x: 420, y: 90, w: 410, h: 640, color: '#f4a68e'},
+      {name: 'Agent', x: 420, y: 90, w: 410, h: 640, color: '#f4a68e'},
       {name: 'AI Providers', x: 500, y: 740, w: 160, h: 80, color: '#8ab4e6'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1080, y: 210, w: 200, h: 440, color: '#a8b8e6'},
