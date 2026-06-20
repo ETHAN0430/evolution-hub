@@ -196,13 +196,20 @@
     var nodes = Object.keys(NODES).map(function (name) {
       var n = NODES[name];
       var c = COLORS[n.group];
+      var isLoop = name === '主循环';
+      var shape = isLoop
+        ? h('ellipse', {rx: 62, ry: 22, fill: c.fill, stroke: c.stroke, strokeWidth: 2})
+        : h('rect', {x: -65, y: -17, width: 130, height: 34, rx: 6, fill: c.fill, stroke: c.stroke, strokeWidth: 1.5});
+      var loopArrow = isLoop
+        ? h('path', {d: 'M -40,-20 C -60,-48 60,-48 40,-20', fill: 'none', stroke: c.stroke, strokeWidth: 1.5, opacity: 0.9, markerEnd: 'url(#eh-arrow)'})
+        : null;
       return h('g', {
         key: name,
         transform: 'translate(' + n.x + ',' + n.y + ')',
         className: 'eh-node',
         tabIndex: 0,
         role: 'button',
-        'aria-label': name + ' — 点击查看源码',
+        'aria-label': name + ' — 点击查看介绍',
         onClick: function () { onNodeClick(name, n.file); },
         onKeyDown: function (e) {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -211,7 +218,8 @@
           }
         }
       },
-        h('rect', {x: -65, y: -17, width: 130, height: 34, rx: 6, fill: c.fill, stroke: c.stroke, strokeWidth: 1.5}),
+        loopArrow,
+        shape,
         h('text', {x: 0, y: 4, textAnchor: 'middle', fill: '#f8fafc', fontSize: 12, fontWeight: 500}, name)
       );
     });
