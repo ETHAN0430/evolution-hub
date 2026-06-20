@@ -193,7 +193,16 @@
       }
       var d;
       var dashed = c[2] === 'dashed';
-      if (x1 === x2 || y1 === y2) {
+      // Gateway -> Agent Init: exit right, rise in the corridor, then turn right
+      var isGatewayToAgent = (c[0] === 'Messaging Gateway' || c[0] === 'TUI Gateway') && c[1] === 'Agent Init';
+      if (isGatewayToAgent) {
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y + 17;
+        var corridorX = 395;
+        d = 'M' + x1 + ',' + y1 + ' L' + corridorX + ',' + y1 + ' L' + corridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (x1 === x2 || y1 === y2) {
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else if (Math.abs(dx) > Math.abs(dy)) {
         // mainly horizontal: go horizontal first, then vertical
