@@ -19,9 +19,11 @@
   // memory/HY branch to the right, storage forms the foundation.
   var NODES = {
     // ── External surfaces (fan in from left) ────────────────────────────────
-    'Hermes CLI': {file: 'hermes_cli/main.py', x: 120, y: 300, group: 'external', desc: '命令行版本。在本地直接启动 AIAgent，显式设置 platform="cli"，所以模型会知道自己在终端里。'},
-    'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 420, group: 'external', desc: '电脑桌面上的 App 窗口。可以走本地 dashboard/tui_gateway，也可以连接远程网关；远程网关可能把它当成 Platform.LOCAL，从而映射成 CLI 身份。'},
-    'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 540, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
+    'Hermes CLI': {file: 'hermes_cli/cli_agent_setup_mixin.py', x: 120, y: 260, group: 'external', desc: '命令行版本。在本地直接启动 AIAgent，在 cli_agent_setup_mixin.py 里显式设置 platform="cli"。'},
+    'TUI': {file: 'hermes_cli/main.py', x: 120, y: 340, group: 'external', desc: '终端 UI 版本。`hermes --tui` 启动，背后同样走 tui_gateway。'},
+    'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 420, group: 'external', desc: '电脑桌面上的 App 窗口。本地模式走 tui_gateway；远程模式会连到远程 Messaging Gateway，被当成 Platform.LOCAL 映射为 CLI。'},
+    'API Server': {file: 'gateway/platforms/api_server.py', x: 120, y: 500, group: 'external', desc: 'OpenAI-compatible API 服务。外部客户端通过 REST/SSE 调用，platform="api_server"。'},
+    'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 580, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
     'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 660, group: 'external', desc: '网页版后台。通过 tui_gateway 提供 JSON-RPC 会话服务，你现在看到的可视化页面由它承载。'},
 
     // ── Gateway & control plane ─────────────────────────────────────────────
@@ -71,7 +73,10 @@
   var CONNECTIONS = [
     // external surfaces -> appropriate gateway / direct agent init
     ['Hermes CLI', 'Agent Init'],
+    ['TUI', 'TUI Gateway'],
     ['Desktop', 'TUI Gateway'],
+    ['Desktop', 'Messaging Gateway', 'dashed'],
+    ['API Server', 'Agent Init'],
     ['Messaging Platforms', 'Messaging Gateway'],
     ['Dashboard', 'TUI Gateway'],
 
@@ -79,6 +84,7 @@
     ['Messaging Gateway', 'Agent Init'],
     ['TUI Gateway', 'Agent Init'],
     ['Config & State', '系统提示'],
+    ['Config & State', 'Agent Init'],
     ['Provider APIs', 'LLM API'],
     ['Agent Init', 'AIAgent'],
     ['AIAgent', 'Turn 前奏'],
@@ -146,7 +152,7 @@
     var onNodeClick = props.onNodeClick;
 
     var CLUSTERS = [
-      {name: 'External', x: 30, y: 220, w: 140, h: 500, color: '#d4c5a9'},
+      {name: 'External', x: 30, y: 200, w: 140, h: 500, color: '#d4c5a9'},
       {name: 'Gateway', x: 190, y: 150, w: 140, h: 520, color: '#e6c875'},
       {name: 'Turn Engine', x: 340, y: 40, w: 260, h: 620, color: '#f4a68e'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
@@ -165,7 +171,8 @@
       );
     });
 
-    function makeOrthogonalLink(a, b, i) {
+    function makeOrthogonalLink(c, i) {
+      var a = NODES[c[0]], b = NODES[c[1]];
       var dx = b.x - a.x, dy = b.y - a.y;
       var x1 = a.x, y1 = a.y, x2 = b.x, y2 = b.y;
       // edge offsets: horizontal if mainly horizontal, else vertical
@@ -185,6 +192,7 @@
       } else {
         d = 'M' + x1 + ',' + y1 + ' L' + mx + ',' + my + ' L' + x2 + ',' + y2;
       }
+      var dashed = c[2] === 'dashed';
       return h('path', {
         key: 'link-' + i,
         d: d,
@@ -192,12 +200,13 @@
         stroke: '#5a7169',
         strokeWidth: 1,
         opacity: 0.85,
+        strokeDasharray: dashed ? '4,3' : undefined,
         markerEnd: 'url(#eh-arrow)'
       });
     }
 
     var links = CONNECTIONS.map(function (c, i) {
-      return makeOrthogonalLink(NODES[c[0]], NODES[c[1]], i);
+      return makeOrthogonalLink(c, i);
     });
 
     var nodes = Object.keys(NODES).map(function (name) {
