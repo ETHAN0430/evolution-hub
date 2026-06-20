@@ -1,0 +1,11 @@
+{
+  "name": "hermes-evolution-hub",
+  "label": "进化中枢",
+  "description": "Hermes 架构图与 HY Memory 进化引擎的可视化。",
+  "icon": "GitBranch",
+  "version": "0.1.0",
+  "tab": { "path": "/evolution-hub", "position": "after:analytics" },
+  "entry": "dist/index.js",
+  "css": "dist/style.css",
+  "api": "plugin_api.py"
+}
