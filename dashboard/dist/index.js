@@ -27,7 +27,7 @@
     'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 660, group: 'external', desc: '网页版后台。通过 tui_gateway 提供 JSON-RPC 会话服务，你现在看到的可视化页面由它承载。'},
 
     // ── Gateway ──────────────────────────────────────────────────────────────
-    'Messaging Gateway': {file: 'gateway/run.py', x: 320, y: 420, group: 'gateway', desc: '消息总入口。处理 Telegram、Discord 等聊天平台消息；内部把 Platform.LOCAL 映射为 "cli"，所以本地/桌面类客户端可能被标记成 CLI。'},
+    'Messaging Gateway': {file: 'gateway/run.py', x: 320, y: 420, group: 'gateway', desc: '消息总入口（Hermes 里通常说的 "gateway" 就是指它）。处理 Telegram、Discord 等聊天平台消息；内部把 Platform.LOCAL 映射为 "cli"，所以本地/桌面类客户端可能被标记成 CLI。'},
     'TUI Gateway': {file: 'tui_gateway/server.py', x: 320, y: 520, group: 'gateway', desc: 'Terminal/UI 网关。给 Desktop、Dashboard、TUI 提供统一 JSON-RPC 会话服务；默认 source="tui"，且 AIAgent 的 platform 被硬编码为 "tui"。'},
 
     // ── Control plane ────────────────────────────────────────────────────────
