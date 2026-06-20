@@ -31,10 +31,10 @@
     'TUI Gateway': {file: 'tui_gateway/server.py', x: 320, y: 520, group: 'gateway', desc: 'Terminal/UI 网关。给 Desktop、Dashboard、TUI 这些 UI 客户端提供统一的后端会话服务。'},
 
     // ── Control plane (foundation row, below turn engine) ────────────────────
-    'Config & State': {file: 'hermes_cli/config.py', x: 420, y: 660, group: 'control', desc: '配置文件。决定用哪个 AI 模型、连哪个服务商、以及一些个性化设置。'},
+    'Config & State': {file: 'hermes_cli/config.py', x: 520, y: 60, group: 'control', desc: '配置文件。决定用哪个 AI 模型、连哪个服务商、以及一些个性化设置。'},
 
-    // ── AI providers (foundation row, next to config) ────────────────────────
-    'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 560, y: 660, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
+    // ── AI providers (foundation row, below turn engine) ─────────────────────
+    'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 560, y: 780, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
 
     // ── Hermes Turn Engine (single vertical spine) ────────────────────────────
     'Agent Init': {file: 'agent/agent_init.py', x: 520, y: 120, group: 'pipeline', desc: '初始化 AIAgent 的地方。在这里设置 platform（cli/tui/api_server/...），并组装首次 system prompt。'},
@@ -67,10 +67,10 @@
     'System 2': {file: 'hy_memory/pipelines/system2_writer.py', x: 1140, y: 620, group: 'hy', desc: '深度思考层。把零散事实组织成概念、意图和知识图谱。'},
 
     // ── Persistent stores (foundation) ──────────────────────────────────────
-    'Vector DB': {file: 'hy_memory/data/vector_store_chroma.py', x: 720, y: 770, group: 'storage', desc: '向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。'},
-    'Graph DB': {file: 'hy_memory/data/graph_store_kuzu.py', x: 960, y: 770, group: 'storage', desc: '图数据库。像知识图谱一样保存概念、主题和它们之间的关系。'},
-    'cache.db': {file: 'hy_memory/data/cache_sqlite.py', x: 1200, y: 770, group: 'storage', desc: '本地小数据库。记录系统运行日志、任务队列和一些临时数据。'},
-    'SQLite Session': {file: 'hermes_state.py', x: 1440, y: 770, group: 'storage', desc: '本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。'}
+    'Vector DB': {file: 'hy_memory/data/vector_store_chroma.py', x: 720, y: 860, group: 'storage', desc: '向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。'},
+    'Graph DB': {file: 'hy_memory/data/graph_store_kuzu.py', x: 960, y: 860, group: 'storage', desc: '图数据库。像知识图谱一样保存概念、主题和它们之间的关系。'},
+    'cache.db': {file: 'hy_memory/data/cache_sqlite.py', x: 1200, y: 860, group: 'storage', desc: '本地小数据库。记录系统运行日志、任务队列和一些临时数据。'},
+    'SQLite Session': {file: 'hermes_state.py', x: 1440, y: 860, group: 'storage', desc: '本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。'}
   };
 
   // Real data flows derived from source analysis
@@ -159,13 +159,13 @@
 
     var CLUSTERS = [
       {name: 'External', x: 20, y: 80, w: 170, h: 560, color: '#d4c5a9'},
+      {name: 'Control Plane', x: 460, y: 25, w: 160, h: 55, color: '#c4b28a'},
       {name: 'Gateway', x: 190, y: 360, w: 200, h: 220, color: '#e6c875'},
-      {name: 'Turn Engine', x: 400, y: 40, w: 410, h: 620, color: '#f4a68e'},
-      {name: 'Control Plane', x: 350, y: 620, w: 160, h: 80, color: '#c4b28a'},
-      {name: 'AI Providers', x: 500, y: 620, w: 160, h: 80, color: '#8ab4e6'},
+      {name: 'Turn Engine', x: 400, y: 90, w: 410, h: 640, color: '#f4a68e'},
+      {name: 'AI Providers', x: 500, y: 740, w: 160, h: 80, color: '#8ab4e6'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1080, y: 210, w: 200, h: 440, color: '#a8b8e6'},
-      {name: 'Storage', x: 620, y: 720, w: 920, h: 110, color: '#7dd3d8'}
+      {name: 'Storage', x: 620, y: 820, w: 920, h: 110, color: '#7dd3d8'}
     ];
 
     var clusters = CLUSTERS.map(function (c, i) {
@@ -241,7 +241,7 @@
       );
     });
 
-    return h('svg', {className: 'eh-arch', viewBox: '0 0 1600 880', width: '1600', height: '880'},
+    return h('svg', {className: 'eh-arch', viewBox: '0 0 1600 960', width: '1600', height: '960'},
       h('defs', null,
         h('pattern', {id: 'eh-grid', width: 40, height: 40, patternUnits: 'userSpaceOnUse'},
           h('path', {d: 'M 40 0 L 0 0 0 40', fill: 'none', stroke: '#163b33', strokeWidth: 0.5, opacity: 0.4})
@@ -252,7 +252,7 @@
       ),
       h('rect', {width: '100%', height: '100%', fill: '#0a1f1a'}),
       h('rect', {width: '100%', height: '100%', fill: 'url(#eh-grid)'}),
-      h('text', {x: 780, y: 40, textAnchor: 'middle', fill: '#8a9e94', fontSize: 13,
+      h('text', {x: 780, y: 25, textAnchor: 'middle', fill: '#8a9e94', fontSize: 13,
         fontFamily: "ui-monospace,'SF Mono',Menlo,monospace", letterSpacing: '0.16em'},
         'HERMES · HY MEMORY EVOLUTION ARCHITECTURE'),
       clusters,
@@ -313,7 +313,7 @@
     var posRef = hooks.useRef({x: 0, y: 0});
 
     var SVG_W = 1600;
-    var SVG_H = 880;
+    var SVG_H = 960;
 
     function fitToScreen() {
       if (!canvasRef.current) return;
