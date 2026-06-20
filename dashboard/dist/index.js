@@ -19,7 +19,7 @@
   // memory/HY branch to the right, storage forms the foundation.
   var NODES = {
     // ── External surfaces (fan in from left), ordered by target proximity ────
-    'Hermes CLI': {file: 'hermes_cli/cli_agent_setup_mixin.py', x: 120, y: 120, group: 'external', desc: '命令行版本。在本地直接启动 AIAgent，在 cli_agent_setup_mixin.py 里显式设置 platform="cli"。'},
+    'Hermes CLI': {file: 'hermes_cli/cli_agent_setup_mixin.py', x: 120, y: 150, group: 'external', desc: '命令行版本。在本地直接启动 AIAgent，在 cli_agent_setup_mixin.py 里显式设置 platform="cli"。'},
     'API Server': {file: 'gateway/platforms/api_server.py', x: 120, y: 220, group: 'external', desc: 'OpenAI-compatible API 服务。外部客户端通过 REST/SSE 调用，platform="api_server"。'},
     'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 420, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
     'TUI': {file: 'tui_gateway/entry.py', x: 120, y: 470, group: 'external', desc: '终端 UI 版本。`hermes --tui` 启动，通过 tui_gateway/entry.py 建立 stdio 传输，走 tui_gateway 后端。'},
@@ -37,7 +37,7 @@
     'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 560, y: 780, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
 
     // ── Hermes Turn Engine (single vertical spine) ────────────────────────────
-    'Agent Init': {file: 'agent/agent_init.py', x: 520, y: 120, group: 'pipeline', desc: '初始化 AIAgent 的地方。在这里设置 platform（cli/tui/api_server/...），并组装首次 system prompt。'},
+    'Agent Init': {file: 'agent/agent_init.py', x: 520, y: 150, group: 'pipeline', desc: '初始化 AIAgent 的地方。在这里设置 platform（cli/tui/api_server/...），并组装首次 system prompt。'},
     'AIAgent': {file: 'run_agent.py', x: 520, y: 190, group: 'pipeline', desc: 'Hermes 的核心运行时对象。持有对话状态、调用 LLM、执行工具、管理会话生命周期，并把底层模块串起来。'},
     'Turn 前奏': {file: 'turn_context.py', x: 520, y: 270, group: 'pipeline', desc: '收到你的消息后，先做准备动作：检查一下当前状态，提前去记忆里找找有没有相关背景。'},
     '系统提示': {file: 'system_prompt.py', x: 520, y: 340, group: 'pipeline', desc: '给 AI 的“身份卡”和基本规则。告诉 AI 它是谁、有什么工具、该怎么说话。'},
