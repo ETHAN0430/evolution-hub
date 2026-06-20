@@ -36,7 +36,7 @@
     // ── Hermes Turn Engine / AIAgent runtime (single vertical spine) ─────────
     'Agent Init': {file: 'agent/agent_init.py', x: 520, y: 150, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：设置 platform、组装首次 system prompt。'},
     'Turn 前奏': {file: 'turn_context.py', x: 520, y: 270, group: 'pipeline', desc: '收到你的消息后，先做准备动作：检查一下当前状态，提前去记忆里找找有没有相关背景。已有会话时直接从这里开始。'},
-    '系统提示': {file: 'system_prompt.py', x: 520, y: 340, group: 'pipeline', desc: '给 AI 的“身份卡”和基本规则。告诉 AI 它是谁、有什么工具、该怎么说话。'},
+    '系统提示': {file: 'system_prompt.py', x: 520, y: 210, group: 'pipeline', desc: '给 AI 的“身份卡”和基本规则。在 Agent Init 时构建并缓存，之后每一轮都会被复用。'},
     '消息构建': {file: 'prompt_builder.py', x: 520, y: 410, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
     'LLM API': {file: 'conversation_loop.py', x: 520, y: 480, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
     '工具执行': {file: 'tool_executor.py', x: 520, y: 550, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
@@ -86,7 +86,7 @@
     ['Agent Init', 'Turn 前奏'],
 
     // Hermes turn pipeline (spine). The agent loop is the cycle between LLM and tools.
-    ['Agent Init', '系统提示'], ['Turn 前奏', '系统提示'], ['系统提示', '消息构建'], ['消息构建', 'LLM API'],
+    ['Agent Init', '系统提示'], ['系统提示', '消息构建'], ['Turn 前奏', '消息构建'], ['消息构建', 'LLM API'],
     ['LLM API', '工具执行'],
     ['工具执行', 'memory tool'],
     ['工具执行', 'LLM API'],
