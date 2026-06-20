@@ -314,7 +314,17 @@
                     '如果源码不在默认位置，可在 Hermes Dashboard 启动前设置环境变量或全局变量覆盖基础路径。'
                   )
                 )
-              : h('pre', {className: 'eh-detail-code'}, detail.code || '(空文件)')
+              : h('div', null,
+                  detail.line
+                    ? h('div', {className: 'eh-detail-code-meta', style: {fontSize: 11, color: '#8a9e94', marginBottom: 6, fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"}},
+                        detail.path + ':' + detail.line + ' (lines ' + detail.start + '-' + detail.end + ')')
+                    : null,
+                  detail.locError
+                    ? h('div', {className: 'eh-detail-code-warn', style: {fontSize: 11, color: '#f4a68e', marginBottom: 6}},
+                        '未找到定位 "' + detail.loc + '"，显示完整文件')
+                    : null,
+                  h('pre', {className: 'eh-detail-code'}, detail.code || '(空文件)')
+                )
       )
     );
   }
@@ -378,14 +388,19 @@
         .then(function (d) {
           setDetail(function (prev) {
             return prev && prev.name === name
-              ? {name: prev.name, desc: prev.desc, src: prev.src, path: prev.path, loc: prev.loc, code: d.content || ('Error: ' + (d.detail || d.error || 'unknown')), loading: false, showCode: true}
+              ? {name: prev.name, desc: prev.desc, src: prev.src, path: prev.path, loc: prev.loc,
+                 code: d.content || ('Error: ' + (d.detail || d.error || 'unknown')),
+                 line: d.line || null, start: d.start || null, end: d.end || null,
+                 locError: d.error || null, loading: false, showCode: true}
               : prev;
           });
         })
         .catch(function (e) {
           setDetail(function (prev) {
             return prev && prev.name === name
-              ? {name: prev.name, desc: prev.desc, src: prev.src, path: prev.path, loc: prev.loc, code: 'Error: ' + e.message, loading: false, showCode: true}
+              ? {name: prev.name, desc: prev.desc, src: prev.src, path: prev.path, loc: prev.loc,
+                 code: 'Error: ' + e.message, line: null, start: null, end: null,
+                 locError: null, loading: false, showCode: true}
               : prev;
           });
         });

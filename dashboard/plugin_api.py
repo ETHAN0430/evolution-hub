@@ -365,10 +365,10 @@ async def api_source(
                     "loc": loc,
                     "error": "definition not found",
                 }
-        start = max(0, line_no - 11)
-        end = min(len(lines), line_no + 30)
+        start = max(0, line_no - 6)
+        end = min(len(lines), line_no + 9)
         snippet = "".join(lines[start:end])
-        return {"content": snippet, "path": path, "line": line_no, "start": start + 1}
+        return {"content": snippet, "path": path, "line": line_no, "start": start + 1, "end": end}
     except Exception as e:
         raise HTTPException(500, str(e))
 
