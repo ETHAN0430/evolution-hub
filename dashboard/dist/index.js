@@ -159,8 +159,8 @@
       {name: 'Gateway', x: 210, y: 90, w: 190, h: 640, color: '#e6c875'},
       {name: 'Agent', x: 420, y: 90, w: 460, h: 650, color: '#f4a68e'},
       {name: 'AI Providers', x: 500, y: 740, w: 160, h: 80, color: '#8ab4e6'},
-      {name: 'Memory', x: 900, y: 210, w: 200, h: 440, color: '#8fc9a3'},
-      {name: 'HY Memory', x: 1120, y: 210, w: 200, h: 440, color: '#a8b8e6'},
+      {name: 'Memory', x: 900, y: 90, w: 200, h: 640, color: '#8fc9a3'},
+      {name: 'HY Memory', x: 1120, y: 90, w: 200, h: 640, color: '#a8b8e6'},
       {name: 'Storage', x: 620, y: 820, w: 920, h: 110, color: '#7dd3d8'}
     ];
 
