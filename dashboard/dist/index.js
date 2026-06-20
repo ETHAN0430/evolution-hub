@@ -234,9 +234,6 @@
       links,
       // Visual annotation: the agent loop is the cycle between LLM and tools
       h('path', {d: 'M 585,503 L 640,503 L 640,437 L 585,437', fill: 'none', stroke: '#f4a68e', strokeWidth: 2, strokeDasharray: '4,3', markerEnd: 'url(#eh-arrow)'}),
-      h('text', {x: 640, y: 474, textAnchor: 'middle', fill: '#f4a68e', fontSize: 11,
-        fontFamily: "ui-monospace,'SF Mono',Menlo,monospace", fontWeight: 600},
-        '主循环'),
       nodes
     );
   }
