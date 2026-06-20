@@ -35,8 +35,7 @@
 
     // ── Hermes Turn Engine / AIAgent runtime (single vertical spine) ─────────
     'Agent Init': {file: 'agent/agent_init.py', x: 520, y: 150, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：设置 platform、组装首次 system prompt。'},
-    'Turn Start': {file: 'turn_context.py', x: 520, y: 270, group: 'pipeline', desc: '每轮 Turn 的入口。turn_context.py 的序幕从这里开始，接下来会串行做输入清洗、记忆预取、预压缩、插件上下文注入，最后交给消息构建。'},
-    '输入清洗': {file: 'turn_context.py', x: 620, y: 270, group: 'pipeline', desc: '清洗用户输入（如去掉非法 surrogate 字符），并把用户消息追加到对话历史中。'},
+    '输入清洗': {file: 'turn_context.py', x: 520, y: 270, group: 'pipeline', desc: '每轮 Turn 的入口。清洗用户输入（如去掉非法 surrogate 字符），并把用户消息追加到对话历史中。'},
     '记忆预取': {file: 'turn_context.py', x: 620, y: 330, group: 'pipeline', desc: '用当前用户消息向 MemoryManager 发起 prefetch，把相关记忆（MEMORY.md、USER.md、HY Memory 等）提前查出来，供后续 prompt 使用。'},
     '预压缩': {file: 'turn_context.py', x: 620, y: 390, group: 'pipeline', desc: '在真正调用 LLM 前，如果发现上下文太长，先做一次预压缩（preflight compression），防止请求超出模型窗口。'},
     '插件上下文': {file: 'turn_context.py', x: 620, y: 450, group: 'pipeline', desc: '调用 pre_llm_call 插件钩子，把插件返回的额外上下文注入到用户消息中。'},
@@ -87,10 +86,10 @@
     ['Messaging Gateway', 'Agent Init'],
     ['TUI Gateway', 'Agent Init'],
     ['Provider APIs', 'LLM API'],
-    ['Agent Init', 'Turn Start'],
+    ['Agent Init', '输入清洗'],
 
     // Hermes turn pipeline (spine). The agent loop is the cycle between LLM and tools.
-    ['Agent Init', '系统提示'], ['系统提示', '消息构建'], ['Turn Start', '输入清洗'], ['输入清洗', '记忆预取'], ['记忆预取', '预压缩'], ['预压缩', '插件上下文'], ['插件上下文', '消息构建'], ['消息构建', 'LLM API'],
+    ['Agent Init', '系统提示'], ['系统提示', '消息构建'], ['输入清洗', '记忆预取'], ['记忆预取', '预压缩'], ['预压缩', '插件上下文'], ['插件上下文', '消息构建'], ['消息构建', 'LLM API'],
     ['LLM API', '工具执行'],
     ['工具执行', 'memory tool'],
     ['工具执行', 'LLM API'],
@@ -119,7 +118,7 @@
     // logging & session persistence
     ['MemoryManager', 'cache.db'],
     ['HY Memory', 'cache.db'],
-    ['Turn Start', 'SQLite Session'], ['Turn End', 'SQLite Session']
+    ['输入清洗', 'SQLite Session'], ['Turn End', 'SQLite Session']
   ];
 
   // Warm, nature-harmonized palette for a dark-green dashboard background.
