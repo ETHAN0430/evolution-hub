@@ -198,12 +198,12 @@
       // External surface -> Gateway: exit right, run in the corridor, then turn right
       var isExternalToGateway = a.group === 'external' && (c[1] === 'Messaging Gateway' || c[1] === 'TUI Gateway');
       if (isGatewayToAgent) {
+        // enter Agent Init from the left side at the same height as Hermes CLI
         x1 = a.x + 65;
         y1 = a.y;
         x2 = b.x - 65;
-        y2 = b.y + 17;
-        var corridorX = 410;
-        d = 'M' + x1 + ',' + y1 + ' L' + corridorX + ',' + y1 + ' L' + corridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else if (isExternalToGateway) {
         x1 = a.x + 65;
         y1 = a.y;
