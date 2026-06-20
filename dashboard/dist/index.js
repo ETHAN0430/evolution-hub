@@ -18,13 +18,13 @@
   // Organic vertical-flow layout: Hermes pipeline runs down the center-left,
   // memory/HY branch to the right, storage forms the foundation.
   var NODES = {
-    // ── External surfaces (fan in from left) ────────────────────────────────
-    'Hermes CLI': {file: 'hermes_cli/cli_agent_setup_mixin.py', x: 120, y: 260, group: 'external', desc: '命令行版本。在本地直接启动 AIAgent，在 cli_agent_setup_mixin.py 里显式设置 platform="cli"。'},
-    'TUI': {file: 'tui_gateway/entry.py', x: 120, y: 340, group: 'external', desc: '终端 UI 版本。`hermes --tui` 启动，通过 tui_gateway/entry.py 建立 stdio 传输，走 tui_gateway 后端。'},
-    'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 420, group: 'external', desc: '电脑桌面上的 App 窗口。本地模式走 tui_gateway；远程模式会连到远程 TUI Gateway（即远程 dashboard 后端）。'},
-    'API Server': {file: 'gateway/platforms/api_server.py', x: 120, y: 500, group: 'external', desc: 'OpenAI-compatible API 服务。外部客户端通过 REST/SSE 调用，platform="api_server"。'},
-    'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 580, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
-    'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 660, group: 'external', desc: '网页版后台。通过 tui_gateway 提供 JSON-RPC 会话服务，你现在看到的可视化页面由它承载。'},
+    // ── External surfaces (fan in from left), ordered by target proximity ────
+    'Hermes CLI': {file: 'hermes_cli/cli_agent_setup_mixin.py', x: 120, y: 120, group: 'external', desc: '命令行版本。在本地直接启动 AIAgent，在 cli_agent_setup_mixin.py 里显式设置 platform="cli"。'},
+    'API Server': {file: 'gateway/platforms/api_server.py', x: 120, y: 170, group: 'external', desc: 'OpenAI-compatible API 服务。外部客户端通过 REST/SSE 调用，platform="api_server"。'},
+    'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 420, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
+    'TUI': {file: 'tui_gateway/entry.py', x: 120, y: 470, group: 'external', desc: '终端 UI 版本。`hermes --tui` 启动，通过 tui_gateway/entry.py 建立 stdio 传输，走 tui_gateway 后端。'},
+    'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 520, group: 'external', desc: '电脑桌面上的 App 窗口。本地模式走 tui_gateway；远程模式会连到远程 TUI Gateway（即远程 dashboard 后端）。'},
+    'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 570, group: 'external', desc: '网页版后台。通过 tui_gateway 提供 JSON-RPC 会话服务，你现在看到的可视化页面由它承载。'},
 
     // ── Gateway ──────────────────────────────────────────────────────────────
     'Messaging Gateway': {file: 'gateway/run.py', x: 320, y: 420, group: 'gateway', desc: '消息总入口（Hermes 里通常说的 "gateway" 就是指它）。负责聊天平台的适配与路由：处理 Telegram、Discord 等消息，知道回哪、发给谁。CLI 一对一单会话，直接连 AIAgent，不需要它。'},
@@ -47,7 +47,7 @@
     'Turn 收尾': {file: 'turn_finalizer.py', x: 520, y: 620, group: 'pipeline', desc: '一轮对话结束后，保存结果、更新记忆、做一些后台整理工作。'},
 
     // ── Turn support modules (branch right from spine) ──────────────────────
-    '背景 review': {file: 'background_review.py', x: 720, y: 220, group: 'pipeline', desc: '在后台悄悄复盘这一轮对话，看看有没有值得记住或改进的地方。'},
+    '背景 review': {file: 'background_review.py', x: 720, y: 220, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
     '上下文压缩': {file: 'context_compressor.py', x: 720, y: 320, group: 'pipeline', desc: '当对话太长时，自动删掉不重要的部分，让 AI 不会“记不过来”。'},
     'ContextCompressor': {file: 'context_compressor.py', x: 720, y: 420, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
     'memory tool': {file: 'tools/memory_tool.py', x: 720, y: 520, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
@@ -67,10 +67,10 @@
     'System 2': {file: 'hy_memory/pipelines/system2_writer.py', x: 1140, y: 620, group: 'hy', desc: '深度思考层。把零散事实组织成概念、意图和知识图谱。'},
 
     // ── Persistent stores (foundation) ──────────────────────────────────────
-    'Vector DB': {file: 'hy_memory/data/vector_store_chroma.py', x: 720, y: 740, group: 'storage', desc: '向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。'},
-    'Graph DB': {file: 'hy_memory/data/graph_store_kuzu.py', x: 960, y: 740, group: 'storage', desc: '图数据库。像知识图谱一样保存概念、主题和它们之间的关系。'},
-    'cache.db': {file: 'hy_memory/data/cache_sqlite.py', x: 1200, y: 740, group: 'storage', desc: '本地小数据库。记录系统运行日志、任务队列和一些临时数据。'},
-    'SQLite Session': {file: 'hermes_state.py', x: 1440, y: 740, group: 'storage', desc: '本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。'}
+    'Vector DB': {file: 'hy_memory/data/vector_store_chroma.py', x: 720, y: 770, group: 'storage', desc: '向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。'},
+    'Graph DB': {file: 'hy_memory/data/graph_store_kuzu.py', x: 960, y: 770, group: 'storage', desc: '图数据库。像知识图谱一样保存概念、主题和它们之间的关系。'},
+    'cache.db': {file: 'hy_memory/data/cache_sqlite.py', x: 1200, y: 770, group: 'storage', desc: '本地小数据库。记录系统运行日志、任务队列和一些临时数据。'},
+    'SQLite Session': {file: 'hermes_state.py', x: 1440, y: 770, group: 'storage', desc: '本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。'}
   };
 
   // Real data flows derived from source analysis
@@ -93,12 +93,13 @@
     ['AIAgent', 'Turn 前奏'],
 
     // Hermes turn pipeline (spine). The agent loop is the cycle between LLM and tools.
-    ['Turn 前奏', '系统提示'], ['系统提示', '消息构建'], ['消息构建', 'LLM API'],
+    ['Agent Init', '系统提示'], ['Turn 前奏', '系统提示'], ['系统提示', '消息构建'], ['消息构建', 'LLM API'],
     ['LLM API', '工具执行'],
+    ['工具执行', 'memory tool'],
     ['工具执行', 'LLM API'],
     ['LLM API', 'Turn 收尾'],
     ['LLM API', '上下文压缩'], ['上下文压缩', 'ContextCompressor'],
-    ['背景 review', 'LLM API'],
+    ['背景 review', 'MemoryManager'],
 
     // turn engine <-> memory abstraction
     ['memory tool', 'MemoryStore'],
@@ -157,14 +158,14 @@
     var onNodeClick = props.onNodeClick;
 
     var CLUSTERS = [
-      {name: 'External', x: 30, y: 200, w: 140, h: 500, color: '#d4c5a9'},
-      {name: 'Control Plane', x: 190, y: 120, w: 140, h: 80, color: '#c4b28a'},
-      {name: 'AI Providers', x: 190, y: 220, w: 140, h: 80, color: '#8ab4e6'},
-      {name: 'Gateway', x: 190, y: 360, w: 140, h: 220, color: '#e6c875'},
-      {name: 'Turn Engine', x: 340, y: 40, w: 260, h: 620, color: '#f4a68e'},
+      {name: 'External', x: 20, y: 80, w: 170, h: 560, color: '#d4c5a9'},
+      {name: 'Control Plane', x: 190, y: 120, w: 200, h: 80, color: '#c4b28a'},
+      {name: 'AI Providers', x: 190, y: 220, w: 200, h: 80, color: '#8ab4e6'},
+      {name: 'Gateway', x: 190, y: 360, w: 200, h: 220, color: '#e6c875'},
+      {name: 'Turn Engine', x: 400, y: 40, w: 410, h: 720, color: '#f4a68e'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1080, y: 210, w: 200, h: 440, color: '#a8b8e6'},
-      {name: 'Storage', x: 620, y: 700, w: 920, h: 80, color: '#7dd3d8'}
+      {name: 'Storage', x: 620, y: 720, w: 920, h: 110, color: '#7dd3d8'}
     ];
 
     var clusters = CLUSTERS.map(function (c, i) {
@@ -182,7 +183,7 @@
       var a = NODES[c[0]], b = NODES[c[1]];
       var dx = b.x - a.x, dy = b.y - a.y;
       var x1 = a.x, y1 = a.y, x2 = b.x, y2 = b.y;
-      // edge offsets: horizontal if mainly horizontal, else vertical
+      // exit/enter from the side facing the target
       if (Math.abs(dx) > Math.abs(dy)) {
         x1 += dx > 0 ? 65 : -65;
         x2 += dx > 0 ? -65 : 65;
@@ -190,23 +191,24 @@
         y1 += dy > 0 ? 17 : -17;
         y2 += dy > 0 ? -17 : 17;
       }
-      // route through a midpoint: prefer horizontal-first L shape
-      var mx = x2, my = y1;
-      // for purely vertical/horizontal, use direct segment
       var d;
+      var dashed = c[2] === 'dashed';
       if (x1 === x2 || y1 === y2) {
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
+      } else if (Math.abs(dx) > Math.abs(dy)) {
+        // mainly horizontal: go horizontal first, then vertical
+        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else {
-        d = 'M' + x1 + ',' + y1 + ' L' + mx + ',' + my + ' L' + x2 + ',' + y2;
+        // mainly vertical: go vertical first, then horizontal
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
       }
-      var dashed = c[2] === 'dashed';
       return h('path', {
         key: 'link-' + i,
         d: d,
         fill: 'none',
         stroke: '#5a7169',
         strokeWidth: 1,
-        opacity: 0.85,
+        opacity: 0.75,
         strokeDasharray: dashed ? '4,3' : undefined,
         markerEnd: 'url(#eh-arrow)'
       });
@@ -239,7 +241,7 @@
       );
     });
 
-    return h('svg', {className: 'eh-arch', viewBox: '30 20 1510 790', width: '1510', height: '790'},
+    return h('svg', {className: 'eh-arch', viewBox: '0 0 1600 880', width: '1600', height: '880'},
       h('defs', null,
         h('pattern', {id: 'eh-grid', width: 40, height: 40, patternUnits: 'userSpaceOnUse'},
           h('path', {d: 'M 40 0 L 0 0 0 40', fill: 'none', stroke: '#163b33', strokeWidth: 0.5, opacity: 0.4})
@@ -256,7 +258,7 @@
       clusters,
       links,
       // Visual annotation: the agent loop is the cycle between LLM and tools
-      h('path', {d: 'M 585,503 L 640,503 L 640,437 L 585,437', fill: 'none', stroke: '#f4a68e', strokeWidth: 2, strokeDasharray: '4,3', markerEnd: 'url(#eh-arrow)'}),
+      h('path', {d: 'M 585,420 L 650,420 L 650,520 L 585,520', fill: 'none', stroke: '#f4a68e', strokeWidth: 2, strokeDasharray: '4,3', markerEnd: 'url(#eh-arrow)'}),
       nodes
     );
   }
@@ -310,8 +312,8 @@
     var dragStartRef = hooks.useRef({x: 0, y: 0});
     var posRef = hooks.useRef({x: 0, y: 0});
 
-    var SVG_W = 1510;
-    var SVG_H = 790;
+    var SVG_W = 1600;
+    var SVG_H = 880;
 
     function fitToScreen() {
       if (!canvasRef.current) return;
