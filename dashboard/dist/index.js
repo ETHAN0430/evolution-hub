@@ -35,7 +35,11 @@
 
     // ── Hermes Turn Engine / AIAgent runtime (single vertical spine) ─────────
     'Agent Init': {file: 'agent/agent_init.py', x: 520, y: 150, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：设置 platform、组装首次 system prompt。'},
-    'Turn Start': {file: 'turn_context.py', x: 520, y: 270, group: 'pipeline', desc: '每轮 Turn 的序幕（prologue），在一个文件里完成：清洗用户输入、恢复/构建 system prompt、预压缩过长上下文、调用 pre_llm_call 插件、从 MemoryManager prefetch 记忆、把用户消息持久化到 SQLite Session、重置重试计数器和 guardrails 等。已有会话时直接从这里开始。'},
+    'Turn Start': {file: 'turn_context.py', x: 520, y: 270, group: 'pipeline', desc: '每轮 Turn 的入口。turn_context.py 的序幕从这里开始，接下来会串行做输入清洗、记忆预取、预压缩、插件上下文注入，最后交给消息构建。'},
+    '输入清洗': {file: 'turn_context.py', x: 620, y: 270, group: 'pipeline', desc: '清洗用户输入（如去掉非法 surrogate 字符），并把用户消息追加到对话历史中。'},
+    '记忆预取': {file: 'turn_context.py', x: 620, y: 330, group: 'pipeline', desc: '用当前用户消息向 MemoryManager 发起 prefetch，把相关记忆（MEMORY.md、USER.md、HY Memory 等）提前查出来，供后续 prompt 使用。'},
+    '预压缩': {file: 'turn_context.py', x: 620, y: 390, group: 'pipeline', desc: '在真正调用 LLM 前，如果发现上下文太长，先做一次预压缩（preflight compression），防止请求超出模型窗口。'},
+    '插件上下文': {file: 'turn_context.py', x: 620, y: 450, group: 'pipeline', desc: '调用 pre_llm_call 插件钩子，把插件返回的额外上下文注入到用户消息中。'},
     '系统提示': {file: 'system_prompt.py', x: 520, y: 210, group: 'pipeline', desc: '给 AI 的“身份卡”和基本规则。在 Agent Init 时构建并缓存，之后每一轮都会被复用。'},
     '消息构建': {file: 'prompt_builder.py', x: 520, y: 410, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
     'LLM API': {file: 'conversation_loop.py', x: 520, y: 480, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
@@ -43,10 +47,10 @@
     'Turn End': {file: 'turn_finalizer.py', x: 520, y: 620, group: 'pipeline', desc: '一轮对话结束后，保存结果、更新记忆、做一些后台整理工作。'},
 
     // ── Turn support modules (branch right from spine, aligned to their caller) ──
-    '后台复盘': {file: 'background_review.py', x: 720, y: 230, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
-    '上下文压缩': {file: 'context_compressor.py', x: 720, y: 410, group: 'pipeline', desc: '当对话太长时，自动删掉不重要的部分，让 AI 不会“记不过来”。'},
-    'ContextCompressor': {file: 'context_compressor.py', x: 720, y: 480, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
-    'memory tool': {file: 'tools/memory_tool.py', x: 720, y: 550, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
+    '后台复盘': {file: 'background_review.py', x: 720, y: 300, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
+    '上下文压缩': {file: 'context_compressor.py', x: 720, y: 480, group: 'pipeline', desc: '当对话太长时，自动删掉不重要的部分，让 AI 不会“记不过来”。'},
+    'ContextCompressor': {file: 'context_compressor.py', x: 720, y: 550, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
+    'memory tool': {file: 'tools/memory_tool.py', x: 720, y: 620, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
 
     // ── Memory abstraction layer ────────────────────────────────────────────
     'MemoryManager': {file: 'memory_manager.py', x: 920, y: 220, group: 'memory', desc: '记忆的调度中心。每次对话前查记忆，对话结束后把新东西存进记忆。'},
@@ -86,7 +90,7 @@
     ['Agent Init', 'Turn Start'],
 
     // Hermes turn pipeline (spine). The agent loop is the cycle between LLM and tools.
-    ['Agent Init', '系统提示'], ['系统提示', '消息构建'], ['Turn Start', '消息构建'], ['消息构建', 'LLM API'],
+    ['Agent Init', '系统提示'], ['系统提示', '消息构建'], ['Turn Start', '输入清洗'], ['输入清洗', '记忆预取'], ['记忆预取', '预压缩'], ['预压缩', '插件上下文'], ['插件上下文', '消息构建'], ['消息构建', 'LLM API'],
     ['LLM API', '工具执行'],
     ['工具执行', 'memory tool'],
     ['工具执行', 'LLM API'],
