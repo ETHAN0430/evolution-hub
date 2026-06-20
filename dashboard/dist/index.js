@@ -43,12 +43,13 @@
     '消息构建': {file: 'agent/system_prompt.py', loc: 'build_system_prompt', x: 510, y: 610, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
     'LLM API': {file: 'agent/conversation_loop.py', loc: 'run_conversation', x: 510, y: 680, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
     '工具执行': {file: 'agent/tool_executor.py', loc: 'execute_tool_calls_concurrent', x: 660, y: 680, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
-    'Turn End': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 680, group: 'pipeline', desc: '一轮对话结束后，保存结果、更新记忆、做一些后台整理工作。'},
-
-    // ── Turn support modules (branch right from spine, aligned to their caller) ──
-    '后台复盘': {file: 'agent/background_review.py', loc: 'spawn_background_review_thread', x: 760, y: 340, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
-    '上下文压缩': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 760, y: 520, group: 'pipeline', desc: '当对话太长时，自动删掉不重要的部分，让 AI 不会“记不过来”。'},
-    'ContextCompressor': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 760, y: 590, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
+    '输出后处理': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 620, group: 'pipeline', desc: '工具循环结束后的输出处理：插件 transform_llm_output/post_llm_call、文件修改校验、异常结束解释等。'},
+    '会话持久化': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 550, group: 'pipeline', desc: '把这轮对话写回 SQLite / JSON log，清理 VM/browser 等临时资源，去掉空的脚手架消息。'},
+    'Turn End': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 480, group: 'pipeline', desc: '最终收尾：统计 token/cost、提取 reasoning、组装 result 返回给调用方。'},
+    // ── Turn support modules (branch right from spine / above the turn chain) ────
+    '后台复盘': {file: 'agent/background_review.py', loc: 'spawn_background_review_thread', x: 810, y: 410, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
+    '上下文压缩': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 660, y: 520, group: 'pipeline', desc: '当对话太长时，自动删掉不重要的部分，让 AI 不会“记不过来”。'},
+    'ContextCompressor': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 660, y: 590, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
     'memory tool': {file: 'tools/memory_tool.py', loc: 'memory_tool', x: 810, y: 720, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
 
     // ── Memory abstraction layer ────────────────────────────────────────────
@@ -93,7 +94,9 @@
     ['LLM API', '工具执行'],
     ['工具执行', 'memory tool'],
     ['工具执行', 'LLM API'],
-    ['LLM API', 'Turn End'],
+    ['工具执行', '输出后处理'],
+    ['输出后处理', '会话持久化'],
+    ['会话持久化', 'Turn End'],
     ['消息构建', '上下文压缩', 'dashed'], ['上下文压缩', 'LLM API', 'dashed'], ['上下文压缩', 'ContextCompressor'],
     ['Turn End', '后台复盘'],
     ['后台复盘', 'MemoryManager'],
