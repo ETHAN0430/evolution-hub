@@ -20,7 +20,7 @@
   var NODES = {
     // ── External surfaces (fan in from left) ────────────────────────────────
     'Hermes CLI': {file: 'hermes_cli/cli_agent_setup_mixin.py', x: 120, y: 260, group: 'external', desc: '命令行版本。在本地直接启动 AIAgent，在 cli_agent_setup_mixin.py 里显式设置 platform="cli"。'},
-    'TUI': {file: 'hermes_cli/main.py', x: 120, y: 340, group: 'external', desc: '终端 UI 版本。`hermes --tui` 启动，背后同样走 tui_gateway。'},
+    'TUI': {file: 'tui_gateway/entry.py', x: 120, y: 340, group: 'external', desc: '终端 UI 版本。`hermes --tui` 启动，通过 tui_gateway/entry.py 建立 stdio 传输，走 tui_gateway 后端。'},
     'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 420, group: 'external', desc: '电脑桌面上的 App 窗口。本地模式走 tui_gateway；远程模式会连到远程 Messaging Gateway，被当成 Platform.LOCAL 映射为 CLI。'},
     'API Server': {file: 'gateway/platforms/api_server.py', x: 120, y: 500, group: 'external', desc: 'OpenAI-compatible API 服务。外部客户端通过 REST/SSE 调用，platform="api_server"。'},
     'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 580, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
@@ -141,7 +141,7 @@
     if (src.startsWith('/')) return src;
     if (src.startsWith('hy_memory/')) return base + 'venv/lib/python3.11/site-packages/' + src;
     if (src === 'run_agent.py' || src === 'hermes_state.py') return base + src;
-    if (src.startsWith('hermes_cli/') || src.startsWith('gateway/') || src.startsWith('apps/')) return base + src;
+    if (src.startsWith('hermes_cli/') || src.startsWith('gateway/') || src.startsWith('apps/') || src.startsWith('tui_gateway/')) return base + src;
     if (src.startsWith('tools/')) return base + src;
     if (src.startsWith('agent/')) return base + src;
     return base + 'agent/' + src;
