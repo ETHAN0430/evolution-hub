@@ -93,6 +93,7 @@
     ['LLM API', 'Turn End'],
     ['消息构建', '上下文压缩', 'dashed'], ['上下文压缩', 'LLM API', 'dashed'], ['上下文压缩', 'ContextCompressor'],
     ['Turn End', '后台复盘'],
+    ['Turn End', 'Turn Start', 'dashed'],
     ['后台复盘', 'MemoryManager'],
 
     // turn engine <-> memory abstraction
