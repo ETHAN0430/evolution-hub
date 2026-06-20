@@ -27,8 +27,8 @@
     'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 660, group: 'external', desc: '网页版后台。通过 tui_gateway 提供 JSON-RPC 会话服务，你现在看到的可视化页面由它承载。'},
 
     // ── Gateway ──────────────────────────────────────────────────────────────
-    'Messaging Gateway': {file: 'gateway/run.py', x: 320, y: 420, group: 'gateway', desc: '消息总入口（Hermes 里通常说的 "gateway" 就是指它）。处理 Telegram、Discord 等聊天平台消息；内部把 Platform.LOCAL 映射为 "cli"，所以本地/桌面类客户端可能被标记成 CLI。'},
-    'TUI Gateway': {file: 'tui_gateway/server.py', x: 320, y: 520, group: 'gateway', desc: 'Terminal/UI 网关。给 Desktop、Dashboard、TUI 提供统一 JSON-RPC 会话服务；默认 source="tui"，且 AIAgent 的 platform 被硬编码为 "tui"。'},
+    'Messaging Gateway': {file: 'gateway/run.py', x: 320, y: 420, group: 'gateway', desc: '消息总入口（Hermes 里通常说的 "gateway" 就是指它）。负责聊天平台的适配与路由：处理 Telegram、Discord 等消息，知道回哪、发给谁。CLI 一对一单会话，直接连 AIAgent，不需要它。'},
+    'TUI Gateway': {file: 'tui_gateway/server.py', x: 320, y: 520, group: 'gateway', desc: 'Terminal/UI 网关。给 Desktop、Dashboard、TUI 这些 UI 客户端提供统一 JSON-RPC 协议和会话管理；默认 source="tui"，且 AIAgent 的 platform 被硬编码为 "tui"。'},
 
     // ── Control plane ────────────────────────────────────────────────────────
     'Config & State': {file: 'hermes_cli/config.py', x: 320, y: 160, group: 'control', desc: '配置文件。决定用哪个 AI 模型、连哪个服务商、以及一些个性化设置。'},
@@ -254,22 +254,6 @@
       links,
       // Visual annotation: the agent loop is the cycle between LLM and tools
       h('path', {d: 'M 585,503 L 640,503 L 640,437 L 585,437', fill: 'none', stroke: '#f4a68e', strokeWidth: 2, strokeDasharray: '4,3', markerEnd: 'url(#eh-arrow)'}),
-      // Gateway purpose annotation
-      h('g', null,
-        h('rect', {x: 190, y: 610, width: 300, height: 74, rx: 6, fill: '#242718', stroke: '#e6c875', strokeOpacity: 0.3, strokeWidth: 1}),
-        h('text', {x: 202, y: 628, fill: '#e6c875', fontSize: 11,
-          fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"},
-          'Gateway 封装平台/客户端差异：'),
-        h('text', {x: 202, y: 644, fill: '#e6c875', fontSize: 11,
-          fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"},
-          'Messaging Gateway 处理聊天平台适配与路由；'),
-        h('text', {x: 202, y: 660, fill: '#e6c875', fontSize: 11,
-          fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"},
-          'TUI Gateway 给 UI 客户端提供统一 JSON-RPC。'),
-        h('text', {x: 202, y: 676, fill: '#e6c875', fontSize: 11,
-          fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"},
-          'CLI 单会话直连 AIAgent，故绕过 gateway。')
-      ),
       // Remote-gateway insight from source investigation
       h('g', null,
         h('rect', {x: 30, y: 720, width: 470, height: 46, rx: 6, fill: '#1c2621', stroke: '#d4c5a9', strokeOpacity: 0.3, strokeWidth: 1}),
