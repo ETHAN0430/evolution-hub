@@ -36,21 +36,21 @@
     // ── AI providers ─────────────────────────────────────────────────────────
     'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 320, y: 260, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
 
-    // ── Hermes Turn Engine (main spine) ─────────────────────────────────────
+    // ── Hermes Turn Engine (main spine), top-down by turn flow ───────────────
     'Agent Init': {file: 'agent/agent_init.py', x: 420, y: 120, group: 'pipeline', desc: '初始化 AIAgent 的地方。在这里设置 platform（cli/tui/api_server/...），并组装首次 system prompt。'},
-    'AIAgent': {file: 'run_agent.py', x: 520, y: 60, group: 'pipeline', desc: 'Hermes 的核心运行时对象。持有对话状态、调用 LLM、执行工具、管理会话生命周期，并把底层模块串起来。'},
-    'Turn 前奏': {file: 'turn_context.py', x: 520, y: 120, group: 'pipeline', desc: '收到你的消息后，先做准备动作：检查一下当前状态，提前去记忆里找找有没有相关背景。'},
-    '系统提示': {file: 'system_prompt.py', x: 520, y: 220, group: 'pipeline', desc: '给 AI 的“身份卡”和基本规则。告诉 AI 它是谁、有什么工具、该怎么说话。'},
-    '消息构建': {file: 'prompt_builder.py', x: 520, y: 320, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
+    'AIAgent': {file: 'run_agent.py', x: 520, y: 180, group: 'pipeline', desc: 'Hermes 的核心运行时对象。持有对话状态、调用 LLM、执行工具、管理会话生命周期，并把底层模块串起来。'},
+    'Turn 前奏': {file: 'turn_context.py', x: 520, y: 240, group: 'pipeline', desc: '收到你的消息后，先做准备动作：检查一下当前状态，提前去记忆里找找有没有相关背景。'},
+    '系统提示': {file: 'system_prompt.py', x: 520, y: 300, group: 'pipeline', desc: '给 AI 的“身份卡”和基本规则。告诉 AI 它是谁、有什么工具、该怎么说话。'},
+    '消息构建': {file: 'prompt_builder.py', x: 520, y: 360, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
     'LLM API': {file: 'conversation_loop.py', x: 520, y: 420, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
-    '工具执行': {file: 'tool_executor.py', x: 520, y: 520, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
-    'Turn 收尾': {file: 'turn_finalizer.py', x: 520, y: 620, group: 'pipeline', desc: '一轮对话结束后，保存结果、更新记忆、做一些后台整理工作。'},
+    '工具执行': {file: 'tool_executor.py', x: 520, y: 480, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
+    'Turn 收尾': {file: 'turn_finalizer.py', x: 520, y: 540, group: 'pipeline', desc: '一轮对话结束后，保存结果、更新记忆、做一些后台整理工作。'},
 
-    // ── Turn support modules (branch right from spine) ──────────────────────
+    // ── Turn support modules (branch right from spine, aligned to their caller) ──
     '背景 review': {file: 'background_review.py', x: 720, y: 220, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
-    '上下文压缩': {file: 'context_compressor.py', x: 720, y: 320, group: 'pipeline', desc: '当对话太长时，自动删掉不重要的部分，让 AI 不会“记不过来”。'},
+    '上下文压缩': {file: 'context_compressor.py', x: 720, y: 360, group: 'pipeline', desc: '当对话太长时，自动删掉不重要的部分，让 AI 不会“记不过来”。'},
     'ContextCompressor': {file: 'context_compressor.py', x: 720, y: 420, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
-    'memory tool': {file: 'tools/memory_tool.py', x: 720, y: 520, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
+    'memory tool': {file: 'tools/memory_tool.py', x: 720, y: 480, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
 
     // ── Memory abstraction layer ────────────────────────────────────────────
     'MemoryManager': {file: 'memory_manager.py', x: 920, y: 220, group: 'memory', desc: '记忆的调度中心。每次对话前查记忆，对话结束后把新东西存进记忆。'},
@@ -258,7 +258,7 @@
       clusters,
       links,
       // Visual annotation: the agent loop is the cycle between LLM and tools
-      h('path', {d: 'M 585,420 L 650,420 L 650,520 L 585,520', fill: 'none', stroke: '#f4a68e', strokeWidth: 2, strokeDasharray: '4,3', markerEnd: 'url(#eh-arrow)'}),
+      h('path', {d: 'M 585,420 L 650,420 L 650,480 L 585,480', fill: 'none', stroke: '#f4a68e', strokeWidth: 2, strokeDasharray: '4,3', markerEnd: 'url(#eh-arrow)'}),
       nodes
     );
   }
