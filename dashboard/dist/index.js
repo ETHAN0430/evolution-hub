@@ -21,7 +21,7 @@
     // ── External surfaces (fan in from left) ────────────────────────────────
     'Hermes CLI': {file: 'hermes_cli/cli_agent_setup_mixin.py', x: 120, y: 260, group: 'external', desc: '命令行版本。在本地直接启动 AIAgent，在 cli_agent_setup_mixin.py 里显式设置 platform="cli"。'},
     'TUI': {file: 'tui_gateway/entry.py', x: 120, y: 340, group: 'external', desc: '终端 UI 版本。`hermes --tui` 启动，通过 tui_gateway/entry.py 建立 stdio 传输，走 tui_gateway 后端。'},
-    'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 420, group: 'external', desc: '电脑桌面上的 App 窗口。本地模式走 tui_gateway；远程模式会连到远程 Messaging Gateway，被当成 Platform.LOCAL 映射为 CLI。'},
+    'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 420, group: 'external', desc: '电脑桌面上的 App 窗口。本地模式走 tui_gateway；远程模式会连到远程 TUI Gateway（即远程 dashboard 后端）。'},
     'API Server': {file: 'gateway/platforms/api_server.py', x: 120, y: 500, group: 'external', desc: 'OpenAI-compatible API 服务。外部客户端通过 REST/SSE 调用，platform="api_server"。'},
     'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 580, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
     'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 660, group: 'external', desc: '网页版后台。通过 tui_gateway 提供 JSON-RPC 会话服务，你现在看到的可视化页面由它承载。'},
@@ -79,7 +79,6 @@
     ['Hermes CLI', 'Agent Init'],
     ['TUI', 'TUI Gateway'],
     ['Desktop', 'TUI Gateway'],
-    ['Desktop', 'Messaging Gateway', 'dashed'],
     ['API Server', 'Agent Init'],
     ['Messaging Platforms', 'Messaging Gateway'],
     ['Dashboard', 'TUI Gateway'],
@@ -258,16 +257,6 @@
       links,
       // Visual annotation: the agent loop is the cycle between LLM and tools
       h('path', {d: 'M 585,503 L 640,503 L 640,437 L 585,437', fill: 'none', stroke: '#f4a68e', strokeWidth: 2, strokeDasharray: '4,3', markerEnd: 'url(#eh-arrow)'}),
-      // Remote-gateway insight from source investigation
-      h('g', null,
-        h('rect', {x: 30, y: 720, width: 470, height: 46, rx: 6, fill: '#1c2621', stroke: '#d4c5a9', strokeOpacity: 0.3, strokeWidth: 1}),
-        h('text', {x: 42, y: 740, fill: '#d4c5a9', fontSize: 11,
-          fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"},
-          'Remote insight: Desktop → remote gateway is classified as Platform.LOCAL,'),
-        h('text', {x: 42, y: 758, fill: '#d4c5a9', fontSize: 11,
-          fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"},
-          'which gateway/run.py maps to the "cli" platform hint → bot says CLI.')
-      ),
       nodes
     );
   }
