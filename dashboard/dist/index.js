@@ -32,6 +32,7 @@
 
     // ── Hermes Turn Engine (main spine) ─────────────────────────────────────
     'Agent Init': {file: 'agent/agent_init.py', x: 420, y: 120, group: 'pipeline', desc: '初始化 AIAgent 的地方。在这里设置 platform（cli/tui/api_server/...），并组装首次 system prompt。'},
+    'AIAgent': {file: 'run_agent.py', x: 520, y: 60, group: 'pipeline', desc: 'Hermes 的核心运行时对象。持有对话状态、调用 LLM、执行工具、管理会话生命周期，并把底层模块串起来。'},
     'Turn 前奏': {file: 'turn_context.py', x: 520, y: 120, group: 'pipeline', desc: '收到你的消息后，先做准备动作：检查一下当前状态，提前去记忆里找找有没有相关背景。'},
     '系统提示': {file: 'system_prompt.py', x: 520, y: 220, group: 'pipeline', desc: '给 AI 的“身份卡”和基本规则。告诉 AI 它是谁、有什么工具、该怎么说话。'},
     '消息构建': {file: 'prompt_builder.py', x: 520, y: 320, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
@@ -79,7 +80,8 @@
     ['TUI Gateway', 'Agent Init'],
     ['Config & State', '系统提示'],
     ['Provider APIs', 'LLM API'],
-    ['Agent Init', 'Turn 前奏'],
+    ['Agent Init', 'AIAgent'],
+    ['AIAgent', 'Turn 前奏'],
 
     // Hermes turn pipeline (spine). The agent loop is the cycle between LLM and tools.
     ['Turn 前奏', '系统提示'], ['系统提示', '消息构建'], ['消息构建', 'LLM API'],
@@ -146,7 +148,7 @@
     var CLUSTERS = [
       {name: 'External', x: 30, y: 220, w: 140, h: 500, color: '#d4c5a9'},
       {name: 'Gateway', x: 190, y: 150, w: 140, h: 520, color: '#e6c875'},
-      {name: 'Turn Engine', x: 340, y: 60, w: 260, h: 600, color: '#f4a68e'},
+      {name: 'Turn Engine', x: 340, y: 40, w: 260, h: 620, color: '#f4a68e'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1080, y: 210, w: 200, h: 440, color: '#a8b8e6'},
       {name: 'Storage', x: 620, y: 700, w: 920, h: 80, color: '#7dd3d8'}
