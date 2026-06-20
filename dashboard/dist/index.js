@@ -92,7 +92,7 @@
     ['工具执行', 'LLM API'],
     ['LLM API', 'Turn End'],
     ['LLM API', '上下文压缩'], ['上下文压缩', 'ContextCompressor'],
-    ['Turn 收尾', '后台复盘'],
+    ['Turn End', '后台复盘'],
     ['后台复盘', 'MemoryManager'],
 
     // turn engine <-> memory abstraction
