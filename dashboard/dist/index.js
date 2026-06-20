@@ -34,36 +34,35 @@
     'Turn 前奏': {file: 'turn_context.py', x: 520, y: 120, group: 'pipeline', desc: '收到你的消息后，先做准备动作：检查一下当前状态，提前去记忆里找找有没有相关背景。'},
     '系统提示': {file: 'system_prompt.py', x: 520, y: 220, group: 'pipeline', desc: '给 AI 的“身份卡”和基本规则。告诉 AI 它是谁、有什么工具、该怎么说话。'},
     '消息构建': {file: 'prompt_builder.py', x: 520, y: 320, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
-    '主循环': {file: 'conversation_loop.py', x: 520, y: 420, group: 'pipeline', desc: '对话的大脑。决定怎么回复你，以及在需要时调用各种工具。'},
-    'LLM API': {file: 'conversation_loop.py', x: 520, y: 520, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
-    '工具执行': {file: 'tool_executor.py', x: 520, y: 620, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
-    'Turn 收尾': {file: 'turn_finalizer.py', x: 520, y: 720, group: 'pipeline', desc: '一轮对话结束后，保存结果、更新记忆、做一些后台整理工作。'},
+    'LLM API': {file: 'conversation_loop.py', x: 520, y: 420, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
+    '工具执行': {file: 'tool_executor.py', x: 520, y: 520, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
+    'Turn 收尾': {file: 'turn_finalizer.py', x: 520, y: 620, group: 'pipeline', desc: '一轮对话结束后，保存结果、更新记忆、做一些后台整理工作。'},
 
     // ── Turn support modules (branch right from spine) ──────────────────────
     '背景 review': {file: 'background_review.py', x: 720, y: 220, group: 'pipeline', desc: '在后台悄悄复盘这一轮对话，看看有没有值得记住或改进的地方。'},
     '上下文压缩': {file: 'context_compressor.py', x: 720, y: 320, group: 'pipeline', desc: '当对话太长时，自动删掉不重要的部分，让 AI 不会“记不过来”。'},
     'ContextCompressor': {file: 'context_compressor.py', x: 720, y: 420, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
-    'memory tool': {file: 'tools/memory_tool.py', x: 720, y: 620, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
+    'memory tool': {file: 'tools/memory_tool.py', x: 720, y: 520, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
 
     // ── Memory abstraction layer ────────────────────────────────────────────
-    'MemoryManager': {file: 'memory_manager.py', x: 920, y: 320, group: 'memory', desc: '记忆的调度中心。每次对话前查记忆，对话结束后把新东西存进记忆。'},
-    'MemoryProvider': {file: 'memory_provider.py', x: 920, y: 420, group: 'memory', desc: '外部记忆服务的接口。让 Hermes 可以接不同的记忆系统，比如 HY Memory。'},
-    'MemoryStore': {file: 'tools/memory_tool.py', x: 920, y: 520, group: 'memory', desc: '本地记忆的仓库。负责保管 MEMORY.md、USER.md 这些文件。'},
-    'ContextEngine': {file: 'context_engine.py', x: 920, y: 620, group: 'memory', desc: '控制对话上下文长度的引擎。决定什么时候该压缩、怎么压缩。'},
-    '记忆文件': {file: 'tools/memory_tool.py', x: 920, y: 720, group: 'memory', desc: '本地保存的长期记忆。比如你的喜好、重要事实、个人资料等。'},
+    'MemoryManager': {file: 'memory_manager.py', x: 920, y: 220, group: 'memory', desc: '记忆的调度中心。每次对话前查记忆，对话结束后把新东西存进记忆。'},
+    'MemoryProvider': {file: 'memory_provider.py', x: 920, y: 320, group: 'memory', desc: '外部记忆服务的接口。让 Hermes 可以接不同的记忆系统，比如 HY Memory。'},
+    'MemoryStore': {file: 'tools/memory_tool.py', x: 920, y: 420, group: 'memory', desc: '本地记忆的仓库。负责保管 MEMORY.md、USER.md 这些文件。'},
+    'ContextEngine': {file: 'context_engine.py', x: 920, y: 520, group: 'memory', desc: '控制对话上下文长度的引擎。决定什么时候该压缩、怎么压缩。'},
+    '记忆文件': {file: 'tools/memory_tool.py', x: 920, y: 620, group: 'memory', desc: '本地保存的长期记忆。比如你的喜好、重要事实、个人资料等。'},
 
     // ── HY Memory evolution engine ──────────────────────────────────────────
-    'HY Memory': {file: 'hy_memory/client.py', x: 1140, y: 320, group: 'hy', desc: '一个更聪明的记忆系统。不仅能存东西，还会自动整理、提炼、进化记忆。'},
-    'S1 Writer': {file: 'hy_memory/pipelines/writer.py', x: 1140, y: 420, group: 'hy', desc: '第一层记忆写入。先把对话内容简单归档，准备后续加工。'},
-    'MemAgent': {file: 'hy_memory/agent/mem_agent.py', x: 1140, y: 520, group: 'hy', desc: '记忆提炼员。自动从对话里提取重要事实、身份信息和摘要。'},
-    'Reconciler': {file: 'hy_memory/agent/reconciler.py', x: 1140, y: 620, group: 'hy', desc: '记忆冲突检查员。看看新信息和旧记忆有没有矛盾，决定是新增、替换还是更新。'},
-    'System 2': {file: 'hy_memory/pipelines/system2_writer.py', x: 1140, y: 720, group: 'hy', desc: '深度思考层。把零散事实组织成概念、意图和知识图谱。'},
+    'HY Memory': {file: 'hy_memory/client.py', x: 1140, y: 220, group: 'hy', desc: '一个更聪明的记忆系统。不仅能存东西，还会自动整理、提炼、进化记忆。'},
+    'S1 Writer': {file: 'hy_memory/pipelines/writer.py', x: 1140, y: 320, group: 'hy', desc: '第一层记忆写入。先把对话内容简单归档，准备后续加工。'},
+    'MemAgent': {file: 'hy_memory/agent/mem_agent.py', x: 1140, y: 420, group: 'hy', desc: '记忆提炼员。自动从对话里提取重要事实、身份信息和摘要。'},
+    'Reconciler': {file: 'hy_memory/agent/reconciler.py', x: 1140, y: 520, group: 'hy', desc: '记忆冲突检查员。看看新信息和旧记忆有没有矛盾，决定是新增、替换还是更新。'},
+    'System 2': {file: 'hy_memory/pipelines/system2_writer.py', x: 1140, y: 620, group: 'hy', desc: '深度思考层。把零散事实组织成概念、意图和知识图谱。'},
 
     // ── Persistent stores (foundation) ──────────────────────────────────────
-    'Vector DB': {file: 'hy_memory/data/vector_store_chroma.py', x: 720, y: 840, group: 'storage', desc: '向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。'},
-    'Graph DB': {file: 'hy_memory/data/graph_store_kuzu.py', x: 960, y: 840, group: 'storage', desc: '图数据库。像知识图谱一样保存概念、主题和它们之间的关系。'},
-    'cache.db': {file: 'hy_memory/data/cache_sqlite.py', x: 1200, y: 840, group: 'storage', desc: '本地小数据库。记录系统运行日志、任务队列和一些临时数据。'},
-    'SQLite Session': {file: 'run_agent.py', x: 1440, y: 840, group: 'storage', desc: '保存每次对话的历史记录，方便下次继续聊。'}
+    'Vector DB': {file: 'hy_memory/data/vector_store_chroma.py', x: 720, y: 740, group: 'storage', desc: '向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。'},
+    'Graph DB': {file: 'hy_memory/data/graph_store_kuzu.py', x: 960, y: 740, group: 'storage', desc: '图数据库。像知识图谱一样保存概念、主题和它们之间的关系。'},
+    'cache.db': {file: 'hy_memory/data/cache_sqlite.py', x: 1200, y: 740, group: 'storage', desc: '本地小数据库。记录系统运行日志、任务队列和一些临时数据。'},
+    'SQLite Session': {file: 'run_agent.py', x: 1440, y: 740, group: 'storage', desc: '保存每次对话的历史记录，方便下次继续聊。'}
   };
 
   // Real data flows derived from source analysis
@@ -77,13 +76,13 @@
     ['Config & State', '系统提示'],
     ['Provider APIs', 'LLM API'],
 
-    // Hermes turn pipeline (spine)
-    ['Turn 前奏', '系统提示'], ['系统提示', '消息构建'], ['消息构建', '主循环'],
-    ['主循环', 'LLM API'],
+    // Hermes turn pipeline (spine). The agent loop is the cycle between LLM and tools.
+    ['Turn 前奏', '系统提示'], ['系统提示', '消息构建'], ['消息构建', 'LLM API'],
     ['LLM API', '工具执行'],
-    ['工具执行', '主循环'],
-    ['主循环', '上下文压缩'], ['上下文压缩', 'ContextCompressor'],
-    ['背景 review', '主循环'], ['Turn 收尾', '主循环'],
+    ['工具执行', 'LLM API'],
+    ['LLM API', 'Turn 收尾'],
+    ['LLM API', '上下文压缩'], ['上下文压缩', 'ContextCompressor'],
+    ['背景 review', 'LLM API'],
 
     // turn engine <-> memory abstraction
     ['memory tool', 'MemoryStore'],
@@ -140,12 +139,12 @@
     var onNodeClick = props.onNodeClick;
 
     var CLUSTERS = [
-      {name: 'External', x: 40, y: 130, w: 200, h: 590, color: '#94a3b8'},
-      {name: 'Gateway', x: 240, y: 160, w: 200, h: 520, color: '#60a5fa'},
-      {name: 'Turn Engine', x: 440, y: 60, w: 400, h: 710, color: '#fb923c'},
-      {name: 'Memory', x: 860, y: 270, w: 200, h: 500, color: '#34d399'},
-      {name: 'HY Memory', x: 1080, y: 270, w: 200, h: 500, color: '#c084fc'},
-      {name: 'Storage', x: 620, y: 790, w: 920, h: 100, color: '#38bdf8'}
+      {name: 'External', x: 30, y: 70, w: 140, h: 390, color: '#d4c5a9'},
+      {name: 'Gateway', x: 190, y: 150, w: 140, h: 400, color: '#e6c875'},
+      {name: 'Turn Engine', x: 340, y: 60, w: 260, h: 600, color: '#f4a68e'},
+      {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
+      {name: 'HY Memory', x: 1080, y: 210, w: 200, h: 440, color: '#a8b8e6'},
+      {name: 'Storage', x: 620, y: 700, w: 920, h: 80, color: '#7dd3d8'}
     ];
 
     var clusters = CLUSTERS.map(function (c, i) {
@@ -197,13 +196,6 @@
     var nodes = Object.keys(NODES).map(function (name) {
       var n = NODES[name];
       var c = COLORS[n.group];
-      var isLoop = name === '主循环';
-      var shape = isLoop
-        ? h('ellipse', {rx: 62, ry: 22, fill: c.fill, stroke: c.stroke, strokeWidth: 2})
-        : h('rect', {x: -65, y: -17, width: 130, height: 34, rx: 6, fill: c.fill, stroke: c.stroke, strokeWidth: 1.5});
-      var loopArrow = isLoop
-        ? h('path', {d: 'M -40,-20 C -60,-48 60,-48 40,-20', fill: 'none', stroke: c.stroke, strokeWidth: 1.5, opacity: 0.9, markerEnd: 'url(#eh-arrow)'})
-        : null;
       return h('g', {
         key: name,
         transform: 'translate(' + n.x + ',' + n.y + ')',
@@ -219,13 +211,12 @@
           }
         }
       },
-        loopArrow,
-        shape,
+        h('rect', {x: -65, y: -17, width: 130, height: 34, rx: 6, fill: c.fill, stroke: c.stroke, strokeWidth: 1.5}),
         h('text', {x: 0, y: 4, textAnchor: 'middle', fill: '#f8fafc', fontSize: 12, fontWeight: 500}, name)
       );
     });
 
-    return h('svg', {className: 'eh-arch', viewBox: '30 20 1510 870', width: '1510', height: '870'},
+    return h('svg', {className: 'eh-arch', viewBox: '30 20 1510 790', width: '1510', height: '790'},
       h('defs', null,
         h('pattern', {id: 'eh-grid', width: 40, height: 40, patternUnits: 'userSpaceOnUse'},
           h('path', {d: 'M 40 0 L 0 0 0 40', fill: 'none', stroke: '#163b33', strokeWidth: 0.5, opacity: 0.4})
@@ -241,6 +232,11 @@
         'HERMES · HY MEMORY EVOLUTION ARCHITECTURE'),
       clusters,
       links,
+      // Visual annotation: the agent loop is the cycle between LLM and tools
+      h('path', {d: 'M 585,520 C 660,520 660,420 585,420', fill: 'none', stroke: '#f4a68e', strokeWidth: 2, strokeDasharray: '4,3', markerEnd: 'url(#eh-arrow)'}),
+      h('text', {x: 640, y: 474, textAnchor: 'middle', fill: '#f4a68e', fontSize: 11,
+        fontFamily: "ui-monospace,'SF Mono',Menlo,monospace", fontWeight: 600},
+        '主循环'),
       nodes
     );
   }
@@ -295,7 +291,7 @@
     var posRef = hooks.useRef({x: 0, y: 0});
 
     var SVG_W = 1510;
-    var SVG_H = 870;
+    var SVG_H = 790;
 
     function fitToScreen() {
       if (!canvasRef.current) return;
