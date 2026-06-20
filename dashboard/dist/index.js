@@ -216,24 +216,6 @@
       );
     });
 
-    var legendItems = [
-      {label: 'External', color: COLORS.external.stroke},
-      {label: 'Gateway', color: COLORS.gateway.stroke},
-      {label: 'Turn Engine', color: COLORS.pipeline.stroke},
-      {label: 'Memory', color: COLORS.memory.stroke},
-      {label: 'HY Memory', color: COLORS.hy.stroke},
-      {label: 'Storage', color: COLORS.storage.stroke}
-    ];
-    var legend = h('g', {transform: 'translate(1330, 880)'},
-      h('rect', {x: -10, y: -14, width: 260, height: 44, rx: 6, fill: '#0f2922', stroke: '#2a4a40', strokeWidth: 1}),
-      legendItems.map(function (item, i) {
-        return h('g', {key: 'legend-' + i, transform: 'translate(' + (i % 3 * 85) + ',' + (Math.floor(i / 3) * 18) + ')'},
-          h('rect', {x: 0, y: -4, width: 8, height: 8, rx: 2, fill: item.color}),
-          h('text', {x: 12, y: 3, fill: '#a3b5ab', fontSize: 9, fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"}, item.label)
-        );
-      })
-    );
-
     return h('svg', {className: 'eh-arch', viewBox: '30 20 1510 870', width: '1510', height: '870'},
       h('defs', null,
         h('pattern', {id: 'eh-grid', width: 40, height: 40, patternUnits: 'userSpaceOnUse'},
@@ -250,8 +232,7 @@
         'HERMES · HY MEMORY EVOLUTION ARCHITECTURE'),
       clusters,
       links,
-      nodes,
-      legend
+      nodes
     );
   }
 
@@ -310,7 +291,7 @@
       var scale = Math.min(availW / SVG_W, availH / SVG_H, 1.2);
       scale = Math.max(0.35, scale);
       var x = (rect.width - SVG_W * scale) / 2;
-      var y = (rect.height - SVG_H * scale) / 2;
+      var y = Math.max(20, (rect.height - SVG_H * scale) * 0.28);
       setSvgScale(scale);
       setPosX(x);
       setPosY(y);
