@@ -38,10 +38,9 @@
     // ── AI providers (foundation row, below turn engine) ─────────────────────
     'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 560, y: 780, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
 
-    // ── Hermes Turn Engine (single vertical spine) ────────────────────────────
-    'Agent Init': {file: 'agent/agent_init.py', x: 520, y: 150, group: 'pipeline', desc: '初始化 AIAgent 的地方。在这里设置 platform（cli/tui/api_server/...），并组装首次 system prompt。'},
-    'AIAgent': {file: 'run_agent.py', x: 520, y: 190, group: 'pipeline', desc: 'Hermes 的核心运行时对象。持有对话状态、调用 LLM、执行工具、管理会话生命周期，并把底层模块串起来。'},
-    'Turn 前奏': {file: 'turn_context.py', x: 520, y: 270, group: 'pipeline', desc: '收到你的消息后，先做准备动作：检查一下当前状态，提前去记忆里找找有没有相关背景。'},
+    // ── Hermes Turn Engine / AIAgent runtime (single vertical spine) ─────────
+    'Agent Init': {file: 'agent/agent_init.py', x: 520, y: 150, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：设置 platform、组装首次 system prompt。'},
+    'Turn 前奏': {file: 'turn_context.py', x: 520, y: 270, group: 'pipeline', desc: '收到你的消息后，先做准备动作：检查一下当前状态，提前去记忆里找找有没有相关背景。已有会话时直接从这里开始。'},
     '系统提示': {file: 'system_prompt.py', x: 520, y: 340, group: 'pipeline', desc: '给 AI 的“身份卡”和基本规则。告诉 AI 它是谁、有什么工具、该怎么说话。'},
     '消息构建': {file: 'prompt_builder.py', x: 520, y: 410, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
     'LLM API': {file: 'conversation_loop.py', x: 520, y: 480, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
@@ -92,8 +91,7 @@
     ['Config', 'Agent Init'],
     ['Rate Limits', 'LLM API'],
     ['Provider APIs', 'LLM API'],
-    ['Agent Init', 'AIAgent'],
-    ['AIAgent', 'Turn 前奏'],
+    ['Agent Init', 'Turn 前奏'],
 
     // Hermes turn pipeline (spine). The agent loop is the cycle between LLM and tools.
     ['Agent Init', '系统提示'], ['Turn 前奏', '系统提示'], ['系统提示', '消息构建'], ['消息构建', 'LLM API'],
