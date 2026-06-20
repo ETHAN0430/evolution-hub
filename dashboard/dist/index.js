@@ -288,10 +288,10 @@
       var pad = 48;
       var availW = rect.width - pad;
       var availH = rect.height - pad;
-      var scale = Math.min(availW / SVG_W, availH / SVG_H, 1.2);
+      var scale = Math.min(availW / SVG_W, availH / SVG_H * 0.85, 1.2);
       scale = Math.max(0.35, scale);
       var x = (rect.width - SVG_W * scale) / 2;
-      var y = Math.max(16, (rect.height - SVG_H * scale) * 0.12);
+      var y = 20;
       setSvgScale(scale);
       setPosX(x);
       setPosY(y);
