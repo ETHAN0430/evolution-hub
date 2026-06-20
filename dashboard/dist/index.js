@@ -32,7 +32,9 @@
 
     // ── Control plane ────────────────────────────────────────────────────────
     'Config & State': {file: 'hermes_cli/config.py', x: 320, y: 160, group: 'control', desc: '配置文件。决定用哪个 AI 模型、连哪个服务商、以及一些个性化设置。'},
-    'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 320, y: 260, group: 'control', desc: '连接各个 AI 大脑服务商，比如 Claude、OpenAI、Gemini 等。'},
+
+    // ── AI providers ─────────────────────────────────────────────────────────
+    'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 320, y: 260, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
 
     // ── Hermes Turn Engine (main spine) ─────────────────────────────────────
     'Agent Init': {file: 'agent/agent_init.py', x: 420, y: 120, group: 'pipeline', desc: '初始化 AIAgent 的地方。在这里设置 platform（cli/tui/api_server/...），并组装首次 system prompt。'},
@@ -128,6 +130,7 @@
     external: {fill: '#1c2621', stroke: '#d4c5a9'},
     gateway: {fill: '#242718', stroke: '#e6c875'},
     control: {fill: '#2a2518', stroke: '#c4b28a'},
+    provider: {fill: '#1a2330', stroke: '#8ab4e6'},
     pipeline: {fill: '#33231e', stroke: '#f4a68e'},
     memory: {fill: '#142d21', stroke: '#8fc9a3'},
     hy: {fill: '#1f2330', stroke: '#a8b8e6'},
@@ -156,7 +159,8 @@
 
     var CLUSTERS = [
       {name: 'External', x: 30, y: 200, w: 140, h: 500, color: '#d4c5a9'},
-      {name: 'Control Plane', x: 190, y: 120, w: 140, h: 200, color: '#c4b28a'},
+      {name: 'Control Plane', x: 190, y: 120, w: 140, h: 80, color: '#c4b28a'},
+      {name: 'AI Providers', x: 190, y: 220, w: 140, h: 80, color: '#8ab4e6'},
       {name: 'Gateway', x: 190, y: 360, w: 140, h: 220, color: '#e6c875'},
       {name: 'Turn Engine', x: 340, y: 40, w: 260, h: 620, color: '#f4a68e'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
