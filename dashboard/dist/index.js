@@ -28,7 +28,7 @@
 
     // ── Gateway ──────────────────────────────────────────────────────────────
     'Messaging Gateway': {file: 'gateway/run.py', x: 320, y: 420, group: 'gateway', desc: '消息总入口（Hermes 里通常说的 "gateway" 就是指它）。负责聊天平台的适配与路由：处理 Telegram、Discord 等消息，知道回哪、发给谁。CLI 一对一单会话，直接连 AIAgent，不需要它。'},
-    'TUI Gateway': {file: 'tui_gateway/server.py', x: 320, y: 520, group: 'gateway', desc: 'Terminal/UI 网关。给 Desktop、Dashboard、TUI 这些 UI 客户端提供统一 JSON-RPC 协议和会话管理；默认 source="tui"，且 AIAgent 的 platform 被硬编码为 "tui"。'},
+    'TUI Gateway': {file: 'tui_gateway/server.py', x: 320, y: 520, group: 'gateway', desc: 'Terminal/UI 网关。给 Desktop、Dashboard、TUI 这些 UI 客户端提供统一的后端会话服务。'},
 
     // ── Control plane ────────────────────────────────────────────────────────
     'Config & State': {file: 'hermes_cli/config.py', x: 320, y: 160, group: 'control', desc: '配置文件。决定用哪个 AI 模型、连哪个服务商、以及一些个性化设置。'},
