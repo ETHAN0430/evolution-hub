@@ -144,13 +144,14 @@
   width: 420px;
   max-width: calc(100% - 48px);
   max-height: calc(100% - 48px);
-  background: var(--eh-card);
-  border: 1px solid var(--eh-border);
+  background: rgba(13, 36, 30, 0.98);
+  border: 1px solid rgba(90, 113, 105, 0.5);
   border-radius: 8px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   z-index: 10;
+  backdrop-filter: blur(8px);
 }
 
 .eh-detail-header {
@@ -224,8 +225,8 @@
 
 .eh-detail-action {
   align-self: flex-start;
-  border: 1px solid var(--eh-border);
-  background: var(--eh-card);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--eh-text);
   padding: 8px 14px;
   font-size: 12px;
@@ -237,14 +238,14 @@
 }
 
 .eh-detail-action:hover {
-  background: var(--eh-border);
-  border-color: #5a7169;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .eh-detail-error {
   padding: 20px;
-  color: #fca5a5;
-  background: #3f0e0e;
+  color: #f5a7a7;
+  background: #2d0a0a;
   border-radius: 0 0 8px 8px;
 }
 
@@ -257,8 +258,7 @@
 .eh-detail-error-hint {
   font-size: 12px;
   line-height: 1.6;
-  color: #fecaca;
-  opacity: 0.9;
+  color: #f8c8c8;
 }
 
 .eh-detail-code {
@@ -267,8 +267,8 @@
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--eh-text);
-  background: #0a1f1a;
+  color: #dff5ed;
+  background: #081a15;
   white-space: pre;
   overflow-wrap: normal;
   overflow-x: auto;

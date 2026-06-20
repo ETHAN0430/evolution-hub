@@ -157,7 +157,7 @@
     var clusters = CLUSTERS.map(function (c, i) {
       return h('g', {key: 'cluster-' + i},
         h('rect', {x: c.x, y: c.y, width: c.w, height: c.h, rx: 10,
-          fill: c.color, opacity: 0.05, stroke: c.color, strokeOpacity: 0.2, strokeWidth: 1,
+          fill: c.color, opacity: 0.12, stroke: c.color, strokeOpacity: 0.35, strokeWidth: 1,
           strokeDasharray: '4,4'}),
         h('text', {x: c.x + 14, y: c.y + 22, fill: c.color, opacity: 0.85, fontSize: 11,
           fontFamily: "ui-monospace,'SF Mono',Menlo,monospace", fontWeight: 600, letterSpacing: '0.08em'},
@@ -191,7 +191,7 @@
         fill: 'none',
         stroke: '#5a7169',
         strokeWidth: 1,
-        opacity: 0.7,
+        opacity: 0.85,
         markerEnd: 'url(#eh-arrow)'
       });
     }
