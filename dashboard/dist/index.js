@@ -34,7 +34,7 @@
     'Provider APIs': {file: 'agent/anthropic_adapter.py', loc: 'build_anthropic_client', x: 560, y: 780, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
 
     // ── Hermes Turn Engine / AIAgent runtime (single vertical spine) ─────────
-    'Agent Init': {file: 'agent/agent_init.py', loc: 'init_agent', x: 510, y: 190, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：1. 设置 platform（cli/tui/api_server/...）；2. 构建并缓存 system prompt；3. 组装可用工具列表（含 MCP）；4. 初始化会话状态（session_id、source、model 等）。'},
+    'Agent Init': {file: 'agent/agent_init.py', loc: 'init_agent', x: 510, y: 190, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：\n1. 设置 platform（cli/tui/api_server/...）\n2. 构建并缓存 system prompt\n3. 组装可用工具列表（含 MCP）\n4. 初始化会话状态（session_id、source、model 等）'},
     '输入清洗': {file: 'agent/turn_context.py', loc: 'build_turn_context', x: 510, y: 260, group: 'pipeline', desc: '每轮 Turn 的入口。清洗用户输入（如去掉非法 surrogate 字符），并把用户消息追加到对话历史中。'},
     'MCP 刷新': {file: 'tools/mcp_tool.py', loc: 'refresh_agent_mcp_tools', x: 510, y: 330, group: 'pipeline', desc: '每轮开头刷新 MCP 工具列表：检查是否有新连上的 MCP server，把新工具加入当前可用工具快照。'},
     '记忆预取': {file: 'agent/memory_manager.py', loc: 'prefetch_all', x: 510, y: 400, group: 'pipeline', desc: '用当前用户消息向 MemoryManager 发起 prefetch，把相关记忆（MEMORY.md、USER.md、HY Memory 等）提前查出来，供后续 prompt 使用。'},
@@ -43,7 +43,7 @@
     '消息构建': {file: 'agent/system_prompt.py', loc: 'build_system_prompt', x: 510, y: 610, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
     'LLM API': {file: 'agent/conversation_loop.py', loc: 'run_conversation', x: 510, y: 680, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
     '工具执行': {file: 'agent/tool_executor.py', loc: 'execute_tool_calls_concurrent', x: 660, y: 680, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
-    '输出后处理': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 620, group: 'pipeline', desc: '工具循环结束后的输出处理：插件 transform_llm_output/post_llm_call、文件修改校验、异常结束解释等。'},
+    '输出后处理': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 620, group: 'pipeline', desc: '工具循环结束后的输出处理：\n1. 插件 transform_llm_output hook\n2. 插件 post_llm_call hook\n3. 文件修改校验 footer\n4. 异常结束解释'},
     '会话持久化': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 550, group: 'pipeline', desc: '把这轮对话写回 SQLite / JSON log，清理 VM/browser 等临时资源，去掉空的脚手架消息。'},
     'Turn End': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 480, group: 'pipeline', desc: '最终收尾：统计 token/cost、提取 reasoning、组装 result 返回给调用方。'},
     // ── Turn support modules (branch right from spine / above the turn chain) ────
