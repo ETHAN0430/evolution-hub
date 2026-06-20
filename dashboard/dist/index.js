@@ -43,7 +43,7 @@
     'Turn 收尾': {file: 'turn_finalizer.py', x: 520, y: 620, group: 'pipeline', desc: '一轮对话结束后，保存结果、更新记忆、做一些后台整理工作。'},
 
     // ── Turn support modules (branch right from spine, aligned to their caller) ──
-    '背景 review': {file: 'background_review.py', x: 720, y: 230, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
+    '后台': {file: 'background_review.py', x: 720, y: 230, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
     '上下文压缩': {file: 'context_compressor.py', x: 720, y: 410, group: 'pipeline', desc: '当对话太长时，自动删掉不重要的部分，让 AI 不会“记不过来”。'},
     'ContextCompressor': {file: 'context_compressor.py', x: 720, y: 480, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
     'memory tool': {file: 'tools/memory_tool.py', x: 720, y: 550, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
@@ -92,7 +92,8 @@
     ['工具执行', 'LLM API'],
     ['LLM API', 'Turn 收尾'],
     ['LLM API', '上下文压缩'], ['上下文压缩', 'ContextCompressor'],
-    ['背景 review', 'MemoryManager'],
+    ['Turn 收尾', '后台'],
+    ['后台', 'MemoryManager'],
 
     // turn engine <-> memory abstraction
     ['memory tool', 'MemoryStore'],
