@@ -158,9 +158,9 @@
     var onNodeClick = props.onNodeClick;
 
     var CLUSTERS = [
-      {name: 'External', x: 20, y: 80, w: 170, h: 510, color: '#d4c5a9'},
+      {name: 'External', x: 20, y: 90, w: 170, h: 640, color: '#d4c5a9'},
       {name: 'Control Plane', x: 460, y: 25, w: 160, h: 55, color: '#c4b28a'},
-      {name: 'Gateway', x: 180, y: 300, w: 220, h: 300, color: '#e6c875'},
+      {name: 'Gateway', x: 190, y: 90, w: 210, h: 640, color: '#e6c875'},
       {name: 'Turn Engine', x: 400, y: 90, w: 410, h: 640, color: '#f4a68e'},
       {name: 'AI Providers', x: 500, y: 740, w: 160, h: 80, color: '#8ab4e6'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
