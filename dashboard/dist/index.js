@@ -26,11 +26,13 @@
     'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 580, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
     'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 660, group: 'external', desc: '网页版后台。通过 tui_gateway 提供 JSON-RPC 会话服务，你现在看到的可视化页面由它承载。'},
 
-    // ── Gateway & control plane ─────────────────────────────────────────────
+    // ── Gateway ──────────────────────────────────────────────────────────────
     'Messaging Gateway': {file: 'gateway/run.py', x: 320, y: 420, group: 'gateway', desc: '消息总入口。处理 Telegram、Discord 等聊天平台消息；内部把 Platform.LOCAL 映射为 "cli"，所以本地/桌面类客户端可能被标记成 CLI。'},
     'TUI Gateway': {file: 'tui_gateway/server.py', x: 320, y: 520, group: 'gateway', desc: 'Terminal/UI 网关。给 Desktop、Dashboard、TUI 提供统一 JSON-RPC 会话服务；默认 source="tui"，且 AIAgent 的 platform 被硬编码为 "tui"。'},
-    'Config & State': {file: 'hermes_cli/config.py', x: 320, y: 220, group: 'gateway', desc: '配置文件。决定用哪个 AI 模型、连哪个服务商、以及一些个性化设置。'},
-    'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 320, y: 620, group: 'gateway', desc: '连接各个 AI 大脑服务商，比如 Claude、OpenAI、Gemini 等。'},
+
+    // ── Control plane ────────────────────────────────────────────────────────
+    'Config & State': {file: 'hermes_cli/config.py', x: 320, y: 160, group: 'control', desc: '配置文件。决定用哪个 AI 模型、连哪个服务商、以及一些个性化设置。'},
+    'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 320, y: 260, group: 'control', desc: '连接各个 AI 大脑服务商，比如 Claude、OpenAI、Gemini 等。'},
 
     // ── Hermes Turn Engine (main spine) ─────────────────────────────────────
     'Agent Init': {file: 'agent/agent_init.py', x: 420, y: 120, group: 'pipeline', desc: '初始化 AIAgent 的地方。在这里设置 platform（cli/tui/api_server/...），并组装首次 system prompt。'},
@@ -125,6 +127,7 @@
   var COLORS = {
     external: {fill: '#1c2621', stroke: '#d4c5a9'},
     gateway: {fill: '#242718', stroke: '#e6c875'},
+    control: {fill: '#2a2518', stroke: '#c4b28a'},
     pipeline: {fill: '#33231e', stroke: '#f4a68e'},
     memory: {fill: '#142d21', stroke: '#8fc9a3'},
     hy: {fill: '#1f2330', stroke: '#a8b8e6'},
@@ -153,7 +156,8 @@
 
     var CLUSTERS = [
       {name: 'External', x: 30, y: 200, w: 140, h: 500, color: '#d4c5a9'},
-      {name: 'Gateway & Control Plane', x: 190, y: 150, w: 140, h: 520, color: '#e6c875'},
+      {name: 'Control Plane', x: 190, y: 120, w: 140, h: 200, color: '#c4b28a'},
+      {name: 'Gateway', x: 190, y: 360, w: 140, h: 220, color: '#e6c875'},
       {name: 'Turn Engine', x: 340, y: 40, w: 260, h: 620, color: '#f4a68e'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1080, y: 210, w: 200, h: 440, color: '#a8b8e6'},
