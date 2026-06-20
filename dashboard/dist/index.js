@@ -91,7 +91,7 @@
     ['工具执行', 'memory tool'],
     ['工具执行', 'LLM API'],
     ['LLM API', 'Turn End'],
-    ['LLM API', '上下文压缩'], ['上下文压缩', 'ContextCompressor'],
+    ['消息构建', '上下文压缩', 'dashed'], ['上下文压缩', 'LLM API', 'dashed'], ['上下文压缩', 'ContextCompressor'],
     ['Turn End', '后台复盘'],
     ['后台复盘', 'MemoryManager'],
 
