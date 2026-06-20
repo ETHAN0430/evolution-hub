@@ -19,57 +19,57 @@
   // memory/HY branch to the right, storage forms the foundation.
   var NODES = {
     // ── External surfaces (fan in from left), ordered by target proximity ────
-    'Hermes CLI': {file: 'hermes_cli/cli_agent_setup_mixin.py', x: 120, y: 150, group: 'external', desc: '命令行版本。在本地直接启动 AIAgent，在 cli_agent_setup_mixin.py 里显式设置 platform="cli"。'},
-    'API Server': {file: 'gateway/platforms/api_server.py', x: 120, y: 220, group: 'external', desc: 'OpenAI-compatible API 服务。外部客户端通过 REST/SSE 调用，platform="api_server"。'},
-    'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 420, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
-    'TUI': {file: 'tui_gateway/entry.py', x: 120, y: 470, group: 'external', desc: '终端 UI 版本。`hermes --tui` 启动，通过 tui_gateway/entry.py 建立 stdio 传输，走 tui_gateway 后端。'},
+    'Hermes CLI': {file: 'hermes_cli/cli_agent_setup_mixin.py', loc: 'CLIAgentSetupMixin', x: 120, y: 150, group: 'external', desc: '命令行版本。在本地直接启动 AIAgent，在 cli_agent_setup_mixin.py 里显式设置 platform="cli"。'},
+    'API Server': {file: 'gateway/platforms/api_server.py', loc: 'APIServerAdapter', x: 120, y: 220, group: 'external', desc: 'OpenAI-compatible API 服务。外部客户端通过 REST/SSE 调用，platform="api_server"。'},
+    'Messaging Platforms': {file: 'gateway/platforms/telegram.py', loc: 'TelegramAdapter', x: 120, y: 420, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
+    'TUI': {file: 'tui_gateway/entry.py', loc: 'main', x: 120, y: 470, group: 'external', desc: '终端 UI 版本。`hermes --tui` 启动，通过 tui_gateway/entry.py 建立 stdio 传输，走 tui_gateway 后端。'},
     'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 520, group: 'external', desc: '电脑桌面上的 App 窗口。本地模式走 tui_gateway；远程模式会连到远程 TUI Gateway（即远程 dashboard 后端）。'},
-    'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 570, group: 'external', desc: '网页版后台。通过 tui_gateway 提供 JSON-RPC 会话服务，你现在看到的可视化页面由它承载。'},
+    'Dashboard': {file: 'hermes_cli/web_server.py', loc: 'start_server', x: 120, y: 570, group: 'external', desc: '网页版后台。通过 tui_gateway 提供 JSON-RPC 会话服务，你现在看到的可视化页面由它承载。'},
 
     // ── Gateway ──────────────────────────────────────────────────────────────
-    'Messaging Gateway': {file: 'gateway/run.py', x: 320, y: 420, group: 'gateway', desc: '消息总入口（Hermes 里通常说的 "gateway" 就是指它）。负责聊天平台的适配与路由：处理 Telegram、Discord 等消息，知道回哪、发给谁。CLI 一对一单会话，直接连 AIAgent，不需要它。'},
-    'TUI Gateway': {file: 'tui_gateway/server.py', x: 320, y: 520, group: 'gateway', desc: 'Terminal/UI 网关。给 Desktop、Dashboard、TUI 这些 UI 客户端提供统一的后端会话服务。'},
+    'Messaging Gateway': {file: 'gateway/run.py', loc: 'GatewayRunner', x: 320, y: 420, group: 'gateway', desc: '消息总入口（Hermes 里通常说的 "gateway" 就是指它）。负责聊天平台的适配与路由：处理 Telegram、Discord 等消息，知道回哪、发给谁。CLI 一对一单会话，直接连 AIAgent，不需要它。'},
+    'TUI Gateway': {file: 'tui_gateway/server.py', loc: 'dispatch', x: 320, y: 520, group: 'gateway', desc: 'Terminal/UI 网关。给 Desktop、Dashboard、TUI 这些 UI 客户端提供统一的后端会话服务。'},
 
     // ── AI providers (foundation row, below turn engine) ─────────────────────
-    'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 560, y: 780, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
+    'Provider APIs': {file: 'agent/anthropic_adapter.py', loc: 'build_anthropic_client', x: 560, y: 780, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
 
     // ── Hermes Turn Engine / AIAgent runtime (single vertical spine) ─────────
-    'Agent Init': {file: 'agent/agent_init.py', x: 520, y: 150, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：1. 设置 platform（cli/tui/api_server/...）；2. 构建并缓存 system prompt；3. 组装可用工具列表（含 MCP）；4. 初始化会话状态（session_id、source、model 等）。'},
-    '输入清洗': {file: 'turn_context.py', x: 520, y: 270, group: 'pipeline', desc: '每轮 Turn 的入口。清洗用户输入（如去掉非法 surrogate 字符），并把用户消息追加到对话历史中。'},
-    'MCP 刷新': {file: 'tools/mcp_tool.py', x: 620, y: 270, group: 'pipeline', desc: '每轮开头刷新 MCP 工具列表：检查是否有新连上的 MCP server，把新工具加入当前可用工具快照。'},
-    '记忆预取': {file: 'turn_context.py', x: 620, y: 330, group: 'pipeline', desc: '用当前用户消息向 MemoryManager 发起 prefetch，把相关记忆（MEMORY.md、USER.md、HY Memory 等）提前查出来，供后续 prompt 使用。'},
-    '预压缩': {file: 'turn_context.py', x: 620, y: 390, group: 'pipeline', desc: '在真正调用 LLM 前，如果发现上下文太长，先做一次预压缩（preflight compression），防止请求超出模型窗口。'},
-    '插件上下文': {file: 'turn_context.py', x: 620, y: 450, group: 'pipeline', desc: '调用 pre_llm_call 插件钩子，把插件返回的额外上下文注入到用户消息中。'},
-    '消息构建': {file: 'prompt_builder.py', x: 520, y: 410, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
-    'LLM API': {file: 'conversation_loop.py', x: 520, y: 480, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
-    '工具执行': {file: 'tool_executor.py', x: 520, y: 550, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
-    'Turn End': {file: 'turn_finalizer.py', x: 520, y: 620, group: 'pipeline', desc: '一轮对话结束后，保存结果、更新记忆、做一些后台整理工作。'},
+    'Agent Init': {file: 'agent/agent_init.py', loc: 'init_agent', x: 520, y: 150, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：1. 设置 platform（cli/tui/api_server/...）；2. 构建并缓存 system prompt；3. 组装可用工具列表（含 MCP）；4. 初始化会话状态（session_id、source、model 等）。'},
+    '输入清洗': {file: 'agent/turn_context.py', loc: 'build_turn_context', x: 520, y: 270, group: 'pipeline', desc: '每轮 Turn 的入口。清洗用户输入（如去掉非法 surrogate 字符），并把用户消息追加到对话历史中。'},
+    'MCP 刷新': {file: 'tools/mcp_tool.py', loc: 'refresh_agent_mcp_tools', x: 620, y: 270, group: 'pipeline', desc: '每轮开头刷新 MCP 工具列表：检查是否有新连上的 MCP server，把新工具加入当前可用工具快照。'},
+    '记忆预取': {file: 'agent/memory_manager.py', loc: 'prefetch_all', x: 620, y: 330, group: 'pipeline', desc: '用当前用户消息向 MemoryManager 发起 prefetch，把相关记忆（MEMORY.md、USER.md、HY Memory 等）提前查出来，供后续 prompt 使用。'},
+    '预压缩': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 620, y: 390, group: 'pipeline', desc: '在真正调用 LLM 前，如果发现上下文太长，先做一次预压缩（preflight compression），防止请求超出模型窗口。'},
+    '插件上下文': {file: 'hermes_cli/plugins.py', loc: 'invoke_hook', x: 620, y: 450, group: 'pipeline', desc: '调用 pre_llm_call 插件钩子，把插件返回的额外上下文注入到用户消息中。'},
+    '消息构建': {file: 'agent/system_prompt.py', loc: 'build_system_prompt', x: 520, y: 410, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
+    'LLM API': {file: 'agent/conversation_loop.py', loc: 'run_conversation', x: 520, y: 480, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
+    '工具执行': {file: 'agent/tool_executor.py', loc: 'execute_tool_calls_concurrent', x: 520, y: 550, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
+    'Turn End': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 520, y: 620, group: 'pipeline', desc: '一轮对话结束后，保存结果、更新记忆、做一些后台整理工作。'},
 
     // ── Turn support modules (branch right from spine, aligned to their caller) ──
-    '后台复盘': {file: 'background_review.py', x: 720, y: 300, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
-    '上下文压缩': {file: 'context_compressor.py', x: 720, y: 480, group: 'pipeline', desc: '当对话太长时，自动删掉不重要的部分，让 AI 不会“记不过来”。'},
-    'ContextCompressor': {file: 'context_compressor.py', x: 720, y: 550, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
-    'memory tool': {file: 'tools/memory_tool.py', x: 720, y: 620, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
+    '后台复盘': {file: 'agent/background_review.py', loc: 'spawn_background_review_thread', x: 720, y: 300, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
+    '上下文压缩': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 720, y: 480, group: 'pipeline', desc: '当对话太长时，自动删掉不重要的部分，让 AI 不会“记不过来”。'},
+    'ContextCompressor': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 720, y: 550, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
+    'memory tool': {file: 'tools/memory_tool.py', loc: 'memory_tool', x: 720, y: 620, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
 
     // ── Memory abstraction layer ────────────────────────────────────────────
-    'MemoryManager': {file: 'memory_manager.py', x: 920, y: 220, group: 'memory', desc: '记忆的调度中心。每次对话前查记忆，对话结束后把新东西存进记忆。'},
-    'MemoryProvider': {file: 'memory_provider.py', x: 920, y: 320, group: 'memory', desc: '外部记忆服务的接口。让 Hermes 可以接不同的记忆系统，比如 HY Memory。'},
-    'MemoryStore': {file: 'tools/memory_tool.py', x: 920, y: 420, group: 'memory', desc: '本地记忆的仓库。负责保管 MEMORY.md、USER.md 这些文件。'},
-    'ContextEngine': {file: 'context_engine.py', x: 920, y: 520, group: 'memory', desc: '控制对话上下文长度的引擎。决定什么时候该压缩、怎么压缩。'},
-    '记忆文件': {file: 'tools/memory_tool.py', x: 920, y: 620, group: 'memory', desc: '本地保存的长期记忆。比如你的喜好、重要事实、个人资料等。'},
+    'MemoryManager': {file: 'agent/memory_manager.py', loc: 'MemoryManager', x: 920, y: 220, group: 'memory', desc: '记忆的调度中心。每次对话前查记忆，对话结束后把新东西存进记忆。'},
+    'MemoryProvider': {file: 'agent/memory_provider.py', loc: 'MemoryProvider', x: 920, y: 320, group: 'memory', desc: '外部记忆服务的接口。让 Hermes 可以接不同的记忆系统，比如 HY Memory。'},
+    'MemoryStore': {file: 'tools/memory_tool.py', loc: 'MemoryStore', x: 920, y: 420, group: 'memory', desc: '本地记忆的仓库。负责保管 MEMORY.md、USER.md 这些文件。'},
+    'ContextEngine': {file: 'agent/context_engine.py', loc: 'ContextEngine', x: 920, y: 520, group: 'memory', desc: '控制对话上下文长度的引擎。决定什么时候该压缩、怎么压缩。'},
+    '记忆文件': {file: 'tools/memory_tool.py', loc: 'MemoryStore', x: 920, y: 620, group: 'memory', desc: '本地保存的长期记忆。比如你的喜好、重要事实、个人资料等。'},
 
     // ── HY Memory evolution engine ──────────────────────────────────────────
-    'HY Memory': {file: 'hy_memory/client.py', x: 1140, y: 220, group: 'hy', desc: '一个更聪明的记忆系统。不仅能存东西，还会自动整理、提炼、进化记忆。'},
-    'S1 Writer': {file: 'hy_memory/pipelines/writer.py', x: 1140, y: 320, group: 'hy', desc: '第一层记忆写入。先把对话内容简单归档，准备后续加工。'},
-    'MemAgent': {file: 'hy_memory/agent/mem_agent.py', x: 1140, y: 420, group: 'hy', desc: '记忆提炼员。自动从对话里提取重要事实、身份信息和摘要。'},
-    'Reconciler': {file: 'hy_memory/agent/reconciler.py', x: 1140, y: 520, group: 'hy', desc: '记忆冲突检查员。看看新信息和旧记忆有没有矛盾，决定是新增、替换还是更新。'},
-    'System 2': {file: 'hy_memory/pipelines/system2_writer.py', x: 1140, y: 620, group: 'hy', desc: '深度思考层。把零散事实组织成概念、意图和知识图谱。'},
+    'HY Memory': {file: 'hy_memory/client.py', loc: 'HyMemoryClient', x: 1140, y: 220, group: 'hy', desc: '一个更聪明的记忆系统。不仅能存东西，还会自动整理、提炼、进化记忆。'},
+    'S1 Writer': {file: 'hy_memory/pipelines/writer.py', loc: 'MemoryWriter', x: 1140, y: 320, group: 'hy', desc: '第一层记忆写入。先把对话内容简单归档，准备后续加工。'},
+    'MemAgent': {file: 'hy_memory/agent/mem_agent.py', loc: 'MemAgent', x: 1140, y: 420, group: 'hy', desc: '记忆提炼员。自动从对话里提取重要事实、身份信息和摘要。'},
+    'Reconciler': {file: 'hy_memory/agent/reconciler.py', loc: 'MemoryReconciler', x: 1140, y: 520, group: 'hy', desc: '记忆冲突检查员。看看新信息和旧记忆有没有矛盾，决定是新增、替换还是更新。'},
+    'System 2': {file: 'hy_memory/pipelines/system2_writer.py', loc: 'System2Writer', x: 1140, y: 620, group: 'hy', desc: '深度思考层。把零散事实组织成概念、意图和知识图谱。'},
 
     // ── Persistent stores (foundation) ──────────────────────────────────────
-    'Vector DB': {file: 'hy_memory/data/vector_store_chroma.py', x: 720, y: 860, group: 'storage', desc: '向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。'},
-    'Graph DB': {file: 'hy_memory/data/graph_store_kuzu.py', x: 960, y: 860, group: 'storage', desc: '图数据库。像知识图谱一样保存概念、主题和它们之间的关系。'},
-    'cache.db': {file: 'hy_memory/data/cache_sqlite.py', x: 1200, y: 860, group: 'storage', desc: '本地小数据库。记录系统运行日志、任务队列和一些临时数据。'},
-    'SQLite Session': {file: 'hermes_state.py', x: 1440, y: 860, group: 'storage', desc: '本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。'}
+    'Vector DB': {file: 'hy_memory/data/vector_store_chroma.py', loc: 'ChromaVectorStore', x: 720, y: 860, group: 'storage', desc: '向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。'},
+    'Graph DB': {file: 'hy_memory/data/graph_store_kuzu.py', loc: 'KuzuGraphStore', x: 960, y: 860, group: 'storage', desc: '图数据库。像知识图谱一样保存概念、主题和它们之间的关系。'},
+    'cache.db': {file: 'hy_memory/data/cache_sqlite.py', loc: 'SqliteCache', x: 1200, y: 860, group: 'storage', desc: '本地小数据库。记录系统运行日志、任务队列和一些临时数据。'},
+    'SQLite Session': {file: 'hermes_state.py', loc: 'SessionDB', x: 1440, y: 860, group: 'storage', desc: '本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。'}
   };
 
   // Real data flows derived from source analysis
@@ -248,11 +248,11 @@
         tabIndex: 0,
         role: 'button',
         'aria-label': name + ' — 点击查看介绍',
-        onClick: function () { onNodeClick(name, n.file); },
+        onClick: function () { onNodeClick(name, n.file, n.loc); },
         onKeyDown: function (e) {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            onNodeClick(name, n.file);
+            onNodeClick(name, n.file, n.loc);
           }
         }
       },
@@ -365,34 +365,36 @@
       return function () { window.removeEventListener('resize', onResize); };
     }, []);
 
-    function loadSource(name, src, path) {
+    function loadSource(name, src, path, loc) {
       setDetail(function (prev) {
         return prev && prev.name === name
-          ? {name: prev.name, desc: prev.desc, src: prev.src, path: prev.path, code: null, loading: true, showCode: true}
+          ? {name: prev.name, desc: prev.desc, src: prev.src, path: prev.path, loc: prev.loc, code: null, loading: true, showCode: true}
           : prev;
       });
-      authFetch(BASE + '/api/source?path=' + encodeURIComponent(path))
+      var url = BASE + '/api/source?path=' + encodeURIComponent(path);
+      if (loc) url += '&loc=' + encodeURIComponent(loc);
+      authFetch(url)
         .then(function (r) { return r.json(); })
         .then(function (d) {
           setDetail(function (prev) {
             return prev && prev.name === name
-              ? {name: prev.name, desc: prev.desc, src: prev.src, path: prev.path, code: d.content || ('Error: ' + (d.detail || d.error || 'unknown')), loading: false, showCode: true}
+              ? {name: prev.name, desc: prev.desc, src: prev.src, path: prev.path, loc: prev.loc, code: d.content || ('Error: ' + (d.detail || d.error || 'unknown')), loading: false, showCode: true}
               : prev;
           });
         })
         .catch(function (e) {
           setDetail(function (prev) {
             return prev && prev.name === name
-              ? {name: prev.name, desc: prev.desc, src: prev.src, path: prev.path, code: 'Error: ' + e.message, loading: false, showCode: true}
+              ? {name: prev.name, desc: prev.desc, src: prev.src, path: prev.path, loc: prev.loc, code: 'Error: ' + e.message, loading: false, showCode: true}
               : prev;
           });
         });
     }
 
-    function onNodeClick(name, src) {
+    function onNodeClick(name, src, loc) {
       var n = NODES[name];
       var path = resolvePath(src);
-      setDetail({name: name, desc: n.desc || '', src: src, path: path, code: null, loading: false, showCode: false});
+      setDetail({name: name, desc: n.desc || '', src: src, path: path, loc: loc || n.loc || '', code: null, loading: false, showCode: false});
     }
 
     function onMouseDown(e) {
@@ -455,7 +457,7 @@
         h(DetailPanel, {
           detail: detail,
           onClose: function () { setDetail(null); },
-          onViewSource: function () { if (detail) loadSource(detail.name, detail.src, detail.path); }
+          onViewSource: function () { if (detail) loadSource(detail.name, detail.src, detail.path, detail.loc); }
         })
       )
     );

@@ -330,14 +330,45 @@ def api_timeline():
 
 
 @router.get("/api/source")
-async def api_source(path: str = Query(..., description="Absolute path to source file")):
-    """Read a source file for the node-detail panel."""
+async def api_source(
+    path: str = Query(..., description="Absolute path to source file"),
+    loc: str = Query(None, description="Line number or function/class name to focus on"),
+):
+    """Read a source file for the node-detail panel. Optionally return a snippet around loc."""
     try:
         if not os.path.isfile(path):
             raise HTTPException(404, "File not found")
         with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
-        return {"content": content, "path": path}
+            lines = f.readlines()
+        if not loc:
+            return {"content": "".join(lines), "path": path}
+        # Try to interpret loc as a 1-based line number
+        try:
+            line_no = int(loc)
+        except ValueError:
+            line_no = None
+            best_indent = None
+            pattern = re.compile(r"^(\s*)(def|class)\s+" + re.escape(loc) + r"\b")
+            for i, line in enumerate(lines, start=1):
+                m = pattern.match(line)
+                if m:
+                    indent = len(m.group(1))
+                    if best_indent is None or indent < best_indent:
+                        line_no = i
+                        best_indent = indent
+                        if indent == 0:
+                            break
+            if line_no is None:
+                return {
+                    "content": "".join(lines),
+                    "path": path,
+                    "loc": loc,
+                    "error": "definition not found",
+                }
+        start = max(0, line_no - 11)
+        end = min(len(lines), line_no + 30)
+        snippet = "".join(lines[start:end])
+        return {"content": snippet, "path": path, "line": line_no, "start": start + 1}
     except Exception as e:
         raise HTTPException(500, str(e))
 
