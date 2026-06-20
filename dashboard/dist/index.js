@@ -395,10 +395,6 @@
       ),
       // Controls
       h('div', {className: 'eh-controls'},
-        h('button', {className: 'eh-btn', onClick: function () { setSvgScale(Math.max(0.35, Math.min(2.5, svgScale - 0.15))); }, title: '缩小'}, '−'),
-        h('button', {className: 'eh-btn', onClick: function () { setSvgScale(Math.max(0.35, Math.min(2.5, svgScale + 0.15))); }, title: '放大'}, '+'),
-        h('button', {className: 'eh-btn', onClick: function () { setSvgScale(1); setPosX(0); setPosY(0); posRef.current = {x: 0, y: 0}; }, title: '重置位置'}, '重置'),
-        h('button', {className: 'eh-btn', onClick: fitToScreen, title: '适配画布'}, '适配'),
         h('div', {className: 'eh-status'},
           h('span', {className: 'eh-pill'},
             h('span', {className: 'eh-dot', style: {background: isOk ? '#4ade80' : '#ef4444', boxShadow: isOk ? '0 0 8px #4ade80' : '0 0 8px #ef4444'}}),
