@@ -30,11 +30,11 @@
     'Messaging Gateway': {file: 'gateway/run.py', x: 320, y: 420, group: 'gateway', desc: '消息总入口（Hermes 里通常说的 "gateway" 就是指它）。负责聊天平台的适配与路由：处理 Telegram、Discord 等消息，知道回哪、发给谁。CLI 一对一单会话，直接连 AIAgent，不需要它。'},
     'TUI Gateway': {file: 'tui_gateway/server.py', x: 320, y: 520, group: 'gateway', desc: 'Terminal/UI 网关。给 Desktop、Dashboard、TUI 这些 UI 客户端提供统一的后端会话服务。'},
 
-    // ── Control plane ────────────────────────────────────────────────────────
-    'Config & State': {file: 'hermes_cli/config.py', x: 320, y: 160, group: 'control', desc: '配置文件。决定用哪个 AI 模型、连哪个服务商、以及一些个性化设置。'},
+    // ── Control plane (foundation row, below turn engine) ────────────────────
+    'Config & State': {file: 'hermes_cli/config.py', x: 420, y: 660, group: 'control', desc: '配置文件。决定用哪个 AI 模型、连哪个服务商、以及一些个性化设置。'},
 
-    // ── AI providers ─────────────────────────────────────────────────────────
-    'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 320, y: 260, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
+    // ── AI providers (foundation row, next to config) ────────────────────────
+    'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 560, y: 660, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
 
     // ── Hermes Turn Engine (main spine), top-down by turn flow ───────────────
     'Agent Init': {file: 'agent/agent_init.py', x: 420, y: 120, group: 'pipeline', desc: '初始化 AIAgent 的地方。在这里设置 platform（cli/tui/api_server/...），并组装首次 system prompt。'},
@@ -159,10 +159,10 @@
 
     var CLUSTERS = [
       {name: 'External', x: 20, y: 80, w: 170, h: 560, color: '#d4c5a9'},
-      {name: 'Control Plane', x: 190, y: 120, w: 200, h: 80, color: '#c4b28a'},
-      {name: 'AI Providers', x: 190, y: 220, w: 200, h: 80, color: '#8ab4e6'},
       {name: 'Gateway', x: 190, y: 360, w: 200, h: 220, color: '#e6c875'},
-      {name: 'Turn Engine', x: 400, y: 40, w: 410, h: 720, color: '#f4a68e'},
+      {name: 'Turn Engine', x: 400, y: 40, w: 410, h: 580, color: '#f4a68e'},
+      {name: 'Control Plane', x: 350, y: 620, w: 160, h: 80, color: '#c4b28a'},
+      {name: 'AI Providers', x: 500, y: 620, w: 160, h: 80, color: '#8ab4e6'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1080, y: 210, w: 200, h: 440, color: '#a8b8e6'},
       {name: 'Storage', x: 620, y: 720, w: 920, h: 110, color: '#7dd3d8'}
