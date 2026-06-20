@@ -20,17 +20,19 @@
   var NODES = {
     // ── External surfaces (fan in from left) ────────────────────────────────
     '用户': {file: 'run_agent.py', x: 120, y: 180, group: 'external', desc: '使用 Hermes 的人。可以通过命令行、桌面 App、网页后台或 Telegram 等聊天软件发消息。'},
-    'Hermes CLI': {file: 'hermes_cli/main.py', x: 120, y: 300, group: 'external', desc: '命令行版本。适合习惯在黑框框里敲命令的人使用。'},
-    'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 420, group: 'external', desc: '电脑桌面上的 App 窗口版本，看起来更像普通软件。'},
-    'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 540, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，让你可以直接在群里 @ 机器人。'},
-    'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 660, group: 'external', desc: '网页版后台。你现在看到的这个可视化页面，就是由它提供的。'},
+    'Hermes CLI': {file: 'hermes_cli/main.py', x: 120, y: 300, group: 'external', desc: '命令行版本。在本地直接启动 AIAgent，显式设置 platform="cli"，所以模型会知道自己在终端里。'},
+    'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 420, group: 'external', desc: '电脑桌面上的 App 窗口。可以走本地 dashboard/tui_gateway，也可以连接远程网关；远程网关可能把它当成 Platform.LOCAL，从而映射成 CLI 身份。'},
+    'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 540, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
+    'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 660, group: 'external', desc: '网页版后台。通过 tui_gateway 提供 JSON-RPC 会话服务，你现在看到的可视化页面由它承载。'},
 
     // ── Gateway & control plane ─────────────────────────────────────────────
-    'Gateway': {file: 'hermes_cli/gateway.py', x: 320, y: 420, group: 'gateway', desc: '消息总入口。把来自各种聊天软件的消息统一收进来，交给 Hermes 处理。'},
+    'Messaging Gateway': {file: 'gateway/run.py', x: 320, y: 420, group: 'gateway', desc: '消息总入口。处理 Telegram、Discord 等聊天平台消息；内部把 Platform.LOCAL 映射为 "cli"，所以本地/桌面类客户端可能被标记成 CLI。'},
+    'TUI Gateway': {file: 'tui_gateway/server.py', x: 320, y: 520, group: 'gateway', desc: 'Terminal/UI 网关。给 Desktop、Dashboard、TUI 提供统一 JSON-RPC 会话服务；默认 source="tui"，且 AIAgent 的 platform 被硬编码为 "tui"。'},
     'Config & State': {file: 'hermes_cli/config.py', x: 320, y: 220, group: 'gateway', desc: '配置文件。决定用哪个 AI 模型、连哪个服务商、以及一些个性化设置。'},
     'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 320, y: 620, group: 'gateway', desc: '连接各个 AI 大脑服务商，比如 Claude、OpenAI、Gemini 等。'},
 
     // ── Hermes Turn Engine (main spine) ─────────────────────────────────────
+    'Agent Init': {file: 'agent/agent_init.py', x: 420, y: 120, group: 'pipeline', desc: '初始化 AIAgent 的地方。在这里设置 platform（cli/tui/api_server/...），并组装首次 system prompt。'},
     'Turn 前奏': {file: 'turn_context.py', x: 520, y: 120, group: 'pipeline', desc: '收到你的消息后，先做准备动作：检查一下当前状态，提前去记忆里找找有没有相关背景。'},
     '系统提示': {file: 'system_prompt.py', x: 520, y: 220, group: 'pipeline', desc: '给 AI 的“身份卡”和基本规则。告诉 AI 它是谁、有什么工具、该怎么说话。'},
     '消息构建': {file: 'prompt_builder.py', x: 520, y: 320, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
@@ -67,14 +69,19 @@
 
   // Real data flows derived from source analysis
   var CONNECTIONS = [
-    // external surfaces -> gateway
-    ['用户', 'Gateway'], ['Hermes CLI', 'Gateway'], ['Desktop', 'Gateway'],
-    ['Messaging Platforms', 'Gateway'], ['Dashboard', 'Gateway'],
+    // external surfaces -> appropriate gateway / direct agent init
+    ['用户', 'Messaging Gateway'],
+    ['Hermes CLI', 'Agent Init'],
+    ['Desktop', 'TUI Gateway'],
+    ['Messaging Platforms', 'Messaging Gateway'],
+    ['Dashboard', 'TUI Gateway'],
 
-    // gateway/config -> turn engine
-    ['Gateway', 'Turn 前奏'],
+    // gateway/control plane -> agent init
+    ['Messaging Gateway', 'Agent Init'],
+    ['TUI Gateway', 'Agent Init'],
     ['Config & State', '系统提示'],
     ['Provider APIs', 'LLM API'],
+    ['Agent Init', 'Turn 前奏'],
 
     // Hermes turn pipeline (spine). The agent loop is the cycle between LLM and tools.
     ['Turn 前奏', '系统提示'], ['系统提示', '消息构建'], ['消息构建', 'LLM API'],
@@ -139,8 +146,8 @@
     var onNodeClick = props.onNodeClick;
 
     var CLUSTERS = [
-      {name: 'External', x: 30, y: 70, w: 140, h: 390, color: '#d4c5a9'},
-      {name: 'Gateway', x: 190, y: 150, w: 140, h: 400, color: '#e6c875'},
+      {name: 'External', x: 30, y: 70, w: 140, h: 620, color: '#d4c5a9'},
+      {name: 'Gateway', x: 190, y: 150, w: 140, h: 520, color: '#e6c875'},
       {name: 'Turn Engine', x: 340, y: 60, w: 260, h: 600, color: '#f4a68e'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1080, y: 210, w: 200, h: 440, color: '#a8b8e6'},
@@ -234,6 +241,16 @@
       links,
       // Visual annotation: the agent loop is the cycle between LLM and tools
       h('path', {d: 'M 585,503 L 640,503 L 640,437 L 585,437', fill: 'none', stroke: '#f4a68e', strokeWidth: 2, strokeDasharray: '4,3', markerEnd: 'url(#eh-arrow)'}),
+      // Remote-gateway insight from source investigation
+      h('g', null,
+        h('rect', {x: 30, y: 720, width: 470, height: 46, rx: 6, fill: '#1c2621', stroke: '#d4c5a9', strokeOpacity: 0.3, strokeWidth: 1}),
+        h('text', {x: 42, y: 740, fill: '#d4c5a9', fontSize: 11,
+          fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"},
+          'Remote insight: Desktop → remote gateway is classified as Platform.LOCAL,'),
+        h('text', {x: 42, y: 758, fill: '#d4c5a9', fontSize: 11,
+          fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"},
+          'which gateway/run.py maps to the "cli" platform hint → bot says CLI.')
+      ),
       nodes
     );
   }
