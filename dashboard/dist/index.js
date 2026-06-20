@@ -30,10 +30,6 @@
     'Messaging Gateway': {file: 'gateway/run.py', x: 320, y: 420, group: 'gateway', desc: '消息总入口（Hermes 里通常说的 "gateway" 就是指它）。负责聊天平台的适配与路由：处理 Telegram、Discord 等消息，知道回哪、发给谁。CLI 一对一单会话，直接连 AIAgent，不需要它。'},
     'TUI Gateway': {file: 'tui_gateway/server.py', x: 320, y: 520, group: 'gateway', desc: 'Terminal/UI 网关。给 Desktop、Dashboard、TUI 这些 UI 客户端提供统一的后端会话服务。'},
 
-    // ── Control plane (top bar) ─────────────────────────────────────────────
-    'Rate Limits': {file: 'agent/rate_limit_tracker.py', x: 545, y: 60, group: 'control', desc: '跟踪 AI 服务商的速率限制（RPM/TPM 剩余额度、重置时间等）。'},
-    'State': {file: 'hermes_state.py', x: 695, y: 60, group: 'control', desc: '会话状态管理。记录当前对话的 source、model、历史元数据，并持久化到 SQLite Session。'},
-
     // ── AI providers (foundation row, below turn engine) ─────────────────────
     'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 560, y: 780, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
 
@@ -86,7 +82,6 @@
     // gateway/control plane -> agent init
     ['Messaging Gateway', 'Agent Init'],
     ['TUI Gateway', 'Agent Init'],
-    ['Rate Limits', 'LLM API'],
     ['Provider APIs', 'LLM API'],
     ['Agent Init', 'Turn 前奏'],
 
@@ -119,8 +114,7 @@
     // logging & session persistence
     ['MemoryManager', 'cache.db'],
     ['HY Memory', 'cache.db'],
-    ['Turn 前奏', 'State'], ['Turn 收尾', 'State'],
-    ['State', 'SQLite Session']
+    ['Turn 前奏', 'SQLite Session'], ['Turn 收尾', 'SQLite Session']
   ];
 
   // Warm, nature-harmonized palette for a dark-green dashboard background.
@@ -158,7 +152,6 @@
 
     var CLUSTERS = [
       {name: 'User', x: 20, y: 90, w: 170, h: 640, color: '#d4c5a9'},
-      {name: 'Control Plane', x: 470, y: 25, w: 280, h: 55, color: '#c4b28a'},
       {name: 'Gateway', x: 210, y: 90, w: 190, h: 640, color: '#e6c875'},
       {name: 'Turn Engine', x: 420, y: 90, w: 410, h: 640, color: '#f4a68e'},
       {name: 'AI Providers', x: 500, y: 740, w: 160, h: 80, color: '#8ab4e6'},
