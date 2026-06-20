@@ -234,7 +234,7 @@
       })
     );
 
-    return h('svg', {className: 'eh-arch', viewBox: '0 0 1600 920', width: '1600', height: '920'},
+    return h('svg', {className: 'eh-arch', viewBox: '30 20 1510 870', width: '1510', height: '870'},
       h('defs', null,
         h('pattern', {id: 'eh-grid', width: 40, height: 40, patternUnits: 'userSpaceOnUse'},
           h('path', {d: 'M 40 0 L 0 0 0 40', fill: 'none', stroke: '#163b33', strokeWidth: 0.5, opacity: 0.4})
@@ -245,7 +245,7 @@
       ),
       h('rect', {width: '100%', height: '100%', fill: '#0a1f1a'}),
       h('rect', {width: '100%', height: '100%', fill: 'url(#eh-grid)'}),
-      h('text', {x: 800, y: 36, textAnchor: 'middle', fill: '#8a9e94', fontSize: 13,
+      h('text', {x: 780, y: 40, textAnchor: 'middle', fill: '#8a9e94', fontSize: 13,
         fontFamily: "ui-monospace,'SF Mono',Menlo,monospace", letterSpacing: '0.16em'},
         'HERMES · HY MEMORY EVOLUTION ARCHITECTURE'),
       clusters,
@@ -298,8 +298,8 @@
     var dragStartRef = hooks.useRef({x: 0, y: 0});
     var posRef = hooks.useRef({x: 0, y: 0});
 
-    var SVG_W = 1600;
-    var SVG_H = 920;
+    var SVG_W = 1510;
+    var SVG_H = 870;
 
     function fitToScreen() {
       if (!canvasRef.current) return;
