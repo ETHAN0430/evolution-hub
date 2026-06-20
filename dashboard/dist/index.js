@@ -34,22 +34,22 @@
     'Provider APIs': {file: 'agent/anthropic_adapter.py', loc: 'build_anthropic_client', x: 560, y: 780, group: 'provider', desc: '连接各个外部 AI 大模型服务商，比如 Claude、OpenAI、Gemini 等。'},
 
     // ── Hermes Turn Engine / AIAgent runtime (single vertical spine) ─────────
-    'Agent Init': {file: 'agent/agent_init.py', loc: 'init_agent', x: 470, y: 150, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：1. 设置 platform（cli/tui/api_server/...）；2. 构建并缓存 system prompt；3. 组装可用工具列表（含 MCP）；4. 初始化会话状态（session_id、source、model 等）。'},
-    '输入清洗': {file: 'agent/turn_context.py', loc: 'build_turn_context', x: 470, y: 220, group: 'pipeline', desc: '每轮 Turn 的入口。清洗用户输入（如去掉非法 surrogate 字符），并把用户消息追加到对话历史中。'},
-    'MCP 刷新': {file: 'tools/mcp_tool.py', loc: 'refresh_agent_mcp_tools', x: 470, y: 290, group: 'pipeline', desc: '每轮开头刷新 MCP 工具列表：检查是否有新连上的 MCP server，把新工具加入当前可用工具快照。'},
-    '记忆预取': {file: 'agent/memory_manager.py', loc: 'prefetch_all', x: 470, y: 360, group: 'pipeline', desc: '用当前用户消息向 MemoryManager 发起 prefetch，把相关记忆（MEMORY.md、USER.md、HY Memory 等）提前查出来，供后续 prompt 使用。'},
-    '预压缩': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 470, y: 430, group: 'pipeline', desc: '在真正调用 LLM 前，如果发现上下文太长，先做一次预压缩（preflight compression），防止请求超出模型窗口。'},
-    '插件上下文': {file: 'hermes_cli/plugins.py', loc: 'invoke_hook', x: 470, y: 500, group: 'pipeline', desc: '调用 pre_llm_call 插件钩子，把插件返回的额外上下文注入到用户消息中。'},
-    '消息构建': {file: 'agent/system_prompt.py', loc: 'build_system_prompt', x: 470, y: 570, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
-    'LLM API': {file: 'agent/conversation_loop.py', loc: 'run_conversation', x: 470, y: 640, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
-    '工具执行': {file: 'agent/tool_executor.py', loc: 'execute_tool_calls_concurrent', x: 620, y: 640, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
-    'Turn End': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 770, y: 640, group: 'pipeline', desc: '一轮对话结束后，保存结果、更新记忆、做一些后台整理工作。'},
+    'Agent Init': {file: 'agent/agent_init.py', loc: 'init_agent', x: 490, y: 190, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：1. 设置 platform（cli/tui/api_server/...）；2. 构建并缓存 system prompt；3. 组装可用工具列表（含 MCP）；4. 初始化会话状态（session_id、source、model 等）。'},
+    '输入清洗': {file: 'agent/turn_context.py', loc: 'build_turn_context', x: 490, y: 260, group: 'pipeline', desc: '每轮 Turn 的入口。清洗用户输入（如去掉非法 surrogate 字符），并把用户消息追加到对话历史中。'},
+    'MCP 刷新': {file: 'tools/mcp_tool.py', loc: 'refresh_agent_mcp_tools', x: 490, y: 330, group: 'pipeline', desc: '每轮开头刷新 MCP 工具列表：检查是否有新连上的 MCP server，把新工具加入当前可用工具快照。'},
+    '记忆预取': {file: 'agent/memory_manager.py', loc: 'prefetch_all', x: 490, y: 400, group: 'pipeline', desc: '用当前用户消息向 MemoryManager 发起 prefetch，把相关记忆（MEMORY.md、USER.md、HY Memory 等）提前查出来，供后续 prompt 使用。'},
+    '预压缩': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 490, y: 470, group: 'pipeline', desc: '在真正调用 LLM 前，如果发现上下文太长，先做一次预压缩（preflight compression），防止请求超出模型窗口。'},
+    '插件上下文': {file: 'hermes_cli/plugins.py', loc: 'invoke_hook', x: 490, y: 540, group: 'pipeline', desc: '调用 pre_llm_call 插件钩子，把插件返回的额外上下文注入到用户消息中。'},
+    '消息构建': {file: 'agent/system_prompt.py', loc: 'build_system_prompt', x: 490, y: 610, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
+    'LLM API': {file: 'agent/conversation_loop.py', loc: 'run_conversation', x: 490, y: 680, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
+    '工具执行': {file: 'agent/tool_executor.py', loc: 'execute_tool_calls_concurrent', x: 640, y: 680, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
+    'Turn End': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 790, y: 680, group: 'pipeline', desc: '一轮对话结束后，保存结果、更新记忆、做一些后台整理工作。'},
 
     // ── Turn support modules (branch right from spine, aligned to their caller) ──
-    '后台复盘': {file: 'agent/background_review.py', loc: 'spawn_background_review_thread', x: 720, y: 300, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
-    '上下文压缩': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 720, y: 480, group: 'pipeline', desc: '当对话太长时，自动删掉不重要的部分，让 AI 不会“记不过来”。'},
-    'ContextCompressor': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 720, y: 550, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
-    'memory tool': {file: 'tools/memory_tool.py', loc: 'memory_tool', x: 620, y: 720, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
+    '后台复盘': {file: 'agent/background_review.py', loc: 'spawn_background_review_thread', x: 740, y: 340, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
+    '上下文压缩': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 740, y: 520, group: 'pipeline', desc: '当对话太长时，自动删掉不重要的部分，让 AI 不会“记不过来”。'},
+    'ContextCompressor': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 740, y: 590, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
+    'memory tool': {file: 'tools/memory_tool.py', loc: 'memory_tool', x: 790, y: 720, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
 
     // ── Memory abstraction layer ────────────────────────────────────────────
     'MemoryManager': {file: 'agent/memory_manager.py', loc: 'MemoryManager', x: 920, y: 220, group: 'memory', desc: '记忆的调度中心。每次对话前查记忆，对话结束后把新东西存进记忆。'},
@@ -157,7 +157,7 @@
     var CLUSTERS = [
       {name: 'User', x: 20, y: 90, w: 170, h: 640, color: '#d4c5a9'},
       {name: 'Gateway', x: 210, y: 90, w: 190, h: 640, color: '#e6c875'},
-      {name: 'Agent', x: 420, y: 90, w: 410, h: 650, color: '#f4a68e'},
+      {name: 'Agent', x: 420, y: 90, w: 440, h: 650, color: '#f4a68e'},
       {name: 'AI Providers', x: 500, y: 740, w: 160, h: 80, color: '#8ab4e6'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1080, y: 210, w: 200, h: 440, color: '#a8b8e6'},
@@ -278,7 +278,7 @@
       clusters,
       links,
       // Visual annotation: the agent loop is the cycle between LLM and tools
-      h('path', {d: 'M 399,640 L 691,640 L 691,617 L 399,617 L 399,640', fill: 'none', stroke: '#f4a68e', strokeWidth: 2, strokeDasharray: '4,3', markerEnd: 'url(#eh-arrow)'}),
+      h('path', {d: 'M 419,680 L 711,680 L 711,657 L 419,657 L 419,680', fill: 'none', stroke: '#f4a68e', strokeWidth: 2, strokeDasharray: '4,3', markerEnd: 'url(#eh-arrow)'}),
       nodes
     );
   }
