@@ -19,7 +19,6 @@
   // memory/HY branch to the right, storage forms the foundation.
   var NODES = {
     // ── External surfaces (fan in from left) ────────────────────────────────
-    '用户': {file: 'run_agent.py', x: 120, y: 180, group: 'external', desc: '使用 Hermes 的人。可以通过命令行、桌面 App、网页后台或 Telegram 等聊天软件发消息。'},
     'Hermes CLI': {file: 'hermes_cli/main.py', x: 120, y: 300, group: 'external', desc: '命令行版本。在本地直接启动 AIAgent，显式设置 platform="cli"，所以模型会知道自己在终端里。'},
     'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 420, group: 'external', desc: '电脑桌面上的 App 窗口。可以走本地 dashboard/tui_gateway，也可以连接远程网关；远程网关可能把它当成 Platform.LOCAL，从而映射成 CLI 身份。'},
     'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 540, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
@@ -70,7 +69,6 @@
   // Real data flows derived from source analysis
   var CONNECTIONS = [
     // external surfaces -> appropriate gateway / direct agent init
-    ['用户', 'Messaging Gateway'],
     ['Hermes CLI', 'Agent Init'],
     ['Desktop', 'TUI Gateway'],
     ['Messaging Platforms', 'Messaging Gateway'],
@@ -146,7 +144,7 @@
     var onNodeClick = props.onNodeClick;
 
     var CLUSTERS = [
-      {name: 'External', x: 30, y: 70, w: 140, h: 620, color: '#d4c5a9'},
+      {name: 'External', x: 30, y: 220, w: 140, h: 500, color: '#d4c5a9'},
       {name: 'Gateway', x: 190, y: 150, w: 140, h: 520, color: '#e6c875'},
       {name: 'Turn Engine', x: 340, y: 60, w: 260, h: 600, color: '#f4a68e'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
