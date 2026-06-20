@@ -160,7 +160,7 @@
     var onNodeClick = props.onNodeClick;
 
     var CLUSTERS = [
-      {name: 'External', x: 20, y: 90, w: 170, h: 640, color: '#d4c5a9'},
+      {name: 'User', x: 20, y: 90, w: 170, h: 640, color: '#d4c5a9'},
       {name: 'Control Plane', x: 420, y: 25, w: 430, h: 55, color: '#c4b28a'},
       {name: 'Gateway', x: 210, y: 90, w: 190, h: 640, color: '#e6c875'},
       {name: 'Turn Engine', x: 420, y: 90, w: 410, h: 640, color: '#f4a68e'},
