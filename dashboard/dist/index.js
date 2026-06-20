@@ -153,7 +153,7 @@
 
     var CLUSTERS = [
       {name: 'External', x: 30, y: 200, w: 140, h: 500, color: '#d4c5a9'},
-      {name: 'Gateway', x: 190, y: 150, w: 140, h: 520, color: '#e6c875'},
+      {name: 'Gateway & Control Plane', x: 190, y: 150, w: 140, h: 520, color: '#e6c875'},
       {name: 'Turn Engine', x: 340, y: 40, w: 260, h: 620, color: '#f4a68e'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1080, y: 210, w: 200, h: 440, color: '#a8b8e6'},
