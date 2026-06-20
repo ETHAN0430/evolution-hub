@@ -35,7 +35,7 @@
 
     // ── Hermes Turn Engine / AIAgent runtime (single vertical spine) ─────────
     'Agent Init': {file: 'agent/agent_init.py', x: 520, y: 150, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：设置 platform、组装首次 system prompt。'},
-    'Turn Start': {file: 'turn_context.py', x: 520, y: 270, group: 'pipeline', desc: '收到你的消息后，先做准备动作：检查一下当前状态，提前去记忆里找找有没有相关背景。已有会话时直接从这里开始。'},
+    'Turn Start': {file: 'turn_context.py', x: 520, y: 270, group: 'pipeline', desc: '每轮 Turn 的序幕（prologue），在一个文件里完成：清洗用户输入、恢复/构建 system prompt、预压缩过长上下文、调用 pre_llm_call 插件、从 MemoryManager prefetch 记忆、把用户消息持久化到 SQLite Session、重置重试计数器和 guardrails 等。已有会话时直接从这里开始。'},
     '系统提示': {file: 'system_prompt.py', x: 520, y: 210, group: 'pipeline', desc: '给 AI 的“身份卡”和基本规则。在 Agent Init 时构建并缓存，之后每一轮都会被复用。'},
     '消息构建': {file: 'prompt_builder.py', x: 520, y: 410, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
     'LLM API': {file: 'conversation_loop.py', x: 520, y: 480, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
