@@ -301,7 +301,7 @@
       h('div', {className: 'eh-detail-body'},
         !detail.showCode
           ? h('div', {className: 'eh-detail-intro'},
-              h('div', {className: 'eh-detail-desc'}, detail.desc || '暂无介绍'),
+              h('div', {className: 'eh-detail-desc'}, (detail.desc || '暂无介绍').replace(/([。；])/g, '$1\n')),
               h('button', {className: 'eh-detail-action', onClick: onViewSource}, '查看源码')
             )
           : detail.loading
