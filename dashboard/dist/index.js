@@ -19,51 +19,51 @@
   // memory/HY branch to the right, storage forms the foundation.
   var NODES = {
     // ── External surfaces (fan in from left) ────────────────────────────────
-    '用户': {file: 'run_agent.py', x: 120, y: 180, group: 'external'},
-    'Hermes CLI': {file: 'hermes_cli/main.py', x: 120, y: 300, group: 'external'},
-    'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 420, group: 'external'},
-    'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 540, group: 'external'},
-    'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 660, group: 'external'},
+    '用户': {file: 'run_agent.py', x: 120, y: 180, group: 'external', desc: '终端用户，通过 CLI、Desktop、Dashboard 或消息平台与 Hermes 交互。'},
+    'Hermes CLI': {file: 'hermes_cli/main.py', x: 120, y: 300, group: 'external', desc: '命令行入口，处理 hermes chat、setup、gateway 等子命令，解析参数并启动会话。'},
+    'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 420, group: 'external', desc: 'Electron 桌面应用，以后端 Dashboard 作为服务运行，提供本地 GUI。'},
+    'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 540, group: 'external', desc: 'Telegram / Discord / Slack / WhatsApp 等平台适配器，把消息转换成 Hermes Turn。'},
+    'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 660, group: 'external', desc: 'FastAPI 后端 + React SPA，提供 Web UI、插件路由挂载和实时状态。'},
 
     // ── Gateway & control plane ─────────────────────────────────────────────
-    'Gateway': {file: 'hermes_cli/gateway.py', x: 320, y: 420, group: 'gateway'},
-    'Config & State': {file: 'hermes_cli/config.py', x: 320, y: 220, group: 'gateway'},
-    'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 320, y: 620, group: 'gateway'},
+    'Gateway': {file: 'hermes_cli/gateway.py', x: 320, y: 420, group: 'gateway', desc: '消息网关生命周期管理：启动/停止平台适配器，把平台事件路由到 Agent。'},
+    'Config & State': {file: 'hermes_cli/config.py', x: 320, y: 220, group: 'gateway', desc: '加载 ~/.hermes/config.yaml，解析模型、提供者、环境变量和运行时配置。'},
+    'Provider APIs': {file: 'agent/anthropic_adapter.py', x: 320, y: 620, group: 'gateway', desc: 'LLM 提供者适配器（Anthropic、OpenAI、Gemini 等），封装 API 调用细节。'},
 
     // ── Hermes Turn Engine (main spine) ─────────────────────────────────────
-    'Turn 前奏': {file: 'turn_context.py', x: 520, y: 120, group: 'pipeline'},
-    '系统提示': {file: 'system_prompt.py', x: 520, y: 220, group: 'pipeline'},
-    '消息构建': {file: 'prompt_builder.py', x: 520, y: 320, group: 'pipeline'},
-    '主循环': {file: 'conversation_loop.py', x: 520, y: 420, group: 'pipeline'},
-    'LLM API': {file: 'conversation_loop.py', x: 520, y: 520, group: 'pipeline'},
-    '工具执行': {file: 'tool_executor.py', x: 520, y: 620, group: 'pipeline'},
-    'Turn 收尾': {file: 'turn_finalizer.py', x: 520, y: 720, group: 'pipeline'},
+    'Turn 前奏': {file: 'turn_context.py', x: 520, y: 120, group: 'pipeline', desc: '每轮对话前的上下文准备：重置计数器、预取外部记忆、触发 pre_llm_call 钩子。'},
+    '系统提示': {file: 'system_prompt.py', x: 520, y: 220, group: 'pipeline', desc: '组装三层系统提示：稳定身份/工具/技能、上下文文件、动态记忆/时间戳块。'},
+    '消息构建': {file: 'prompt_builder.py', x: 520, y: 320, group: 'pipeline', desc: '把系统提示、历史消息、用户输入和预取记忆组装成 LLM 专用的消息列表。'},
+    '主循环': {file: 'conversation_loop.py', x: 520, y: 420, group: 'pipeline', desc: '核心对话循环：调用 LLM → 处理工具调用 → 循环直到最终回答或预算耗尽。'},
+    'LLM API': {file: 'conversation_loop.py', x: 520, y: 520, group: 'pipeline', desc: '实际的 LLM 调用层，处理流式响应、工具调用请求和 prefix caching。'},
+    '工具执行': {file: 'tool_executor.py', x: 520, y: 620, group: 'pipeline', desc: '并发或顺序执行模型返回的工具调用，应用护栏、中断和结果分类。'},
+    'Turn 收尾': {file: 'turn_finalizer.py', x: 520, y: 720, group: 'pipeline', desc: '每轮结束后持久化会话/轨迹/诊断，同步外部记忆，触发插件和 review 钩子。'},
 
     // ── Turn support modules (branch right from spine) ──────────────────────
-    '背景 review': {file: 'background_review.py', x: 720, y: 220, group: 'pipeline'},
-    '上下文压缩': {file: 'context_compressor.py', x: 720, y: 320, group: 'pipeline'},
-    'ContextCompressor': {file: 'context_compressor.py', x: 720, y: 420, group: 'memory'},
-    'memory tool': {file: 'tools/memory_tool.py', x: 720, y: 620, group: 'pipeline'},
+    '背景 review': {file: 'background_review.py', x: 720, y: 220, group: 'pipeline', desc: '异步执行背景记忆/技能 review，为后续轮次提供压缩或优化建议。'},
+    '上下文压缩': {file: 'context_compressor.py', x: 720, y: 320, group: 'pipeline', desc: '在 token 预算超支时裁剪、合并或摘要历史消息，保持上下文可用。'},
+    'ContextCompressor': {file: 'context_compressor.py', x: 720, y: 420, group: 'memory', desc: '默认的 ContextEngine 实现，保护头尾消息并对中间部分做 LLM 摘要。'},
+    'memory tool': {file: 'tools/memory_tool.py', x: 720, y: 620, group: 'pipeline', desc: '内置记忆工具，管理本地 MEMORY.md / USER.md 的 add / replace / remove。'},
 
     // ── Memory abstraction layer ────────────────────────────────────────────
-    'MemoryManager': {file: 'memory_manager.py', x: 920, y: 320, group: 'memory'},
-    'MemoryProvider': {file: 'memory_provider.py', x: 920, y: 420, group: 'memory'},
-    'MemoryStore': {file: 'tools/memory_tool.py', x: 920, y: 520, group: 'memory'},
-    'ContextEngine': {file: 'context_engine.py', x: 920, y: 620, group: 'memory'},
-    '记忆文件': {file: 'tools/memory_tool.py', x: 920, y: 720, group: 'memory'},
+    'MemoryManager': {file: 'memory_manager.py', x: 920, y: 320, group: 'memory', desc: '内存提供者编排器，每轮前调用 prefetch_all，每轮后调用 sync_all。'},
+    'MemoryProvider': {file: 'memory_provider.py', x: 920, y: 420, group: 'memory', desc: '外部记忆提供者抽象基类，定义 prefetch / sync_turn 等生命周期钩子。'},
+    'MemoryStore': {file: 'tools/memory_tool.py', x: 920, y: 520, group: 'memory', desc: '内置记忆存储，维护本地记忆文件的快照和注入到系统提示的冻结版本。'},
+    'ContextEngine': {file: 'context_engine.py', x: 920, y: 620, group: 'memory', desc: '上下文管理接口，默认由 ContextCompressor 实现，负责消息裁剪与压缩。'},
+    '记忆文件': {file: 'tools/memory_tool.py', x: 920, y: 720, group: 'memory', desc: '本地持久化的 MEMORY.md / USER.md，保存用户画像和长期事实。'},
 
     // ── HY Memory evolution engine ──────────────────────────────────────────
-    'HY Memory': {file: 'hy_memory/client.py', x: 1140, y: 320, group: 'hy'},
-    'S1 Writer': {file: 'hy_memory/pipelines/writer.py', x: 1140, y: 420, group: 'hy'},
-    'MemAgent': {file: 'hy_memory/agent/mem_agent.py', x: 1140, y: 520, group: 'hy'},
-    'Reconciler': {file: 'hy_memory/agent/reconciler.py', x: 1140, y: 620, group: 'hy'},
-    'System 2': {file: 'hy_memory/pipelines/system2_writer.py', x: 1140, y: 720, group: 'hy'},
+    'HY Memory': {file: 'hy_memory/client.py', x: 1140, y: 320, group: 'hy', desc: 'HY Memory 客户端门面，初始化嵌入、向量/图存储、缓存和流水线注册表。'},
+    'S1 Writer': {file: 'hy_memory/pipelines/writer.py', x: 1140, y: 420, group: 'hy', desc: 'System 1 写入流水线：分配层级、嵌入、写 L1_RAW，触发事实提取与冲突调和。'},
+    'MemAgent': {file: 'hy_memory/agent/mem_agent.py', x: 1140, y: 520, group: 'hy', desc: '记忆代理，并行运行 Extractor / Summarizer / Reflector，提取事实/身份/摘要。'},
+    'Reconciler': {file: 'hy_memory/agent/reconciler.py', x: 1140, y: 620, group: 'hy', desc: '记忆调和器，对比新旧记忆并输出 ADD / SUPERSEDE / UPDATE 操作序列。'},
+    'System 2': {file: 'hy_memory/pipelines/system2_writer.py', x: 1140, y: 720, group: 'hy', desc: '异步认知加工：DBSCAN 聚类事实，LLM 生成图结构（L6 SCHEMA / L7 INTENTION）。'},
 
     // ── Persistent stores (foundation) ──────────────────────────────────────
-    'Vector DB': {file: 'hy_memory/data/vector_store_chroma.py', x: 720, y: 840, group: 'storage'},
-    'Graph DB': {file: 'hy_memory/data/graph_store_kuzu.py', x: 960, y: 840, group: 'storage'},
-    'cache.db': {file: 'hy_memory/data/cache_sqlite.py', x: 1200, y: 840, group: 'storage'},
-    'SQLite Session': {file: 'run_agent.py', x: 1440, y: 840, group: 'storage'}
+    'Vector DB': {file: 'hy_memory/data/vector_store_chroma.py', x: 720, y: 840, group: 'storage', desc: 'Chroma/Qdrant 向量数据库，存储 L0-L5 记忆节点及嵌入，支持语义搜索。'},
+    'Graph DB': {file: 'hy_memory/data/graph_store_kuzu.py', x: 960, y: 840, group: 'storage', desc: 'Kùzu/Neo4j 图数据库，存储 L6 SCHEMA / L7 INTENTION、证据和主题关系。'},
+    'cache.db': {file: 'hy_memory/data/cache_sqlite.py', x: 1200, y: 840, group: 'storage', desc: 'SQLite 缓存与审计库，记录 pipeline_logs、memory_operations、S2 队列和系统指标。'},
+    'SQLite Session': {file: 'run_agent.py', x: 1440, y: 840, group: 'storage', desc: '会话状态持久化，保存对话历史和运行期元数据。'}
   };
 
   // Real data flows derived from source analysis
@@ -239,9 +239,10 @@
   function DetailPanel(props) {
     var detail = props.detail;
     var onClose = props.onClose;
+    var onViewSource = props.onViewSource;
     if (!detail) return null;
-    var isError = !detail.loading && detail.code && (detail.code.startsWith('Error:') || detail.code.startsWith('Error：'));
-    return h('div', {className: 'eh-detail', role: 'dialog', 'aria-label': detail.name + ' 源码'},
+    var isError = detail.showCode && !detail.loading && detail.code && (detail.code.startsWith('Error:') || detail.code.startsWith('Error：'));
+    return h('div', {className: 'eh-detail', role: 'dialog', 'aria-label': detail.name + ' 详情'},
       h('div', {className: 'eh-detail-header'},
         h('div', null,
           h('div', {className: 'eh-detail-title'}, detail.name),
@@ -250,18 +251,23 @@
         h('button', {className: 'eh-detail-close', onClick: onClose, 'aria-label': '关闭详情'}, '×')
       ),
       h('div', {className: 'eh-detail-body'},
-        detail.loading
-          ? h('div', {className: 'eh-detail-loading'}, '加载源码中...')
-          : isError
-            ? h('div', {className: 'eh-detail-error'},
-                h('div', {className: 'eh-detail-error-title'}, '无法读取源码'),
-                h('div', {className: 'eh-detail-error-hint'},
-                  '尝试路径：' + detail.path,
-                  h('br', null),
-                  '如果源码不在默认位置，可在 Hermes Dashboard 启动前设置环境变量或全局变量覆盖基础路径。'
+        !detail.showCode
+          ? h('div', {className: 'eh-detail-intro'},
+              h('div', {className: 'eh-detail-desc'}, detail.desc || '暂无介绍'),
+              h('button', {className: 'eh-detail-action', onClick: onViewSource}, '查看源码')
+            )
+          : detail.loading
+            ? h('div', {className: 'eh-detail-loading'}, '加载源码中...')
+            : isError
+              ? h('div', {className: 'eh-detail-error'},
+                  h('div', {className: 'eh-detail-error-title'}, '无法读取源码'),
+                  h('div', {className: 'eh-detail-error-hint'},
+                    '尝试路径：' + detail.path,
+                    h('br', null),
+                    '如果源码不在默认位置，可在 Hermes Dashboard 启动前设置环境变量或全局变量覆盖基础路径。'
+                  )
                 )
-              )
-            : h('pre', {className: 'eh-detail-code'}, detail.code || '(空文件)')
+              : h('pre', {className: 'eh-detail-code'}, detail.code || '(空文件)')
       )
     );
   }
@@ -312,25 +318,34 @@
       return function () { window.removeEventListener('resize', onResize); };
     }, []);
 
-    function onNodeClick(name, src) {
-      var path = resolvePath(src);
-      setDetail({name: name, src: src, path: path, code: null, loading: true});
+    function loadSource(name, src, path) {
+      setDetail(function (prev) {
+        return prev && prev.name === name
+          ? {name: prev.name, desc: prev.desc, src: prev.src, path: prev.path, code: null, loading: true, showCode: true}
+          : prev;
+      });
       authFetch(BASE + '/api/source?path=' + encodeURIComponent(path))
         .then(function (r) { return r.json(); })
         .then(function (d) {
           setDetail(function (prev) {
             return prev && prev.name === name
-              ? {name: prev.name, src: prev.src, path: prev.path, code: d.content || ('Error: ' + (d.detail || d.error || 'unknown')), loading: false}
+              ? {name: prev.name, desc: prev.desc, src: prev.src, path: prev.path, code: d.content || ('Error: ' + (d.detail || d.error || 'unknown')), loading: false, showCode: true}
               : prev;
           });
         })
         .catch(function (e) {
           setDetail(function (prev) {
             return prev && prev.name === name
-              ? {name: prev.name, src: prev.src, path: prev.path, code: 'Error: ' + e.message, loading: false}
+              ? {name: prev.name, desc: prev.desc, src: prev.src, path: prev.path, code: 'Error: ' + e.message, loading: false, showCode: true}
               : prev;
           });
         });
+    }
+
+    function onNodeClick(name, src) {
+      var n = NODES[name];
+      var path = resolvePath(src);
+      setDetail({name: name, desc: n.desc || '', src: src, path: path, code: null, loading: false, showCode: false});
     }
 
     function onMouseDown(e) {
@@ -390,7 +405,11 @@
         h('div', {ref: svgRef, className: 'eh-svg-wrap', style: {transform: transformStyle}},
           h(ArchitectureSvg, {onNodeClick: onNodeClick})
         ),
-        h(DetailPanel, {detail: detail, onClose: function () { setDetail(null); }})
+        h(DetailPanel, {
+          detail: detail,
+          onClose: function () { setDetail(null); },
+          onViewSource: function () { if (detail) loadSource(detail.name, detail.src, detail.path); }
+        })
       )
     );
   }

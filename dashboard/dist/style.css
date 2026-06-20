@@ -207,6 +207,40 @@
   text-align: center;
 }
 
+.eh-detail-intro {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.eh-detail-desc {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--eh-text);
+}
+
+.eh-detail-action {
+  align-self: flex-start;
+  border: 1px solid var(--eh-border);
+  background: var(--eh-card);
+  color: var(--eh-text);
+  padding: 8px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  letter-spacing: 0.06em;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.eh-detail-action:hover {
+  background: var(--eh-border);
+  border-color: #5a7169;
+}
+
 .eh-detail-error {
   padding: 20px;
   color: #fca5a5;
