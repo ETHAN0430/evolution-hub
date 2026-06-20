@@ -21,10 +21,10 @@
     // ── External surfaces (fan in from left), ordered by target proximity ────
     'Hermes CLI': {file: 'hermes_cli/cli_agent_setup_mixin.py', x: 120, y: 120, group: 'external', desc: '命令行版本。在本地直接启动 AIAgent，在 cli_agent_setup_mixin.py 里显式设置 platform="cli"。'},
     'API Server': {file: 'gateway/platforms/api_server.py', x: 120, y: 220, group: 'external', desc: 'OpenAI-compatible API 服务。外部客户端通过 REST/SSE 调用，platform="api_server"。'},
-    'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 320, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
-    'TUI': {file: 'tui_gateway/entry.py', x: 120, y: 380, group: 'external', desc: '终端 UI 版本。`hermes --tui` 启动，通过 tui_gateway/entry.py 建立 stdio 传输，走 tui_gateway 后端。'},
-    'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 430, group: 'external', desc: '电脑桌面上的 App 窗口。本地模式走 tui_gateway；远程模式会连到远程 TUI Gateway（即远程 dashboard 后端）。'},
-    'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 480, group: 'external', desc: '网页版后台。通过 tui_gateway 提供 JSON-RPC 会话服务，你现在看到的可视化页面由它承载。'},
+    'Messaging Platforms': {file: 'gateway/platforms/telegram.py', x: 120, y: 420, group: 'external', desc: 'Telegram、Discord、Slack、WhatsApp 这类聊天软件接入，经过 Messaging Gateway 处理。'},
+    'TUI': {file: 'tui_gateway/entry.py', x: 120, y: 470, group: 'external', desc: '终端 UI 版本。`hermes --tui` 启动，通过 tui_gateway/entry.py 建立 stdio 传输，走 tui_gateway 后端。'},
+    'Desktop': {file: 'apps/desktop/electron/main.cjs', x: 120, y: 520, group: 'external', desc: '电脑桌面上的 App 窗口。本地模式走 tui_gateway；远程模式会连到远程 TUI Gateway（即远程 dashboard 后端）。'},
+    'Dashboard': {file: 'hermes_cli/web_server.py', x: 120, y: 570, group: 'external', desc: '网页版后台。通过 tui_gateway 提供 JSON-RPC 会话服务，你现在看到的可视化页面由它承载。'},
 
     // ── Gateway ──────────────────────────────────────────────────────────────
     'Messaging Gateway': {file: 'gateway/run.py', x: 320, y: 420, group: 'gateway', desc: '消息总入口（Hermes 里通常说的 "gateway" 就是指它）。负责聊天平台的适配与路由：处理 Telegram、Discord 等消息，知道回哪、发给谁。CLI 一对一单会话，直接连 AIAgent，不需要它。'},
@@ -158,9 +158,9 @@
     var onNodeClick = props.onNodeClick;
 
     var CLUSTERS = [
-      {name: 'External', x: 20, y: 80, w: 170, h: 480, color: '#d4c5a9'},
+      {name: 'External', x: 20, y: 80, w: 170, h: 510, color: '#d4c5a9'},
       {name: 'Control Plane', x: 460, y: 25, w: 160, h: 55, color: '#c4b28a'},
-      {name: 'Gateway', x: 180, y: 300, w: 220, h: 260, color: '#e6c875'},
+      {name: 'Gateway', x: 180, y: 300, w: 220, h: 300, color: '#e6c875'},
       {name: 'Turn Engine', x: 400, y: 90, w: 410, h: 640, color: '#f4a68e'},
       {name: 'AI Providers', x: 500, y: 740, w: 160, h: 80, color: '#8ab4e6'},
       {name: 'Memory', x: 860, y: 210, w: 200, h: 440, color: '#8fc9a3'},
@@ -209,10 +209,11 @@
         y1 = a.y;
         x2 = b.x - 65;
         y2 = b.y;
-        var corridorX = 240;
+        // same height as gateway: straight horizontal line, no corner
         if (y1 === y2) {
-          d = 'M' + x1 + ',' + y1 + ' L' + corridorX + ',' + y1 + ' L' + x2 + ',' + y2;
+          d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
         } else {
+          var corridorX = 240;
           d = 'M' + x1 + ',' + y1 + ' L' + corridorX + ',' + y1 + ' L' + corridorX + ',' + y2 + ' L' + x2 + ',' + y2;
         }
       } else if (x1 === x2 || y1 === y2) {
