@@ -254,6 +254,22 @@
       links,
       // Visual annotation: the agent loop is the cycle between LLM and tools
       h('path', {d: 'M 585,503 L 640,503 L 640,437 L 585,437', fill: 'none', stroke: '#f4a68e', strokeWidth: 2, strokeDasharray: '4,3', markerEnd: 'url(#eh-arrow)'}),
+      // Gateway purpose annotation
+      h('g', null,
+        h('rect', {x: 190, y: 610, width: 300, height: 74, rx: 6, fill: '#242718', stroke: '#e6c875', strokeOpacity: 0.3, strokeWidth: 1}),
+        h('text', {x: 202, y: 628, fill: '#e6c875', fontSize: 11,
+          fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"},
+          'Gateway 封装平台/客户端差异：'),
+        h('text', {x: 202, y: 644, fill: '#e6c875', fontSize: 11,
+          fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"},
+          'Messaging Gateway 处理聊天平台适配与路由；'),
+        h('text', {x: 202, y: 660, fill: '#e6c875', fontSize: 11,
+          fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"},
+          'TUI Gateway 给 UI 客户端提供统一 JSON-RPC。'),
+        h('text', {x: 202, y: 676, fill: '#e6c875', fontSize: 11,
+          fontFamily: "ui-monospace,'SF Mono',Menlo,monospace"},
+          'CLI 单会话直连 AIAgent，故绕过 gateway。')
+      ),
       // Remote-gateway insight from source investigation
       h('g', null,
         h('rect', {x: 30, y: 720, width: 470, height: 46, rx: 6, fill: '#1c2621', stroke: '#d4c5a9', strokeOpacity: 0.3, strokeWidth: 1}),
