@@ -63,7 +63,7 @@
     'Vector DB': {file: 'hy_memory/data/vector_store_chroma.py', x: 720, y: 740, group: 'storage', desc: '向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。'},
     'Graph DB': {file: 'hy_memory/data/graph_store_kuzu.py', x: 960, y: 740, group: 'storage', desc: '图数据库。像知识图谱一样保存概念、主题和它们之间的关系。'},
     'cache.db': {file: 'hy_memory/data/cache_sqlite.py', x: 1200, y: 740, group: 'storage', desc: '本地小数据库。记录系统运行日志、任务队列和一些临时数据。'},
-    'SQLite Session': {file: 'run_agent.py', x: 1440, y: 740, group: 'storage', desc: '保存每次对话的历史记录，方便下次继续聊。'}
+    'SQLite Session': {file: 'hermes_state.py', x: 1440, y: 740, group: 'storage', desc: '本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。'}
   };
 
   // Real data flows derived from source analysis
@@ -132,7 +132,7 @@
     var base = SOURCE_BASE;
     if (src.startsWith('/')) return src;
     if (src.startsWith('hy_memory/')) return base + 'venv/lib/python3.11/site-packages/' + src;
-    if (src === 'run_agent.py') return base + src;
+    if (src === 'run_agent.py' || src === 'hermes_state.py') return base + src;
     if (src.startsWith('hermes_cli/') || src.startsWith('gateway/') || src.startsWith('apps/')) return base + src;
     if (src.startsWith('tools/')) return base + src;
     if (src.startsWith('agent/')) return base + src;
