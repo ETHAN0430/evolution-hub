@@ -365,8 +365,32 @@ async def api_source(
                     "loc": loc,
                     "error": "definition not found",
                 }
-        start = max(0, line_no - 6)
-        end = min(len(lines), line_no + 9)
+        is_numeric_loc = loc.isdigit() if isinstance(loc, str) else True
+        if is_numeric_loc:
+            start = max(0, line_no - 6)
+            end = min(len(lines), line_no + 9)
+        else:
+            # For function/class names, return the whole definition (signature + body)
+            # up to the next sibling/peer definition, capped at ~200 lines.
+            def_idx = line_no - 1
+            def_indent = len(re.match(r"^(\s*)", lines[def_idx]).group(1))
+            start = def_idx
+            while start > 0:
+                prev = lines[start - 1]
+                m = re.match(r"^(\s*)@", prev)
+                if m and len(m.group(1)) == def_indent:
+                    start -= 1
+                else:
+                    break
+            end = len(lines)
+            boundary = re.compile(r"^(\s*)(def|class)\b")
+            for j in range(line_no, len(lines)):
+                m = boundary.match(lines[j])
+                if m and len(m.group(1)) <= def_indent:
+                    end = j
+                    break
+            if end - start > 200:
+                end = start + 200
         snippet = "".join(lines[start:end])
         return {"content": snippet, "path": path, "line": line_no, "start": start + 1, "end": end}
     except Exception as e:
