@@ -193,8 +193,8 @@
       }
       var d;
       var dashed = c[2] === 'dashed';
-      // Gateway -> Agent Init: exit right, rise in the corridor, then turn right
-      var isGatewayToAgent = (c[0] === 'Messaging Gateway' || c[0] === 'TUI Gateway') && c[1] === 'Agent Init';
+      // Gateway/API Server -> Agent Init: exit right, rise in the corridor, then right into Agent Init
+      var isGatewayToAgent = (c[0] === 'Messaging Gateway' || c[0] === 'TUI Gateway' || c[0] === 'API Server') && c[1] === 'Agent Init';
       // External surface -> Gateway: exit right, run in the corridor, then turn right
       var isExternalToGateway = a.group === 'external' && (c[1] === 'Messaging Gateway' || c[1] === 'TUI Gateway');
       if (isGatewayToAgent) {
