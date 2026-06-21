@@ -205,7 +205,7 @@
       "x": 920,
       "y": 320,
       "group": "memory",
-      "desc": "外部记忆服务的接口。所有外部记忆系统都按这个标准接口接入 Hermes：system_prompt_block()、prefetch()、sync_turn()、get_tool_schemas() 等。HY Memory 也是通过它接入的。"
+      "desc": "外部记忆服务的标准接口（抽象基类）。MemoryManager 只认这个接口，\n具体实现包括：HY Memory、记忆文件（memory_tool）等。\n核心方法：system_prompt_block()、prefetch()、sync_turn()、get_tool_schemas()。"
     },
     "ContextEngine": {
       "file": "agent/context_engine.py",
@@ -221,7 +221,7 @@
       "x": 920,
       "y": 620,
       "group": "memory",
-      "desc": "本地保存的长期记忆。比如你的喜好、重要事实、个人资料等。"
+      "desc": "本地保存的长期记忆实现（基于 memory_tool）。作为 MemoryProvider 接入 Hermes，\n支持 prefetch() 自动召回和工具显式读写。"
     },
     "HY Memory": {
       "file": "hy_memory/client.py",
@@ -229,7 +229,7 @@
       "x": 1140,
       "y": 220,
       "group": "hy",
-      "desc": "一个更聪明的记忆系统。作为 Hermes 的 MemoryProvider 接入，通过 prefetch() 在每次 LLM 调用前召回相关记忆；也能被模型通过记忆工具显式读写。\n注：HY 记忆内容会追加在本地 memory 块之后写入 system prompt，靠后的位置让模型更倾向采信它。"
+      "desc": "一个更聪明的记忆系统，作为 MemoryProvider 的实现接入 Hermes。\n通过 prefetch() 在每次 LLM 调用前召回相关记忆，也能被模型通过记忆工具显式读写。\n注：HY 记忆内容会追加在本地 memory 块之后写入 system prompt，靠后的位置让模型更倾向采信它。"
     },
     "S1 Writer": {
       "file": "hy_memory/pipelines/writer.py",
@@ -415,20 +415,12 @@
       "MemoryProvider"
     ],
     [
-      "MemoryProvider",
-      "记忆文件"
-    ],
-    [
       "记忆文件",
       "ContextEngine"
     ],
     [
       "ContextEngine",
       "ContextCompressor"
-    ],
-    [
-      "MemoryProvider",
-      "HY Memory"
     ],
     [
       "HY Memory",
