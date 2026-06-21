@@ -26,6 +26,40 @@ _AGENT_LOG = Path.home() / ".hermes" / "logs" / "agent.log"
 _CONFIG_YAML = Path.home() / ".hermes" / "config.yaml"
 _CACHE_DB = Path.home() / ".hy_memory" / "data" / "cache.db"
 
+# Source base is configurable via env var; frontend can also pass absolute paths.
+# Default matches the standard Hermes agent checkout location.
+DEFAULT_SOURCE_BASE = Path(os.environ.get("HERMES_SOURCE_BASE", "/home/cyf/.hermes/hermes-agent"))
+
+
+def _resolve_source_path(path: str) -> Path:
+    """Resolve a source path that may be absolute or relative to the source base.
+
+    Relative paths are resolved under HERMES_SOURCE_BASE. hy_memory/ paths are
+    searched under any Python version inside venv/lib/python*/site-packages/.
+    """
+    p = Path(path)
+    if p.is_absolute() and p.exists():
+        return p
+    if p.is_absolute():
+        # Absolute but not found; still return it so the caller gets a clean 404.
+        return p
+
+    candidates: list[Path] = []
+    if path.startswith("hy_memory/"):
+        suffix = path[len("hy_memory/"):]
+        venv_site_packages = list(DEFAULT_SOURCE_BASE.glob("venv/lib/python*/site-packages/"))
+        for sp in venv_site_packages:
+            candidates.append(sp / suffix)
+    else:
+        candidates.append(DEFAULT_SOURCE_BASE / path)
+
+    for c in candidates:
+        if c.exists():
+            return c
+
+    # Fallback to the first candidate (or source-base joined path) for error reporting.
+    return candidates[0] if candidates else DEFAULT_SOURCE_BASE / path
+
 # ── simple TTL cache ──────────────────────────────────────────────────────
 _cache: Dict[str, dict] = {}
 
@@ -331,17 +365,18 @@ def api_timeline():
 
 @router.get("/api/source")
 async def api_source(
-    path: str = Query(..., description="Absolute path to source file"),
+    path: str = Query(..., description="Absolute or relative path to source file"),
     loc: str = Query(None, description="Line number or function/class name to focus on"),
 ):
     """Read a source file for the node-detail panel. Optionally return a snippet around loc."""
     try:
-        if not os.path.isfile(path):
-            raise HTTPException(404, "File not found")
-        with open(path, "r", encoding="utf-8") as f:
+        resolved = _resolve_source_path(path)
+        if not resolved.is_file():
+            raise HTTPException(404, f"File not found: {resolved}")
+        with open(resolved, "r", encoding="utf-8") as f:
             lines = f.readlines()
         if not loc:
-            return {"content": "".join(lines), "path": path}
+            return {"content": "".join(lines), "path": str(resolved)}
         # Try to interpret loc as a 1-based line number
         try:
             line_no = int(loc)
@@ -361,7 +396,7 @@ async def api_source(
             if line_no is None:
                 return {
                     "content": "".join(lines),
-                    "path": path,
+                    "path": str(resolved),
                     "loc": loc,
                     "error": "definition not found",
                 }
@@ -392,7 +427,7 @@ async def api_source(
             if end - start > 200:
                 end = start + 200
         snippet = "".join(lines[start:end])
-        return {"content": snippet, "path": path, "line": line_no, "start": start + 1, "end": end}
+        return {"content": snippet, "path": str(resolved), "line": line_no, "start": start + 1, "end": end}
     except Exception as e:
         raise HTTPException(500, str(e))
 
