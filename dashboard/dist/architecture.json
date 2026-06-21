@@ -240,7 +240,7 @@
     "Vector DB": {
       "file": "hy_memory/data/vector_store_chroma.py",
       "loc": "ChromaVectorStore",
-      "x": 1400,
+      "x": 1700,
       "y": 380,
       "group": "storage",
       "desc": "向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。\n\n每个节点同时保存两部分：embedding 向量（用于 ANN 语义召回）和原文 payload（如 content、layer、tags 等，用于返回人类可读内容）。"
@@ -327,7 +327,7 @@
       "x": 1380,
       "y": 300,
       "group": "hy",
-      "desc": "异步深度加工层（System 2 Writer）。\n\n从已有的 L0/L1/L2/L4 记忆层出发，做更重的结构化处理：\n- Schema 归纳：提炼概念、心智模型 → L6_SCHEMA\n- 意图识别：提取前瞻意图 → L7_INTENTION\n- 约束标注：标注禁忌、偏好边界\n- 知识缺口扫描：审计记忆完整性\n\n这是异步路径：不一定每轮都跑，跑的时候生成/更新 Graph DB 里的概念和关系。"
+      "desc": "异步深度加工层（System 2 Writer）。\n\n它不是被 S1 直接调用的，而是作为后台异步任务运行：当 Vector DB 里积累了足够的 L0/L1/L2/L4 记忆后，由定时任务或触发条件唤醒，做更重的结构化处理：\n- Schema 归纳：提炼概念、心智模型 → L6_SCHEMA\n- 意图识别：提取前瞻意图 → L7_INTENTION\n- 约束标注：标注禁忌、偏好边界\n- 知识缺口扫描：审计记忆完整性\n\n产出写入 Graph DB（概念和关系）。"
     },
     "记忆同步": {
       "x": 810,
@@ -760,11 +760,6 @@
     [
       "记忆预取",
       "Embed Service",
-      "dashed"
-    ],
-    [
-      "System 1 Writer",
-      "System 2 Writer",
       "dashed"
     ],
     [

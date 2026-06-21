@@ -299,13 +299,6 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'System 1 Writer' && c[1] === 'System 2 Writer') {
-        // S1 -> System 2 Writer: horizontal pipeline handoff
-        x1 = a.x + 65;
-        y1 = a.y;
-        x2 = b.x - 65;
-        y2 = b.y;
-        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else if (c[0] === '记忆预取' && c[1] === 'Embed Service') {
         // 记忆预取 -> Embed Service: auto recall goes through the retrieval path
         x1 = a.x + 65;
