@@ -257,6 +257,14 @@
         var replyCorridorY = 120;
         var replyCorridorX = 320;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + replyCorridorY + ' L' + replyCorridorX + ',' + replyCorridorY + ' L' + replyCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'sync_all' && c[1] === 'MemoryManager') {
+        // sync_all -> MemoryManager: right out, run under MemoryProvider, then up into MemoryManager
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        var syncCorridorX = 1000;
+        d = 'M' + x1 + ',' + y1 + ' L' + syncCorridorX + ',' + y1 + ' L' + syncCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === '工具执行' && c[1] === '上下文压缩') {
         // Tool -> context compressor: straight up, then left (vertical-first L)
         x1 = a.x;

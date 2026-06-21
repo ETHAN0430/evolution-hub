@@ -396,6 +396,12 @@
       "y": 580,
       "group": "hy",
       "desc": "审计记忆完整性，发现缺失的关键信息。"
+    },
+    "sync_all": {
+      "x": 660,
+      "y": 420,
+      "group": "pipeline",
+      "desc": "每轮 Turn 正常结束后，由 run_agent.py 直接调用的轻量同步写记忆操作。\n\n触发条件：\n- 没被中断\n- 有 final_response\n- 有用户消息\n\n作用：调用 MemoryManager.sync_all()，把本轮用户消息和助手回复快速同步到外部 Memory Provider。\n特点：轻量、必须快，在 PostHook 之后、Turn Finalizer 之前执行。\n\n时序：LLM API → 工具执行 → PostHook → sync_all → Turn Finalizer → 后台复盘 → SQLite Session"
     }
   },
   "CONNECTIONS": [
@@ -509,6 +515,10 @@
     ],
     [
       "PostHook",
+      "sync_all"
+    ],
+    [
+      "sync_all",
       "Turn Finalizer"
     ],
     [
@@ -740,6 +750,11 @@
     [
       "知识缺口",
       "Graph DB"
+    ],
+    [
+      "sync_all",
+      "MemoryManager",
+      "dashed"
     ]
   ]
 }
