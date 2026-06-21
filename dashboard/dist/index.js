@@ -43,11 +43,13 @@
     'LLM API': {file: 'agent/conversation_loop.py', loc: 'run_conversation', x: 510, y: 680, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
     '工具执行': {file: 'agent/tool_executor.py', loc: 'execute_tool_calls_concurrent', x: 660, y: 680, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
     '上下文压缩': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 510, y: 610, group: 'pipeline', desc: '进入 LLM 前或工具结果返回后，如果上下文超过阈值，先压缩再交给 LLM。'},
-    '输出后处理': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 680, group: 'pipeline', desc: '工具循环结束后的输出处理：\n1. 插件 transform_llm_output hook\n2. 插件 post_llm_call hook\n3. 文件修改校验 footer\n4. 异常结束解释'},
-    '会话持久化': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 610, group: 'pipeline', desc: '把这轮对话写回 SQLite / JSON log，清理 VM/browser 等临时资源，去掉空的脚手架消息。'},
-    'Turn End': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 540, group: 'pipeline', desc: '最终收尾：统计 token/cost、提取 reasoning、组装 result 返回给调用方。'},
+    'transform_llm_output 钩子': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 610, group: 'pipeline', desc: '插件 transform_llm_output 钩子。在工具循环结束后、返回给用户前，允许插件改写 LLM 的输出文本（第一个非空结果生效）。'},
+    'post_llm_call 钩子': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 540, group: 'pipeline', desc: '插件 post_llm_call 钩子。工具循环结束后触发，插件可用来持久化对话数据或同步到外部记忆系统。'},
+    '输出后处理': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 470, group: 'pipeline', desc: '原生 Turn 收尾处理：\n1. 文件修改校验 footer\n2. 异常结束解释\n3. 提取 reasoning\n4. 组装 result'},
+    '会话持久化': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 400, group: 'pipeline', desc: '把这轮对话写回 SQLite / JSON log，清理 VM/browser 等临时资源，去掉空的脚手架消息。'},
+    'Turn End': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 330, group: 'pipeline', desc: '最终收尾：统计 token/cost、返回 result 给调用方。'},
     // ── Turn support modules (branch right from spine / above the turn chain) ────
-    '后台复盘': {file: 'agent/background_review.py', loc: 'spawn_background_review_thread', x: 810, y: 470, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
+    '后台复盘': {file: 'agent/background_review.py', loc: 'spawn_background_review_thread', x: 810, y: 260, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
     'ContextCompressor': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 920, y: 470, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
 
     // ── Memory abstraction layer ────────────────────────────────────────────
@@ -94,7 +96,9 @@
     ['工具执行', '上下文压缩', 'dashed'],
     ['消息构建', '上下文压缩'],
     ['上下文压缩', 'LLM API'],
-    ['LLM API', '输出后处理'],
+    ['LLM API', 'transform_llm_output 钩子'],
+    ['transform_llm_output 钩子', 'post_llm_call 钩子'],
+    ['post_llm_call 钩子', '输出后处理'],
     ['输出后处理', '会话持久化'],
     ['会话持久化', 'Turn End'],
     
@@ -225,7 +229,7 @@
         y2 = b.y;
         var cliCorridorX = 410;
         d = 'M' + x1 + ',' + y1 + ' L' + cliCorridorX + ',' + y1 + ' L' + cliCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'LLM API' && c[1] === '输出后处理') {
+      } else if (c[0] === 'LLM API' && c[1] === 'transform_llm_output 钩子') {
         // route above the tool-execution node so the line doesn't pass through it
         x1 = a.x;
         y1 = a.y - 17;
