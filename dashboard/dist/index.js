@@ -623,6 +623,7 @@
     var _mem = hooks.useState(null), memoryFeed = _mem[0], setMemoryFeed = _mem[1];
     var _pre = hooks.useState(null), prefetchFeed = _pre[0], setPrefetchFeed = _pre[1];
     var _si = hooks.useState(null), selfImprovement = _si[0], setSelfImprovement = _si[1];
+    var _tab = hooks.useState(0), activeTab = _tab[0], setActiveTab = _tab[1];
     var svgRef = hooks.useRef(null);
     var canvasRef = hooks.useRef(null);
     var dragRef = hooks.useRef(false);
@@ -669,6 +670,10 @@
       window.addEventListener('resize', onResize);
       return function () { window.removeEventListener('resize', onResize); };
     }, []);
+
+    hooks.useEffect(function () {
+      if (activeTab === 0) fitToScreen();
+    }, [activeTab]);
 
     function loadSource(name, src, path, loc) {
       setDetail(function (prev) {
@@ -765,6 +770,37 @@
       })
     );
 
+    var TABS = ['架构图', '运行态'];
+    var tabChildren = [];
+    if (activeTab === 0) {
+      tabChildren.push(
+        h('div', {ref: canvasRef, key: 'canvas', className: 'eh-canvas', onMouseDown: onMouseDown, onMouseMove: onMouseMove, onMouseUp: onMouseUp, onMouseLeave: onMouseLeave}, canvasChildren)
+      );
+    } else {
+      tabChildren.push(
+        h('div', {className: 'eh-feeds', key: 'feeds'},
+          h('div', {className: 'eh-feeds-grid'},
+            h('div', {className: 'eh-feeds-col'}, h(MemoryFeedPanel, {data: memoryFeed})),
+            h('div', {className: 'eh-feeds-col'}, h(PrefetchFeedPanel, {data: prefetchFeed}))
+          ),
+          h('div', {className: 'eh-feeds-row'}, h(SelfImprovementPanel, {data: selfImprovement}))
+        ),
+        h('div', {className: 'eh-glossary' + (glossaryOpen ? ' eh-glossary-open' : ''), key: 'glossary'},
+          h('button', {className: 'eh-glossary-toggle', onClick: function () { setGlossaryOpen(!glossaryOpen); }}, glossaryOpen ? '收起术语表 ▲' : '展开术语表 ▼'),
+          h('div', {className: 'eh-glossary-content'},
+            h('div', {className: 'eh-glossary-grid'},
+              GLOSSARY.map(function (item, idx) {
+                return h('div', {className: 'eh-glossary-item', key: idx},
+                  h('div', {className: 'eh-glossary-term'}, item.term),
+                  h('div', {className: 'eh-glossary-def'}, item.def)
+                );
+              })
+            )
+          )
+        )
+      );
+    }
+
     return h('div', {className: 'eh-page'},
       h('div', {className: 'eh-announcer', 'aria-live': 'polite', 'aria-atomic': 'true'}, health ? ('服务' + (isOk ? '正常' : '异常') + ' · VDB ' + (srv.vdb_points || '?')) : ''),
       // Header
@@ -783,32 +819,19 @@
           ),
           h('span', {className: 'eh-pill'}, 'VDB: ', h('b', null, srv.vdb_points || '?')),
           h('span', {className: 'eh-pill'}, 'API: ', h('b', null, agentLoop ? agentLoop.total_api : '?'))
-        )
-      ),
-      // Canvas + detail
-      h('div', {ref: canvasRef, className: 'eh-canvas', onMouseDown: onMouseDown, onMouseMove: onMouseMove, onMouseUp: onMouseUp, onMouseLeave: onMouseLeave}, canvasChildren),
-      // Feeds: memory, prefetch, self-improvement
-      h('div', {className: 'eh-feeds', key: 'feeds'},
-        h('div', {className: 'eh-feeds-grid'},
-          h('div', {className: 'eh-feeds-col'}, h(MemoryFeedPanel, {data: memoryFeed})),
-          h('div', {className: 'eh-feeds-col'}, h(PrefetchFeedPanel, {data: prefetchFeed}))
         ),
-        h('div', {className: 'eh-feeds-row'}, h(SelfImprovementPanel, {data: selfImprovement}))
-      ),
-      // Glossary
-      h('div', {className: 'eh-glossary' + (glossaryOpen ? ' eh-glossary-open' : ''), key: 'glossary'},
-        h('button', {className: 'eh-glossary-toggle', onClick: function () { setGlossaryOpen(!glossaryOpen); }}, glossaryOpen ? '收起术语表 ▲' : '展开术语表 ▼'),
-        h('div', {className: 'eh-glossary-content'},
-          h('div', {className: 'eh-glossary-grid'},
-            GLOSSARY.map(function (item, idx) {
-              return h('div', {className: 'eh-glossary-item', key: idx},
-                h('div', {className: 'eh-glossary-term'}, item.term),
-                h('div', {className: 'eh-glossary-def'}, item.def)
-              );
-            })
-          )
+        h('div', {className: 'eh-tabs'},
+          TABS.map(function (name, i) {
+            return h('button', {
+              key: 'tab-' + i,
+              className: 'eh-tab' + (activeTab === i ? ' eh-tab-active' : ''),
+              onClick: function () { setActiveTab(i); }
+            }, name);
+          })
         )
-      )
+      ),
+      // Tab content
+      h('div', {className: 'eh-tab-content'}, tabChildren)
     );
   }
 
