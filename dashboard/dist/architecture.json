@@ -267,7 +267,7 @@
       "x": 1220,
       "y": 440,
       "group": "hy",
-      "desc": "HY Memory 的语义搜索工具。根据 query 召回相关记忆（只返回 metadata，完整内容需要再 read）。"
+      "desc": "HY Memory 的语义搜索工具。根据 query 召回相关记忆（只返回 metadata，完整内容需要再 read）。\n\n底层查询：实际是对 Vector DB 做语义搜索，召回与 query 意思相近的记忆向量。"
     },
     "记忆写入": {
       "file": "hy_memory/coding/curator/tools.py",
@@ -275,7 +275,7 @@
       "x": 1000,
       "y": 580,
       "group": "hy",
-      "desc": "HY Memory 的写入工具。支持 create / update / delete 记忆。"
+      "desc": "HY Memory 的写入工具。支持 create / update / delete 记忆。\n\n底层写入：新记忆经过处理后，最终写入 Vector DB（语义向量）或 Graph DB（概念关系），具体取决于记忆类型。"
     },
     "Vector DB": {
       "file": "hy_memory/data/vector_store_chroma.py",
@@ -702,6 +702,16 @@
     [
       "Tokenizer Training",
       "Post-Training",
+      "dashed"
+    ],
+    [
+      "记忆检索",
+      "Vector DB",
+      "dashed"
+    ],
+    [
+      "记忆写入",
+      "Vector DB",
       "dashed"
     ]
   ]
