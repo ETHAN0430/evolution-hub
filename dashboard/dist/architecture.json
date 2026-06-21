@@ -530,10 +530,6 @@
       "Vector DB"
     ],
     [
-      "Turn Context",
-      "SQLite Session"
-    ],
-    [
       "Turn Finalizer",
       "SQLite Session"
     ],
