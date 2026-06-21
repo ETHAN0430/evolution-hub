@@ -42,7 +42,7 @@
     '消息构建': {file: 'agent/system_prompt.py', loc: 'build_system_prompt', x: 510, y: 540, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
     'LLM API': {file: 'agent/conversation_loop.py', loc: 'run_conversation', x: 510, y: 610, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
     '工具执行': {file: 'agent/tool_executor.py', loc: 'execute_tool_calls_concurrent', x: 660, y: 680, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
-    '上下文压缩': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 660, y: 620, group: 'pipeline', desc: '进入 LLM 前或工具结果返回后，如果上下文超过阈值，先压缩再交给 LLM。'},
+    '上下文压缩': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 660, y: 540, group: 'pipeline', desc: '进入 LLM 前或工具结果返回后，如果上下文超过阈值，先压缩再交给 LLM。'},
     '输出后处理': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 520, group: 'pipeline', desc: '工具循环结束后的输出处理：\n1. 插件 transform_llm_output hook\n2. 插件 post_llm_call hook\n3. 文件修改校验 footer\n4. 异常结束解释'},
     '会话持久化': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 450, group: 'pipeline', desc: '把这轮对话写回 SQLite / JSON log，清理 VM/browser 等临时资源，去掉空的脚手架消息。'},
     'Turn End': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 380, group: 'pipeline', desc: '最终收尾：统计 token/cost、提取 reasoning、组装 result 返回给调用方。'},
