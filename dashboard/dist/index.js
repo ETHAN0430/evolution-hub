@@ -104,6 +104,7 @@
       {name: 'Agent', x: 420, y: 90, w: 460, h: 650, color: '#f4a68e'},
       {name: 'Model / Reasoning', x: 20, y: 760, w: 1340, h: 110, color: '#8ab4e6'},
       {name: 'Model / Training', x: 20, y: 890, w: 1100, h: 220, color: '#8ab4e6'},
+      {name: 'Distillation', x: 720, y: 930, w: 320, h: 140, color: '#7aa4d6'},
       {name: 'Memory', x: 900, y: 90, w: 420, h: 640, color: '#8fc9a3'},
       {name: 'Storage', x: 1340, y: 90, w: 200, h: 640, color: '#7dd3d8'},
 

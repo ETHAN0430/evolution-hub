@@ -322,7 +322,7 @@
       "desc": "训练产出的模型参数。Hermes 运行时会把这些权重加载到推理层的 Self-Attention / FFN / Output Head / Embedding 中，让模型开始工作。\n\n来源可以是 Pre-training、Post-Training（SFT/RLHF/DPO）或 Distillation 的 Student。\n\n注意：Hermes 运行时只加载这些权重做推理，不会在线训练或修改模型权重。如果用用户案例去改进模型，那是离线后训练（Post-Training）的事，需要先清洗、标注数据，再单独跑训练流程。\n\n注意：Model Weights 只作用于神经网络的计算层——Embedding、Attention、FFN、Output Head。Tokenizer 是切词规则，不是神经网络权重；KV Cache 是运行时缓存；Sampling 是解码策略，都不属于 Model Weights。\n\n具体包括：Embedding 矩阵、Self-Attention 的 Q/K/V 和输出投影、FFN 的两层权重、Output Head 投影，以及 LayerNorm 参数。Tokenizer、KV Cache、Sampling 不属于 Model Weights。"
     },
     "Distillation": {
-      "x": 750,
+      "x": 800,
       "y": 970,
       "group": "provider",
       "desc": "一句话：让一个模型（Student）学另一个模型（Teacher）的输出分布，把能力从 Teacher 迁移到 Student。\n\n例子：Teacher 看到 \"我想吃\" 后输出 \"苹果\" 的概率分布（苹果 0.7、香蕉 0.2、西瓜 0.08...）。Student 不只看正确答案，还要尽量模仿这个分布。\n\nStudent 一定是小模型吗？\n不一定。常见做法是 Student 比 Teacher 小，为了压缩和加速（如大模型蒸馏到小模型）。但也可以把能力从一个强模型迁移到另一个同尺寸甚至更大的模型，比如从 Claude 蒸馏到 Kimi，或从推理模型蒸馏到对话模型。核心不是大小，而是 \"让 Student 模仿 Teacher 的输出分布\"。\n\n流程：\n1. 先用 Pre-training / Post-Training 得到一个强 Teacher。\n2. 准备一个 Student（可以是预训练好的模型，尺寸可大可小）。\n3. 对同样的输入，Teacher 输出软分布，Student 用 KL 散度去逼近。\n4. Student 的 weights 通过反向传播自己学出来，Teacher 只当裁判不贡献参数。\n\n蒸馏和 SFT/RLHF/DPO 是并行的后训练路径，终点都是 Model Weights。\n\n从 Student 的视角看：\nStudent 只感知到损失函数里多了一项“要拟合某个软分布”。它并不知道这个软分布来自一个更大的模型、一个更贵的模型，还是人类标注的分布。对 Student 来说，这就是一种特殊的训练目标，和普通 SFT 没有本质区别——区别只在标签是谁生成的。\n\n所以，Student 模型无法回答“你是不是蒸馏了某个模型”这种问题。它对自己的训练过程、数据来源、Teacher 是谁都没有记忆——就像你问一个人“你小学数学老师是谁”，他可能记得，但模型连这种元信息都没有被训练进去。"
@@ -331,7 +331,7 @@
       "x": 450,
       "y": 970,
       "group": "provider",
-      "desc": "一句话：在预训练之后继续训练，让模型更听话、更安全、更符合人类偏好。\n\n例子：用高质量问答对教模型按指令回答；用人类偏好数据让模型学会“哪种回答更好”。\n\n主要方法：\n- SFT（监督微调）：用 (prompt, answer) pair 训练，让模型学会对话格式。\n- RLHF：训练奖励模型判断回答好坏，再用 PPO 等强化学习优化。\n- DPO：直接用偏好 pair 数据优化，不需要奖励模型。\n\n后训练的目标是让模型从“会续写文本”变成“会按指令 helpful 地回答”。终点是 Model Weights。"
+      "desc": "一句话：在预训练之后继续训练，让模型更听话、更安全、更符合人类偏好。\n\n例子：用高质量问答对教模型按指令回答；用人类偏好数据让模型学会“哪种回答更好”。\n\n主要方法：\n- SFT（监督微调）：用 (prompt, answer) pair 训练，让模型学会对话格式。\n- RLHF：训练奖励模型判断回答好坏，再用 PPO 等强化学习优化。\n- DPO：直接用偏好 pair 数据优化，不需要奖励模型。\n\n后训练的目标是让模型从“会续写文本”变成“会按指令 helpful 地回答”。终点是 Model Weights。\n\n注意：Post-Training 继续使用 Pre-training 阶段固定好的 Tokenizer，不会重新训练它。只有扩展词表时才需要重新训练或初始化新 token 的 Embedding。"
     },
     "KV Cache": {
       "x": 560,
@@ -358,13 +358,13 @@
       "desc": "Tokenizer Training 不是训练神经网络，而是训练一个统计切词器。\n\n做什么：用 Training Data 跑 BPE / SentencePiece / Unigram 等算法，决定：\n- 词表里有哪些 token\n- 遇到新词时按什么规则切分/合并\n\n注意：token ID 本身没有被“预训练”。token ID 只是词表里的整数编号，像字典页码。真正在 Pre-training 里被学出来的是每个 token ID 对应的 Embedding 向量，以及 Attention、FFN、Output Head 的权重。\n\n所以流程是：\n1. Tokenizer Training：从原始文本中学切词规则。\n2. Pre-training：用固定好的 Tokenizer 把文本切成 token ID，再训练神经网络权重。"
     },
     "Teacher": {
-      "x": 750,
+      "x": 800,
       "y": 1030,
       "group": "provider",
       "desc": "蒸馏里的大模型。通常是一个已经 Pre-training / Post-Training 好的强模型，参数冻结，只用来生成软目标（soft target）给学生模型学习。"
     },
     "Student": {
-      "x": 900,
+      "x": 950,
       "y": 970,
       "group": "provider",
       "desc": "蒸馏里的小模型。用 Teacher 的软输出作为监督信号训练，参数量更小，推理更快。训练完成后它的 weights 就是 Model Weights 的一部分。"
@@ -703,6 +703,16 @@
     [
       "RAG",
       "LLM API",
+      "dashed"
+    ],
+    [
+      "Tokenizer Training",
+      "Tokenizer",
+      "dashed"
+    ],
+    [
+      "Tokenizer Training",
+      "Post-Training",
       "dashed"
     ]
   ]
