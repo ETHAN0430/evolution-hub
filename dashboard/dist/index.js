@@ -106,7 +106,7 @@
       {name: 'Model / Training', x: 420, y: 890, w: 1380, h: 220, color: '#8ab4e6'},
       {name: 'Distillation', x: 1060, y: 930, w: 320, h: 140, color: '#7aa4d6'},
       {name: 'Memory', x: 890, y: 80, w: 710, h: 700, color: '#8fc9a3'},
-      {name: 'Memory Tools', x: 900, y: 150, w: 220, h: 600, color: '#8fc9a3'},
+      {name: 'Tools', x: 900, y: 150, w: 220, h: 600, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1100, y: 260, w: 350, h: 400, color: '#8fc9a3'},
       {name: 'Memory Layers', x: 1340, y: 260, w: 160, h: 320, color: '#8fc9a3'},
       {name: 'Retrieval', x: 1500, y: 500, w: 100, h: 220, color: '#7dd3d8'},
@@ -235,15 +235,22 @@
         x2 = b.x + 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === '后台复盘' && c[1] === 'memory') {
-        // Background review -> built-in memory tool: horizontal into the memory tool surface
+      } else if (c[0] === '后台复盘' && c[1] === 'memory_tool') {
+        // Background review -> memory_tool: horizontal into the tool surface
         x1 = a.x + 65;
         y1 = a.y;
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'memory' && c[1] === '记忆文件') {
-        // memory tool -> local memory file: stay above the external-memory surface
+      } else if (c[0] === '后台复盘' && c[1] === 'skill') {
+        // Background review -> skill: drop down into the skill tool node
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'memory_tool' && c[1] === '记忆文件') {
+        // memory_tool -> local memory file: stay above the external-memory surface
         x1 = a.x + 65;
         y1 = a.y;
         x2 = b.x - 65;

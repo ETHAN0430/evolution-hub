@@ -337,14 +337,6 @@
       "group": "hy",
       "desc": "异步深度加工层（System 2 Writer）。\n\n从已有的 L0/L1/L2/L4 记忆层出发，做更重的结构化处理：\n- Schema 归纳：提炼概念、心智模型 → L6_SCHEMA\n- 意图识别：提取前瞻意图 → L7_INTENTION\n- 约束标注：标注禁忌、偏好边界\n- 知识缺口扫描：审计记忆完整性\n\n这是异步路径：不一定每轮都跑，跑的时候生成/更新 Graph DB 里的概念和关系。"
     },
-    "memory": {
-      "file": "tools/memory_tool.py",
-      "loc": "memory_tool",
-      "x": 980,
-      "y": 190,
-      "group": "memory",
-      "desc": "Hermes 内置的本地文件记忆工具（tools/memory_tool.py）。\n\n模型可显式调用：memory(action=add|replace|remove, target=memory|user, content=..., old_text=...)。\n也支持 batch operations：operations=[{action, content?, old_text?}, ...]。\n\n作用对象：\n- target=memory：写入 MEMORY.md，保存环境事实、项目约定、工具 quirks 等。\n- target=user：写入 USER.md，保存用户偏好、身份、沟通风格等。\n\n关键区别：这个工具直接写本地文件，不经过 S1 / MemoryWriter，也不进入外部 Vector DB。它写入的内容只有两种生效方式：\n1. Agent Init 启动时把文件加载成 frozen snapshot 注入 system prompt。\n2. 下轮新会话重新加载 snapshot 时才能看到本轮写入。\n\n后台复盘（background review）也会调用此工具把提炼出的用户画像/偏好落盘。"
-    },
     "记忆同步": {
       "x": 810,
       "y": 300,
@@ -410,6 +402,22 @@
       "y": 540,
       "group": "hy",
       "desc": "意图层。System 2 Writer 从 L1_RAW 等层提取出的前瞻意图、目标。"
+    },
+    "memory_tool": {
+      "file": "tools/memory_tool.py",
+      "loc": "memory_tool",
+      "x": 980,
+      "y": 190,
+      "group": "memory",
+      "desc": "Hermes 内置的本地文件记忆工具（tools/memory_tool.py）。\n\n模型可显式调用：memory(action=add|replace|remove, target=memory|user, content=..., old_text=...)。\n也支持 batch operations：operations=[{action, content?, old_text?}, ...]。\n\n作用对象：\n- target=memory：写入 MEMORY.md，保存环境事实、项目约定、工具 quirks 等。\n- target=user：写入 USER.md，保存用户偏好、身份、沟通风格等。\n\n关键区别：memory_tool 直接写本地文件，不经过 S1 / MemoryWriter，也不进入外部 Vector DB。它写入的内容只有两种生效方式：\n1. Agent Init 启动时把文件加载成 frozen snapshot 注入 system prompt。\n2. 下轮新会话重新加载 snapshot 时才能看到本轮写入。\n\n后台复盘（background review）也会调用此工具把提炼出的用户画像/偏好落盘。"
+    },
+    "skill": {
+      "file": "tools/skill_manage.py",
+      "loc": "skill_manage",
+      "x": 980,
+      "y": 260,
+      "group": "memory",
+      "desc": "Hermes 技能管理工具（tools/skill_manage.py）。\n\n后台复盘会调用它来更新/创建 skill 文件；Agent Init 时会加载相关 skill 到 system prompt。skill 沉淀的是可复用的 prompt 模式、流程或领域知识。"
     }
   },
   "CONNECTIONS": [
@@ -650,11 +658,11 @@
     ],
     [
       "后台复盘",
-      "memory",
+      "memory_tool",
       "dashed"
     ],
     [
-      "memory",
+      "memory_tool",
       "记忆文件",
       "dashed"
     ],
@@ -762,6 +770,11 @@
     [
       "S1 / MemoryWriter",
       "L0_BASIC_INFO",
+      "dashed"
+    ],
+    [
+      "后台复盘",
+      "skill",
       "dashed"
     ]
   ]
