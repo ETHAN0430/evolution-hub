@@ -398,7 +398,7 @@
       "desc": "审计记忆完整性，发现缺失的关键信息。"
     },
     "sync_all": {
-      "x": 660,
+      "x": 810,
       "y": 300,
       "group": "pipeline",
       "desc": "Turn Finalizer 内部调用的外部记忆同步动作。\n\n在 `finalize_turn()` 末尾，通过 `agent._sync_external_memory_for_turn()` 触发：\n1. 调用 MemoryManager.sync_all()，把本轮用户消息和助手回复同步给已注册的外部 MemoryProvider。\n2. 调用 MemoryManager.queue_prefetch_all()，让外部 Provider 提前为下一轮做召回预热。\n\n只有非中断、且存在最终回复和用户消息时才会执行。"
