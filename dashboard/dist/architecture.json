@@ -64,19 +64,19 @@
       "desc": "Terminal/UI 网关。给 Desktop、Dashboard、TUI 这些 UI 客户端提供统一的后端会话服务。"
     },
     "Tokenizer": {
-      "x": 220,
+      "x": 140,
       "y": 780,
       "group": "provider",
       "desc": "把原始文本切成模型能处理的 token。\n\n例如：\n- 'hello world' 可能被切成 ['hello', ' world']\n- 中文常按字或子词切分\n- 不同服务商（OpenAI、Anthropic）有各自的词表和 BPE 规则\n\nTokenizer 的输出是一串整数 token ID，后面才交给 embedding 层。"
     },
     "Embedding": {
-      "x": 380,
+      "x": 280,
       "y": 780,
       "group": "provider",
       "desc": "把每个 token ID 映射成一个高维向量（通常几百到几千维）。\n\n作用：把离散的 token 变成连续的语义表示，意思相近的词在向量空间里也相近。\n注意：Embedding 本身不包含位置信息，模型还不知道 token 的顺序。"
     },
     "Positional Encoding": {
-      "x": 540,
+      "x": 420,
       "y": 780,
       "group": "provider",
       "desc": "给每个 token 的 embedding 加上位置信号，让模型知道“这个词是第几个”。\n\nSelf-Attention 对输入顺序不敏感，不加重位置信息就无法区分：\n- '我吃苹果' 和 '苹果吃我'\n\n常见做法：sin/cos 固定位置编码（Transformer 原版）或可学习的 positional embedding。"
@@ -88,40 +88,16 @@
       "desc": "Transformer 的核心计算层。\n\n对每个 token，它会计算它和序列中所有其它 token 的关联程度（Query-Key 点积），再用这个权重把大家的 Value 加权求和。\n\n多头 = 多组并行的 Q/K/V 投影，每组关注不同的关系（语法、指代、语义等）。\n\nKV Cache：实际推理时会把已经算过的 Key/Value 缓存起来，避免每生成一个新 token 都重新算一遍整个历史序列，从而大幅加速自回归生成。"
     },
     "Feed-Forward Network": {
-      "x": 860,
+      "x": 840,
       "y": 780,
       "group": "provider",
       "desc": "对每个 token 单独做非线性变换。\n\n结构：一般是两个全连接层夹一个激活函数（如 GELU）。\n作用：给模型增加非线性拟合能力，让 attention 提取的关系能进一步组合、变换。\n注意：这一层每个 token 各自计算，不看其它 token。"
     },
     "Output Head": {
-      "x": 1020,
+      "x": 980,
       "y": 780,
       "group": "provider",
       "desc": "把最后一层的隐藏状态投影回词表大小，输出下一个 token 的分数（logits），再经 softmax 得到概率分布。\n\n实际生成时不会直接取概率最大的 token，而是按 temperature、top-p、top-k 等策略采样，让回答更自然、有变化。"
-    },
-    "Training Data": {
-      "x": 150,
-      "y": 820,
-      "group": "provider",
-      "desc": "训练模型用的数据。预训练阶段通常是海量互联网文本、代码、书籍等；微调阶段则是特定领域或任务的高质量数据。"
-    },
-    "Pre-training": {
-      "x": 350,
-      "y": 820,
-      "group": "provider",
-      "desc": "在大规模通用数据上从头训练模型，让模型学会语言结构、世界知识和基本推理能力。\n\n这一步消耗的算力最大，产出的是基础模型（base model）。"
-    },
-    "Fine-Tuning / SFT": {
-      "x": 550,
-      "y": 820,
-      "group": "provider",
-      "desc": "在预训练好的模型基础上，用特定领域或任务数据继续训练，让模型更适合目标场景。\n\n常见方式：\n- SFT（监督微调）：用（问题，答案）pair 继续训练\n- 指令微调：让模型学会按指令格式回答\n- RLHF / DPO：用人类偏好数据对齐\n\n注意：写 system prompt、改提示词（prompt engineering）**不算**微调，因为模型权重没变；微调会实际更新模型参数。"
-    },
-    "Model Weights": {
-      "x": 750,
-      "y": 820,
-      "group": "provider",
-      "desc": "训练产出的模型参数（权重）。\n\n这些权重会被加载到 Embedding、Self-Attention、FFN、Output Head 等每一层中，支撑左侧的推理链路。\n\nHermes 运行时只加载已经训练好的 weights，不更新它们。"
     },
     "Agent Init": {
       "file": "agent/agent_init.py",
@@ -177,7 +153,7 @@
       "x": 510,
       "y": 680,
       "group": "pipeline",
-      "desc": "真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。\n\n几个概念区分：\n- LLM（大语言模型）是任务/类别，不是具体架构。\n- Transformer 是当前 LLM 的主流实现（self-attention + FFN）。\n- JEPA / 世界模型是更远的方向，想从“预测下一个 token”转向“预测世界的未来状态”。\n\n调用本身走流式输出：chunk 会经“流式输出”节点推给 CLI / Gateway 等消费者；没有消费者时内部把整段回答收齐后再继续。transform_llm_output 等输出改写 Hook 在完整回答收齐后、交给用户前执行。"
+      "desc": "真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。\n\n几个概念区分：\n- LLM（大语言模型）是任务/类别，不是具体架构。\n- Transformer 是当前 LLM 的主流实现（self-attention + FFN）。\n- JEPA / 世界模型是更远的方向，想从“预测下一个 token”转向“预测世界的未来状态”。\n\n调用本身走流式输出：chunk 会经“流式输出”节点推给 CLI / Gateway 等消费者；没有消费者时内部把整段回答收齐后再继续。transform_llm_output 等输出改写 Hook 在完整回答收齐后、交给用户前执行。\n\n流结束的判断：\n- 收到 API 的结束标记（如 SSE 的 [DONE] 或 finish_reason 不为 null）。\n- 连接自然断开。\n\n怎么知道要调工具：\n- 流结束后，把 chunk 拼成完整 assistant_message。\n- 如果消息里有 tool_calls / function_call，就进入“工具执行”节点。\n- 如果没有，就是最终答案，直接返回给用户。\n\n常见 finish_reason：stop（正常结束）、tool_calls（要调工具）、length（token 上限截断）、content_filter（安全过滤）。"
     },
     "流式输出": {
       "file": "agent/conversation_loop.py",
@@ -206,16 +182,16 @@
     "PostHook": {
       "file": "agent/turn_finalizer.py",
       "loc": "finalize_turn",
-      "x": 810,
-      "y": 680,
+      "x": 660,
+      "y": 540,
       "group": "pipeline",
       "desc": "通用插件 Hook 注入点。\"post\" / transform / error / lifecycle 型 Hook：\n- post_llm_call：LLM 返回且工具循环结束后\n- post_tool_call：单个工具执行完成后\n- post_api_request：模型 API 请求完成后\n- api_request_error：模型 API 调用出错时\n- transform_terminal_output：终端输出展示前改写\n- transform_tool_result：工具结果返回给模型前改写\n- transform_llm_output：LLM 输出返回给用户前改写\n- on_session_end：会话结束时\n- on_session_finalize：会话最终收尾时\n- on_session_reset：会话被重置时\n- subagent_stop：子 agent 停止时\n- post_approval_response：用户做出审批选择后\n\npost_llm_call 在工具循环结束后触发，插件可用来持久化对话数据或同步到外部记忆系统。\n\n注：本节点只代表主链路上的 post_llm_call；其它 post / transform / error / lifecycle 型 Hook 发生在工具执行、Turn Finalizer、Gateway、会话生命周期等对应节点处，图中未单独标出。"
     },
     "Turn Finalizer": {
       "file": "agent/turn_finalizer.py",
       "loc": "finalize_turn",
-      "x": 810,
-      "y": 575,
+      "x": 660,
+      "y": 260,
       "group": "pipeline",
       "desc": "工具循环结束后的 Turn 收尾处理，全部在 `finalize_turn()` 中顺序执行：\n1. 文件修改校验 footer\n2. 异常结束解释\n3. 提取 reasoning\n4. transform_llm_output 输出改写\n5. 组装 result\n6. 写 SQLite / JSON log\n7. 清理 VM/browser 等临时资源\n8. 统计 token/cost\n9. 返回 result 给调用方\n10. 触发后台复盘"
     },
@@ -223,14 +199,14 @@
       "file": "agent/background_review.py",
       "loc": "spawn_background_review_thread",
       "x": 810,
-      "y": 400,
+      "y": 190,
       "group": "pipeline",
       "desc": "在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。"
     },
     "MemoryManager": {
       "file": "agent/memory_manager.py",
       "loc": "MemoryManager",
-      "x": 920,
+      "x": 1110,
       "y": 220,
       "group": "memory",
       "desc": "记忆的调度中心。每次对话前查记忆，对话结束后把新东西存进记忆。"
@@ -238,47 +214,39 @@
     "MemoryProvider": {
       "file": "agent/memory_provider.py",
       "loc": "MemoryProvider",
-      "x": 920,
-      "y": 320,
+      "x": 1110,
+      "y": 140,
       "group": "memory",
       "desc": "外部记忆服务的标准接口（抽象基类）。MemoryManager 只认这个接口，\n具体实现包括：HY Memory、记忆文件（memory_tool）等。\n核心方法：system_prompt_block()、prefetch()、sync_turn()、get_tool_schemas()。"
-    },
-    "ContextEngine": {
-      "file": "agent/context_engine.py",
-      "loc": "ContextEngine",
-      "x": 920,
-      "y": 520,
-      "group": "memory",
-      "desc": "控制对话上下文长度的引擎。决定什么时候该压缩、怎么压缩。"
     },
     "记忆文件": {
       "file": "tools/memory_tool.py",
       "loc": "MemoryStore",
-      "x": 920,
-      "y": 620,
+      "x": 1000,
+      "y": 660,
       "group": "memory",
       "desc": "本地保存的长期记忆实现（基于 memory_tool）。作为 MemoryProvider 接入 Hermes，\n支持 prefetch() 自动召回和工具显式读写。"
     },
     "HY Memory": {
       "file": "hy_memory/client.py",
       "loc": "HyMemoryClient",
-      "x": 1140,
-      "y": 220,
+      "x": 1220,
+      "y": 660,
       "group": "hy",
       "desc": "一个更聪明的记忆系统，作为 MemoryProvider 的实现接入 Hermes。\n通过 prefetch() 在每次 LLM 调用前召回相关记忆，也能被模型通过记忆工具显式读写。\n注：HY 记忆内容会追加在本地 memory 块之后写入 system prompt，靠后的位置让模型更倾向采信它。"
     },
     "S1 Writer": {
       "file": "hy_memory/pipelines/writer.py",
       "loc": "MemoryWriter",
-      "x": 1140,
-      "y": 320,
+      "x": 1000,
+      "y": 340,
       "group": "hy",
       "desc": "第一层记忆写入。先把对话内容简单归档，准备后续加工。"
     },
     "MemAgent": {
       "file": "hy_memory/agent/mem_agent.py",
       "loc": "MemAgent",
-      "x": 1140,
+      "x": 1000,
       "y": 420,
       "group": "hy",
       "desc": "记忆提炼员。自动从对话里提取重要事实、身份信息和摘要。"
@@ -286,32 +254,32 @@
     "Reconciler": {
       "file": "hy_memory/agent/reconciler.py",
       "loc": "MemoryReconciler",
-      "x": 1140,
-      "y": 520,
+      "x": 1000,
+      "y": 500,
       "group": "hy",
       "desc": "记忆冲突检查员。看看新信息和旧记忆有没有矛盾，决定是新增、替换还是更新。"
     },
     "System 2": {
       "file": "hy_memory/pipelines/system2_writer.py",
       "loc": "System2Writer",
-      "x": 1140,
-      "y": 620,
+      "x": 1220,
+      "y": 340,
       "group": "hy",
       "desc": "深度思考层。把零散事实组织成概念、意图和知识图谱。"
     },
     "记忆检索": {
       "file": "hy_memory/coding/curator/tools.py",
       "loc": "search_memory",
-      "x": 1280,
-      "y": 260,
+      "x": 1220,
+      "y": 440,
       "group": "hy",
       "desc": "HY Memory 的语义搜索工具。根据 query 召回相关记忆（只返回 metadata，完整内容需要再 read）。"
     },
     "记忆写入": {
       "file": "hy_memory/coding/curator/tools.py",
       "loc": "create_memory",
-      "x": 1280,
-      "y": 460,
+      "x": 1000,
+      "y": 580,
       "group": "hy",
       "desc": "HY Memory 的写入工具。支持 create / update / delete 记忆。"
     },
@@ -319,7 +287,7 @@
       "file": "hy_memory/data/vector_store_chroma.py",
       "loc": "ChromaVectorStore",
       "x": 1440,
-      "y": 200,
+      "y": 620,
       "group": "storage",
       "desc": "向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。"
     },
@@ -327,7 +295,7 @@
       "file": "hy_memory/data/graph_store_kuzu.py",
       "loc": "KuzuGraphStore",
       "x": 1440,
-      "y": 350,
+      "y": 720,
       "group": "storage",
       "desc": "图数据库。像知识图谱一样保存概念、主题和它们之间的关系。"
     },
@@ -348,46 +316,76 @@
       "desc": "本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。"
     },
     "GPU / HBM": {
-      "x": 300,
-      "y": 940,
+      "x": 110,
+      "y": 1060,
       "group": "hardware",
-      "desc": "GPU 高带宽显存（HBM）。推理时模型权重和 KV Cache 都住在这里，是 LLM 服务的核心瓶颈。\n\n显存容量决定了能同时跑多大的模型、多大的 batch、多长的上下文。KV Cache 随序列长度线性增长，长上下文很容易把 HBM 打满。"
+      "desc": "AI 训练和推理的主力计算单元。\n\nGPU 里有大量并行计算核心，适合矩阵运算、attention、反向传播这些 heavy compute。\nHBM（High Bandwidth Memory）是贴在 GPU 旁边的高速显存，用来存模型权重、KV Cache 和中间激活值。"
     },
-    "CPU RAM / SSD": {
-      "x": 600,
-      "y": 940,
-      "group": "hardware",
-      "desc": "CPU 内存和固态硬盘。\n\n- CPU RAM：常用于 KV Cache offloading、向量数据库索引缓存。\n- SSD：持久化存储 SQLite、cache.db、会话日志、模型 checkpoint 等。\n\n当 GPU 显存不够时，会把部分 KV Cache 或模型权重卸载到 CPU RAM / SSD，但速度会显著下降。"
+    "Decoder": {
+      "x": 560,
+      "y": 780,
+      "group": "provider",
+      "desc": "Decoder 块。包含 Masked Self-Attention 和 FFN，是 GPT 这类自回归模型的核心。模型逐 token 生成答案时，就是 Decoder 一遍又一遍地跑前向传播。"
     },
-    "Network": {
+    "Temperature": {
+      "x": 1120,
+      "y": 780,
+      "group": "provider",
+      "desc": "温度采样。Output Head 输出的是每个 token 的分数（logits），Temperature 控制采样的随机性：\n- T=0：总是取概率最高的 token（贪婪）。\n- T 低：回答更确定、更死板。\n- T 高：回答更随机、更有创造性。"
+    },
+    "Pre-training": {
+      "x": 150,
+      "y": 870,
+      "group": "provider",
+      "desc": "在大规模通用数据上从头训练基础模型，学习语言结构、知识和基本推理。"
+    },
+    "SFT / Fine-Tuning": {
+      "x": 400,
+      "y": 870,
+      "group": "provider",
+      "desc": "监督微调。用（问题，答案）pair 继续训练，让模型学会按指令格式回答。"
+    },
+    "RLHF": {
+      "x": 650,
+      "y": 870,
+      "group": "provider",
+      "desc": "Reinforcement Learning from Human Feedback。用人类偏好数据训练奖励模型，再用 RL 调大模型。"
+    },
+    "DPO": {
       "x": 900,
+      "y": 870,
+      "group": "provider",
+      "desc": "Direct Preference Optimization。直接用偏好数据优化模型，省掉奖励模型和 RL。"
+    },
+    "Reward Model": {
+      "x": 650,
       "y": 940,
-      "group": "hardware",
-      "desc": "网络。调用外部 AI Provider 时的必经瓶颈，影响首 token 延迟和流式响应速度。\n\n本地部署（CPU/GPU）可以绕过，但模型 weights 下载、多机分布式推理、模型服务集群内部通信仍依赖网络。"
+      "group": "provider",
+      "desc": "奖励模型。给 RLHF 提供“哪个回答更好”的打分信号。"
     },
-    "光模块 / 交换机": {
-      "x": 200,
-      "y": 1020,
-      "group": "infra",
-      "desc": "光模块、交换机、路由器。负责把数据从一台机器搬到另一台机器，跨机架/跨数据中心都靠它们。"
+    "Teacher Model": {
+      "x": 250,
+      "y": 940,
+      "group": "provider",
+      "desc": "能力强的教师模型，用来生成 soft target 指导学生模型。"
     },
-    "服务器 / 机架": {
-      "x": 420,
-      "y": 1020,
-      "group": "infra",
-      "desc": "服务器和机架。Dell、HPE、浪潮、Supermicro 这些整机厂的产品都住这里，GPU/CPU/内存/硬盘都装在机架上。"
+    "Distillation": {
+      "x": 500,
+      "y": 940,
+      "group": "provider",
+      "desc": "知识蒸馏。让学生模型学习教师模型的输出分布，而不是直接学真实标签。"
     },
-    "电力 / UPS": {
-      "x": 640,
-      "y": 1020,
-      "group": "infra",
-      "desc": "电力和 UPS。数据中心最底层的保障：市电、UPS、备用柴油发电机、PDU、散热/空调。\n\nUPS 是电力保障的一部分：市电断供时 UPS 先顶上，等柴油发电机启动。所以把它们画在一起。"
+    "Student Model": {
+      "x": 750,
+      "y": 940,
+      "group": "provider",
+      "desc": "更小、更快的学生模型，蒸馏后接近教师模型能力。"
     },
-    "电网 / 火电": {
-      "x": 860,
-      "y": 1020,
-      "group": "infra",
-      "desc": "AI 数据中心是超级耗电大户，电力是训练/推理成本里的关键一项。\n\n中美新建大规模 AI 集群的主流供电方式：\n- 美国：天然气是近期新建 AI 数据中心最热门的选择（稳定、可快速扩容），部分老厂用核电或签绿电 PPA。\n- 中国：煤电仍是主力，但西南水电、西北风电光伏也承接了不少算力中心。\n\n总体来看，化石能源（天然气 / 煤电）目前仍是 AI 数据中心最主要的底层电力来源。"
+    "Model Weights": {
+      "x": 525,
+      "y": 1000,
+      "group": "provider",
+      "desc": "训练产出的模型参数。Hermes 运行时会把这些权重加载到推理层的 Decoder / Attention / FFN / Output Head 中。"
     }
   },
   "CONNECTIONS": [
@@ -428,69 +426,9 @@
       "Tokenizer"
     ],
     [
-      "Tokenizer",
-      "Embedding"
-    ],
-    [
-      "Embedding",
-      "Positional Encoding"
-    ],
-    [
-      "Positional Encoding",
-      "Multi-Head Self-Attention"
-    ],
-    [
-      "Multi-Head Self-Attention",
-      "Feed-Forward Network"
-    ],
-    [
-      "Feed-Forward Network",
-      "Output Head"
-    ],
-    [
       "Output Head",
       "LLM API",
       "dashed"
-    ],
-    [
-      "Training Data",
-      "Pre-training"
-    ],
-    [
-      "Pre-training",
-      "Fine-Tuning / SFT"
-    ],
-    [
-      "Fine-Tuning / SFT",
-      "Model Weights"
-    ],
-    [
-      "Model Weights",
-      "GPU / HBM"
-    ],
-    [
-      "Multi-Head Self-Attention",
-      "GPU / HBM"
-    ],
-    [
-      "LLM API",
-      "Network"
-    ],
-    [
-      "Vector DB",
-      "CPU RAM / SSD"
-    ],
-    [
-      "Graph DB",
-      "CPU RAM / SSD"
-    ],
-    [
-      "cache.db",
-      "CPU RAM / SSD"
-    ],
-    [
-      "SQLite Session",
-      "CPU RAM / SSD"
     ],
     [
       "LLM API",
@@ -538,6 +476,11 @@
       "PreHook"
     ],
     [
+      "记忆预取",
+      "MemoryManager",
+      "dashed"
+    ],
+    [
       "PreHook",
       "上下文压缩"
     ],
@@ -554,14 +497,14 @@
       "上下文压缩",
       "LLM API"
     ],
-
     [
       "PostHook",
       "Turn Finalizer"
     ],
     [
       "Turn Finalizer",
-      "后台复盘"
+      "后台复盘",
+      "dashed"
     ],
     [
       "后台复盘",
@@ -578,14 +521,6 @@
     [
       "MemoryProvider",
       "记忆文件"
-    ],
-    [
-      "记忆文件",
-      "ContextEngine"
-    ],
-    [
-      "ContextEngine",
-      "上下文压缩"
     ],
     [
       "HY Memory",
@@ -640,28 +575,96 @@
       "SQLite Session"
     ],
     [
-      "GPU / HBM",
-      "服务器 / 机架"
+      "工具执行",
+      "PostHook"
     ],
     [
-      "CPU RAM / SSD",
-      "服务器 / 机架"
+      "Turn Finalizer",
+      "Hermes CLI",
+      "dashed"
     ],
     [
-      "Network",
-      "光模块 / 交换机"
+      "Turn Finalizer",
+      "API Server",
+      "dashed"
     ],
     [
-      "光模块 / 交换机",
-      "服务器 / 机架"
+      "Turn Finalizer",
+      "Messaging Gateway",
+      "dashed"
     ],
     [
-      "电力 / UPS",
-      "服务器 / 机架"
+      "Turn Finalizer",
+      "TUI Gateway",
+      "dashed"
     ],
     [
-      "电网 / 火电",
-      "电力 / UPS"
+      "Tokenizer",
+      "Embedding"
+    ],
+    [
+      "Embedding",
+      "Positional Encoding"
+    ],
+    [
+      "Positional Encoding",
+      "Decoder"
+    ],
+    [
+      "Decoder",
+      "Multi-Head Self-Attention"
+    ],
+    [
+      "Multi-Head Self-Attention",
+      "Feed-Forward Network"
+    ],
+    [
+      "Feed-Forward Network",
+      "Output Head"
+    ],
+    [
+      "Output Head",
+      "Temperature"
+    ],
+    [
+      "Pre-training",
+      "SFT / Fine-Tuning"
+    ],
+    [
+      "SFT / Fine-Tuning",
+      "RLHF"
+    ],
+    [
+      "SFT / Fine-Tuning",
+      "DPO"
+    ],
+    [
+      "Reward Model",
+      "RLHF"
+    ],
+    [
+      "Teacher Model",
+      "Distillation"
+    ],
+    [
+      "Distillation",
+      "Student Model"
+    ],
+    [
+      "RLHF",
+      "Model Weights"
+    ],
+    [
+      "DPO",
+      "Model Weights"
+    ],
+    [
+      "Student Model",
+      "Model Weights"
+    ],
+    [
+      "Model Weights",
+      "Decoder"
     ]
   ]
 }

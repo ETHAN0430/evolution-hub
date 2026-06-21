@@ -37,6 +37,22 @@
     infra: {fill: '#2a2218', stroke: '#c4b28a'}
   };
 
+  var GLOSSARY = [
+    {term: 'ReAct', def: 'Reasoning + Acting。翻译：先想想再动手。这也值得造个缩写？本质就是“模型调工具”循环，包装一下论文就好发了。Hermes 里就是 LLM API → 工具执行 → 上下文压缩 → LLM API 这个圈。'},
+    {term: 'Function Calling', def: '模型输出 JSON，让外部程序去执行。说白了：模型就是个嘴炮指挥家，自己不动手。非要叫 Function Calling，显得比“调函数”高级。'},
+    {term: 'Observation', def: '工具执行后返回的结果。一帮人非叫 Observation，听着像在做科学实验。其实就是“工具跑完告诉你啥情况”。'},
+    {term: 'Reasoning / Thinking 模型', def: '会自己打草稿再回答的模型。DeepSeek-R1、o1 干的就是这事。非叫 Reasoning / Thinking Model，整得跟人类哲学家似的。'},
+    {term: 'CoT（Chain-of-Thought）', def: 'prompt 里写“请逐步思考”。小学老师天天说“把过程写出来”，到 AI 圈就变成学术术语了，服了。'},
+    {term: 'Post-Training / 后训练', def: '预训练之后继续训练。包括 SFT、RLHF、DPO。一帮人不敢叫“再训练”，非要叫 Post-Training，显得洋气。'},
+    {term: 'PreHook / PostHook', def: 'LLM 调用前后插点代码。Pre=前，Post=后，Hook=钩子。三个字说明白的事非要整俩英文词，装逼指数拉满。'},
+    {term: 'S1 / S2（System 1 / System 2）', def: '快思考 vs 慢思考。把“直觉反应”和“深思熟虑”说成 S1/S2，学术圈最爱的降维打击式命名。'},
+    {term: 'Prompt Engineering', def: '调 prompt。说人话：跟模型说话的方式多试几遍，找最容易出好答案的说法。也被包装成一门学问，还出了各种“工程方法论”。'},
+    {term: 'Loop', def: '循环。说人话：模型生成→调工具→再生成，反复直到任务完成。AI 圈啥都要叫 loop，agent loop、feedback loop、training loop，显得高级。'},
+    {term: 'Context', def: '上下文。说人话：模型当前能看到的对话历史和背景。Context 长就是 token 贵，短就是模型忘事。搞不清时说“我 context 不够”就行了。'},
+    {term: 'Harness', def: 'Harness（框架/脚手架）。说人话：把模型、工具、数据包在一起跑的一坨代码。非叫 Harness，跟骑马套鞍似的，也不知道在套谁。'},
+    {term: 'Prompt vs Skill', def: '最好的 prompt 就是你的大脑：临场判断、上下文理解、随机应变。一旦某个流程固定下来、可以复用，它就变成了 skill。Prompt 是手动的，skill 是沉淀后的 prompt。'}
+  ];
+
   var SOURCE_BASE = (typeof window.__HERMES_SOURCE_BASE__ === 'string' && window.__HERMES_SOURCE_BASE__)
     ? window.__HERMES_SOURCE_BASE__
     : '';
@@ -65,12 +81,11 @@
       {name: 'User', x: 20, y: 90, w: 170, h: 640, color: '#d4c5a9'},
       {name: 'Gateway', x: 210, y: 90, w: 190, h: 640, color: '#e6c875'},
       {name: 'Agent', x: 420, y: 90, w: 460, h: 650, color: '#f4a68e'},
-      {name: 'Model', x: 20, y: 740, w: 1080, h: 160, color: '#8ab4e6'},
-      {name: 'Memory', x: 900, y: 90, w: 200, h: 640, color: '#8fc9a3'},
-      {name: 'HY Memory', x: 1120, y: 90, w: 200, h: 640, color: '#a8b8e6'},
+      {name: 'Model / Inference', x: 20, y: 740, w: 1240, h: 80, color: '#8ab4e6'},
+      {name: 'Training', x: 20, y: 830, w: 1000, h: 180, color: '#8ab4e6'},
+      {name: 'Memory', x: 900, y: 90, w: 420, h: 640, color: '#8fc9a3'},
       {name: 'Storage', x: 1340, y: 90, w: 200, h: 640, color: '#7dd3d8'},
-      {name: 'Hardware', x: 20, y: 900, w: 1080, h: 80, color: '#e6a875'},
-      {name: 'DC Infrastructure', x: 20, y: 980, w: 1080, h: 80, color: '#c4b28a'}
+      {name: 'Hardware', x: 20, y: 1020, w: 200, h: 80, color: '#e6a875'}
     ];
 
     var clusters = CLUSTERS.map(function (c, i) {
@@ -131,14 +146,38 @@
         y2 = b.y;
         var cliCorridorX = 410;
         d = 'M' + x1 + ',' + y1 + ' L' + cliCorridorX + ',' + y1 + ' L' + cliCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'LLM API' && c[1] === 'PostHook') {
-        // route above the tool-execution node so the line doesn't pass through it
+      } else if (c[0] === 'LLM API' && c[1] === 'Tokenizer') {
+        // LLM API -> Tokenizer: down out of the pipeline, then left above the inference cluster, then down into Tokenizer
+        x1 = a.x;
+        y1 = a.y + 17;
+        x2 = b.x;
+        y2 = b.y - 17;
+        var tokenizerCorridorY = 750;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + tokenizerCorridorY + ' L' + x2 + ',' + tokenizerCorridorY + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Output Head' && c[1] === 'LLM API') {
+        // Output Head -> LLM API: up, then left to below LLM API, then up into its bottom
         x1 = a.x;
         y1 = a.y - 17;
         x2 = b.x;
-        y2 = b.y - 17;
-        var corridorY = 650;
-        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + corridorY + ' L' + x2 + ',' + corridorY + ' L' + x2 + ',' + y2;
+        y2 = b.y + 17;
+        var outputCorridorY = 720;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + outputCorridorY + ' L' + x2 + ',' + outputCorridorY + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Turn Finalizer' && c[1] === '后台复盘') {
+        // Turn Finalizer -> 后台复盘: go up to Agent Init height, then right into 后台复盘
+        x1 = a.x;
+        y1 = a.y - 17;
+        x2 = b.x - 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Turn Finalizer' && ['Hermes CLI', 'API Server', 'Messaging Gateway', 'TUI Gateway'].indexOf(c[1]) >= 0) {
+        // Turn Finalizer -> gateways: exit upward, bend slightly above, go left to streaming-output x, then down
+        x1 = a.x;
+        y1 = a.y - 17;
+        x2 = b.x;
+        y2 = b.y;
+        var replyCorridorY = 120;
+        var replyCorridorX = 320;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + replyCorridorY + ' L' + replyCorridorX + ',' + replyCorridorY + ' L' + replyCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === '工具执行' && c[1] === '上下文压缩') {
         // Tool -> context compressor: straight up, then left (vertical-first L)
         x1 = a.x;
@@ -194,7 +233,7 @@
       );
     });
 
-    return h('svg', {className: 'eh-arch', viewBox: '0 0 1800 1080', width: '1800', height: '1080'},
+    return h('svg', {className: 'eh-arch', viewBox: '0 0 1800 1180', width: '1800', height: '1180'},
       h('defs', null,
         h('pattern', {id: 'eh-grid', width: 40, height: 40, patternUnits: 'userSpaceOnUse'},
           h('path', {d: 'M 40 0 L 0 0 0 40', fill: 'none', stroke: '#163b33', strokeWidth: 0.5, opacity: 0.4})
@@ -265,6 +304,7 @@
     var _b = hooks.useState(null), agentLoop = _b[0], setAgentLoop = _b[1];
     var _c = hooks.useState(null), arch = _c[0], setArch = _c[1];
     var _d = hooks.useState(null), detail = _d[0], setDetail = _d[1];
+    var _glossary = hooks.useState(false), glossaryOpen = _glossary[0], setGlossaryOpen = _glossary[1];
     var _e = hooks.useState(1), svgScale = _e[0], setSvgScale = _e[1];
     var _f = hooks.useState(0), posX = _f[0], setPosX = _f[1];
     var _g = hooks.useState(0), posY = _g[0], setPosY = _g[1];
@@ -275,7 +315,7 @@
     var posRef = hooks.useRef({x: 0, y: 0});
 
     var SVG_W = 1800;
-    var SVG_H = 1080;
+    var SVG_H = 1180;
 
     function fitToScreen() {
       if (!canvasRef.current) return;
@@ -425,7 +465,21 @@
         )
       ),
       // Canvas + detail
-      h('div', {ref: canvasRef, className: 'eh-canvas', onMouseDown: onMouseDown, onMouseMove: onMouseMove, onMouseUp: onMouseUp, onMouseLeave: onMouseLeave}, canvasChildren)
+      h('div', {ref: canvasRef, className: 'eh-canvas', onMouseDown: onMouseDown, onMouseMove: onMouseMove, onMouseUp: onMouseUp, onMouseLeave: onMouseLeave}, canvasChildren),
+      // Glossary
+      h('div', {className: 'eh-glossary' + (glossaryOpen ? ' eh-glossary-open' : ''), key: 'glossary'},
+        h('button', {className: 'eh-glossary-toggle', onClick: function () { setGlossaryOpen(!glossaryOpen); }}, glossaryOpen ? '收起术语表 ▲' : '展开术语表 ▼'),
+        h('div', {className: 'eh-glossary-content'},
+          h('div', {className: 'eh-glossary-grid'},
+            GLOSSARY.map(function (item, idx) {
+              return h('div', {className: 'eh-glossary-item', key: idx},
+                h('div', {className: 'eh-glossary-term'}, item.term),
+                h('div', {className: 'eh-glossary-def'}, item.def)
+              );
+            })
+          )
+        )
+      )
     );
   }
 
