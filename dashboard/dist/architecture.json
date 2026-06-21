@@ -195,7 +195,7 @@
       "x": 810,
       "y": 190,
       "group": "pipeline",
-      "desc": "在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。"
+      "desc": "在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。\n\n这是 Self-Improvement 吗？\n算一种，但它是系统层面的自我改进，不是改模型权重。它让 Agent 从对话中学习用户习惯、错误模式、有效流程，并沉淀成记忆或技能，下次对话就能用。\n\n和“Memory updated”有什么关系？\n用户看到的“Memory updated”通常就是这类机制的结果：系统从对话里提炼出事实/偏好，写进了长期记忆（通过 MemoryManager / HY Memory / 记忆文件）。\nHermes 里具体实现有两条路径：\n- 自动：后台复盘在每轮结束后触发，异步写入。\n- 显式：模型调用 memory / 记忆写入 工具，把重要信息写进记忆。"
     },
     "MemoryManager": {
       "file": "agent/memory_manager.py",
