@@ -257,13 +257,13 @@
         var replyCorridorY = 120;
         var replyCorridorX = 320;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + replyCorridorY + ' L' + replyCorridorX + ',' + replyCorridorY + ' L' + replyCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'sync_all' && c[1] === 'MemoryManager') {
-        // sync_all -> MemoryManager: right out, run under MemoryProvider, then up into MemoryManager
+      } else if (c[0] === '记忆同步' && c[1] === '外部记忆') {
+        // 记忆同步 -> 外部记忆: right out, then up into the external memory box
         x1 = a.x + 65;
         y1 = a.y;
         x2 = b.x - 65;
         y2 = b.y;
-        var syncCorridorX = 1000;
+        var syncCorridorX = 920;
         d = 'M' + x1 + ',' + y1 + ' L' + syncCorridorX + ',' + y1 + ' L' + syncCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === '工具执行' && c[1] === '上下文压缩') {
         // Tool -> context compressor: straight up, then left (vertical-first L)
@@ -272,24 +272,24 @@
         x2 = b.x + 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'MemoryProvider' && ['记忆检索', '记忆写入'].indexOf(c[1]) >= 0) {
-        // MemoryProvider -> Memory Tools: left corridor to avoid MemoryManager
+      } else if (c[0] === '外部记忆' && ['记忆检索', '记忆写入'].indexOf(c[1]) >= 0) {
+        // 外部记忆 -> Memory Tools: left corridor down into the tool surface
         x1 = a.x - 65;
         y1 = a.y;
         var leftCorridorX = 920;
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + leftCorridorX + ',' + y1 + ' L' + leftCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'MemoryProvider' && ['S1 / MemoryWriter', 'System 2 Writer'].indexOf(c[1]) >= 0) {
-        // MemoryProvider -> HY Memory components: right corridor down, then into the HY cluster
+      } else if (c[0] === '外部记忆' && ['S1 / MemoryWriter', 'System 2 Writer'].indexOf(c[1]) >= 0) {
+        // 外部记忆 -> HY Memory components: right corridor down, then into the HY cluster
         x1 = a.x + 65;
         y1 = a.y;
         var rightCorridorX = 1100;
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + rightCorridorX + ',' + y1 + ' L' + rightCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'MemoryProvider' && c[1] === 'cache.db') {
-        // MemoryProvider -> cache.db: right corridor down, then right into storage cluster
+      } else if (c[0] === '外部记忆' && c[1] === 'cache.db') {
+        // 外部记忆 -> cache.db: right corridor down, then right into storage cluster
         x1 = a.x + 65;
         y1 = a.y;
         var storageCorridorX = 1300;
@@ -319,6 +319,14 @@
         y2 = b.y;
         var initMemCorridorX = 820;
         d = 'M' + x1 + ',' + y1 + ' L' + initMemCorridorX + ',' + y1 + ' L' + initMemCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === '记忆预取' && c[1] === '外部记忆') {
+        // 记忆预取 -> 外部记忆: right out, then up into external memory
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        var prefetchCorridorX = 800;
+        d = 'M' + x1 + ',' + y1 + ' L' + prefetchCorridorX + ',' + y1 + ' L' + prefetchCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (x1 === x2 || y1 === y2) {
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else if (Math.abs(dx) > Math.abs(dy)) {

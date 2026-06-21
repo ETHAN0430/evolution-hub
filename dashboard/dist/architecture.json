@@ -131,7 +131,7 @@
       "x": 510,
       "y": 470,
       "group": "pipeline",
-      "desc": "MemoryManager.prefetch_all()：每次 LLM 调用前，把当前用户消息丢给已注册的外部 MemoryProvider，让它们各自 prefetch() 回相关记忆。\n本地 MEMORY.md / USER.md 不在每轮 prefetch，而是在 Agent Init 时作为 frozen snapshot 注入 system prompt。\n\n工程语义上和 PreHook 一样（都是在 LLM 调用前注入上下文），只是走了专用通道，不走 plugins 的 Hook 系统。"
+      "desc": "每轮 LLM 调用前，把当前用户消息发给外部记忆后端做语义召回，\n把相关上下文注入 system prompt。\n\n本地 MEMORY.md / USER.md 不在每轮 prefetch，而是在 Agent Init 时作为 frozen snapshot 注入 system prompt。"
     },
     "PreHook": {
       "file": "hermes_cli/plugins.py",
@@ -197,22 +197,6 @@
       "group": "pipeline",
       "desc": "在后台 fork 一个独立 agent 复盘本轮对话，把值得记住的东西写进本地记忆/技能存储，不会回流到当前主对话。\n\n具体流程：\n1. 触发：每轮 Turn 结束后，Turn Finalizer 调用 background_review，启动一个后台线程/子 agent。\n2. 读对话：后台 agent 从 Turn Finalizer 接收 `messages_snapshot`（内存里的本轮/会话 message 列表，不是 SQLite/JSON log）。\n3. 提炼：判断有没有值得沉淀的信息，如用户偏好、事实、可复用 skill/prompt 模式、之前犯的错误和正确做法。\n4. 写入：\n   - 本地记忆 → 调用内置 memory 工具写入 MEMORY.md / USER.md。\n   - 技能 → 调用 skill_manage 更新/创建 skill 文件。\n   外部 MemoryProvider 的同步由 Turn Finalizer 里的 sync_all 完成，不在后台复盘里重复写入。\n5. 不回流：后台复盘是异步的，写入结果不会插入当前对话。\n6. 下次生效：下轮对话 system prompt / skill 加载会召回相关内容。"
     },
-    "MemoryManager": {
-      "file": "agent/memory_manager.py",
-      "loc": "MemoryManager",
-      "x": 1020,
-      "y": 220,
-      "group": "memory",
-      "desc": "外部记忆 Provider 的调度中心。\n\n每个 AIAgent 实例最多同时挂载一个外部 MemoryProvider（由 config.yaml 里的 memory.provider 决定）。\n- 对话前：调用 MemoryManager.prefetch_all() 从外部 Provider 召回相关上下文。\n- 对话后：通过 sync_all() / queue_prefetch_all() 把本轮结果同步给外部 Provider。\n- 工具调用：把 Provider 暴露的工具 schema 注入模型可用工具集，并把模型发起的工具调用路由给 Provider.handle_tool_call()。\n\n本地的 MEMORY.md / USER.md（memory_tool）不经过 MemoryManager，直接走 tools registry。"
-    },
-    "MemoryProvider": {
-      "file": "agent/memory_provider.py",
-      "loc": "MemoryProvider",
-      "x": 1020,
-      "y": 140,
-      "group": "memory",
-      "desc": "外部记忆服务的标准接口（抽象基类）。\n\nMemoryManager 只认这个接口；具体实现通常是 HY Memory、Honcho、Mem0 等插件。\n三种调用通道都落在同一个 MemoryProvider 上：\n- 自动检索：prefetch(query)，每次 LLM 调用前由系统触发（对应图上的 记忆预取）。\n- 自动写入：sync_turn(user, asst)，每轮结束后由系统触发（对应 Turn Finalizer 里的 sync_all）。\n- 显式工具：get_tool_schemas() / handle_tool_call()，模型主动说“帮我记住/搜一下”时调用（对应 Memory Tools cluster）。\n\n注意：内置的 memory_tool（MEMORY.md / USER.md）不是 MemoryProvider，它通过 tools registry 直接注册。"
-    },
     "记忆文件": {
       "file": "tools/memory_tool.py",
       "loc": "MemoryStore",
@@ -243,7 +227,7 @@
       "x": 940,
       "y": 300,
       "group": "hy",
-      "desc": "HY Memory 暴露给模型的语义搜索工具（hy_memory/coding/curator/tools.py 里的 search_memory）。\n\n模型显式调用后，请求经 MemoryManager.handle_tool_call() 路由到 HY Memory Provider，对 Vector DB 做语义召回。\n返回的是相关记忆的 metadata；如需完整内容还要再 read。\n\n注意：这不是本地 memory_tool；本地记忆没有 search 动作，靠 system prompt 里的 frozen snapshot 直接提供。"
+      "desc": "外部记忆后端暴露给模型的语义搜索工具。\n\n模型显式调用后，外部记忆后端对 Vector DB 做语义召回，返回相关记忆的 metadata；\n如需完整内容还要再 read。"
     },
     "记忆写入": {
       "file": "hy_memory/coding/curator/tools.py",
@@ -251,7 +235,7 @@
       "x": 940,
       "y": 360,
       "group": "hy",
-      "desc": "HY Memory 暴露给模型的写入工具（hy_memory/coding/curator/tools.py 里的 create_memory）。\n\n模型显式调用后，请求经 MemoryManager.handle_tool_call() 路由到 HY Memory Provider，用于新增/更新记忆。\n写入内容会进入 HY Memory 的 L1_RAW / L2_FACT / L3_SUMMARY / L4_IDENTITY 等层级，并最终落地到 Vector DB 或 Graph DB。\n\n注意：这不是本地 memory_tool；本地记忆走 tools/memory_tool.py 的 memory(action=add/replace/remove)。"
+      "desc": "外部记忆后端暴露给模型的写入工具。\n\n模型显式调用后，外部记忆后端把新记忆写入 Vector DB 或 Graph DB。"
     },
     "Vector DB": {
       "file": "hy_memory/data/vector_store_chroma.py",
@@ -397,12 +381,6 @@
       "group": "hy",
       "desc": "审计记忆完整性，发现缺失的关键信息。"
     },
-    "sync_all": {
-      "x": 810,
-      "y": 300,
-      "group": "pipeline",
-      "desc": "Turn Finalizer 内部调用的外部记忆同步动作。\n\n在 `finalize_turn()` 末尾，通过 `agent._sync_external_memory_for_turn()` 触发：\n1. 调用 MemoryManager.sync_all()，把本轮用户消息和助手回复同步给已注册的外部 MemoryProvider。\n2. 调用 MemoryManager.queue_prefetch_all()，让外部 Provider 提前为下一轮做召回预热。\n\n只有非中断、且存在最终回复和用户消息时才会执行。"
-    },
     "memory": {
       "file": "tools/memory_tool.py",
       "loc": "memory_tool",
@@ -410,6 +388,18 @@
       "y": 520,
       "group": "memory",
       "desc": "Hermes 内置记忆工具（tools/memory_tool.py）。\n\n模型可显式调用：memory(action=add|replace|remove, target=memory|user, content=..., old_text=...)。\n也支持 batch operations：operations=[{action, content?, old_text?}, ...]。\n\n作用对象：\n- target=memory：写入 MEMORY.md，保存环境事实、项目约定、工具 quirks 等。\n- target=user：写入 USER.md，保存用户偏好、身份、沟通风格等。\n\n后台复盘（background review）也会调用此工具把提炼出的用户画像/偏好落盘。"
+    },
+    "记忆同步": {
+      "x": 810,
+      "y": 300,
+      "group": "pipeline",
+      "desc": "Turn Finalizer 内部调用的外部记忆同步动作。\n\n在 `finalize_turn()` 末尾触发：把本轮用户消息和助手回复写入外部记忆后端，\n并发起下一轮 prefetch 预热。\n\n注意：虽然源码方法叫 sync_all，但 Hermes 同一时间只允许激活一个外部记忆后端，\n所以这里的 \"all\" 实际上是\"当前已注册的那个外部后端\"。"
+    },
+    "外部记忆": {
+      "x": 1020,
+      "y": 180,
+      "group": "memory",
+      "desc": "外部记忆后端的数据入口（如 HY Memory、Honcho、Mem0 等）。\n\n接收两类输入：\n- 自动检索：每轮 LLM 调用前，由 记忆预取 把用户消息发过来做语义召回。\n- 自动写入：每轮结束后，由 记忆同步 把本轮（用户消息，助手回复）同步进来。\n- 显式工具：模型通过 记忆检索 / 记忆写入 等工具主动查询或修改记忆。\n\n数据落地：写入 Vector DB（语义向量）、Graph DB（概念关系）、cache.db（运行缓存）。\nHermes 同一时间只激活一个外部记忆后端。"
     }
   },
   "CONNECTIONS": [
@@ -500,11 +490,6 @@
       "PreHook"
     ],
     [
-      "记忆预取",
-      "MemoryManager",
-      "dashed"
-    ],
-    [
       "PreHook",
       "上下文压缩"
     ],
@@ -525,14 +510,6 @@
       "Turn Finalizer",
       "后台复盘",
       "dashed"
-    ],
-    [
-      "后台复盘",
-      "MemoryManager"
-    ],
-    [
-      "MemoryManager",
-      "MemoryProvider"
     ],
     [
       "S1 / MemoryWriter",
@@ -704,26 +681,6 @@
       "dashed"
     ],
     [
-      "MemoryProvider",
-      "S1 / MemoryWriter"
-    ],
-    [
-      "MemoryProvider",
-      "System 2 Writer"
-    ],
-    [
-      "MemoryProvider",
-      "记忆检索"
-    ],
-    [
-      "MemoryProvider",
-      "记忆写入"
-    ],
-    [
-      "MemoryProvider",
-      "cache.db"
-    ],
-    [
       "System 2 Writer",
       "Schema 归纳"
     ],
@@ -744,13 +701,8 @@
       "Graph DB"
     ],
     [
-      "sync_all",
-      "MemoryManager",
-      "dashed"
-    ],
-    [
       "Turn Finalizer",
-      "sync_all"
+      "记忆同步"
     ],
     [
       "工具执行",
@@ -770,6 +722,36 @@
       "Agent Init",
       "记忆文件",
       "dashed"
+    ],
+    [
+      "记忆预取",
+      "外部记忆",
+      "dashed"
+    ],
+    [
+      "记忆同步",
+      "外部记忆",
+      "dashed"
+    ],
+    [
+      "外部记忆",
+      "记忆检索"
+    ],
+    [
+      "外部记忆",
+      "记忆写入"
+    ],
+    [
+      "外部记忆",
+      "S1 / MemoryWriter"
+    ],
+    [
+      "外部记忆",
+      "System 2 Writer"
+    ],
+    [
+      "外部记忆",
+      "cache.db"
     ]
   ]
 }
