@@ -327,7 +327,7 @@
       "x": 1380,
       "y": 300,
       "group": "hy",
-      "desc": "异步深度加工层（System 2 Writer）。\n\n它不是被 S1 直接调用的，而是作为后台异步任务运行：当 Vector DB 里积累了足够的 L0/L1/L2/L4 记忆后，由定时任务或触发条件唤醒，做更重的结构化处理：\n- Schema 归纳：提炼概念、心智模型 → L6_SCHEMA\n- 意图识别：提取前瞻意图 → L7_INTENTION\n- 约束标注：标注禁忌、偏好边界\n- 知识缺口扫描：审计记忆完整性\n\n产出写入 Graph DB（概念和关系）。"
+      "desc": "异步深度加工层（System 2 Writer）。\n\n它不是被 S1 直接调用的，而是作为后台异步任务运行。它直接从 Vector DB 读取已有的 L0_BASIC_INFO、L2_FACT、L4_IDENTITY 等记忆，用 LLM 做更重的归纳，产出：\n- Schema 归纳：提炼概念、心智模型 → L6_SCHEMA\n- 意图识别：提取前瞻意图 → L7_INTENTION\n- 约束标注：标注禁忌、偏好边界\n- 知识缺口扫描：审计记忆完整性\n\n产出写入 Graph DB（概念和关系）。"
     },
     "记忆同步": {
       "x": 810,
@@ -375,7 +375,7 @@
       "x": 1040,
       "y": 300,
       "group": "hy",
-      "desc": "基础画像层。用户的姓名、年龄、职业等硬信息，通常由 basic profile 工具提取并维护。"
+      "desc": "基础画像层。用户的姓名、年龄、职业、常用环境等硬信息。\n\n由 S1 / MemoryWriter 里的 basic profile 提取模块维护：每轮同步时扫描用户消息，用规则/LLM 判断有没有新的或冲突的基础信息，如果有就更新 L0。更新频率低，不是每轮都写。"
     },
     "L5_KNOWLEDGE": {
       "x": 1200,
@@ -770,6 +770,11 @@
     [
       "后台复盘",
       "skill_manage",
+      "dashed"
+    ],
+    [
+      "Vector DB",
+      "System 2 Writer",
       "dashed"
     ]
   ]

@@ -307,6 +307,14 @@
         y2 = b.y;
         var prefetchEmbedCorridorX = 1100;
         d = 'M' + x1 + ',' + y1 + ' L' + prefetchEmbedCorridorX + ',' + y1 + ' L' + prefetchEmbedCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Vector DB' && c[1] === 'System 2 Writer') {
+        // Vector DB -> System 2 Writer: read existing memories for async schema/intention induction
+        x1 = a.x;
+        y1 = a.y - 17;
+        x2 = b.x + 65;
+        y2 = b.y;
+        var system2ReadCorridorY = 260;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + system2ReadCorridorY + ' L' + x2 + ',' + system2ReadCorridorY + ' L' + x2 + ',' + y2;
       } else if (x1 === x2 || y1 === y2) {
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else if (Math.abs(dx) > Math.abs(dy)) {
