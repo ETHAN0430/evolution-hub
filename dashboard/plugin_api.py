@@ -363,25 +363,176 @@ def api_timeline():
     }
 
 
+def _first_text(obj: Any, max_depth: int = 3) -> str:
+    if max_depth <= 0:
+        return ""
+    if isinstance(obj, str):
+        return obj
+    if isinstance(obj, list):
+        for item in obj:
+            s = _first_text(item, max_depth - 1)
+            if s:
+                return s
+    if isinstance(obj, dict):
+        for v in obj.values():
+            s = _first_text(v, max_depth - 1)
+            if s:
+                return s
+    return ""
+
+
+def _extract_summary(parsed: Any, keys: list[str]) -> str:
+    if not isinstance(parsed, dict):
+        return ""
+    for k in keys:
+        v = parsed.get(k)
+        if v is None:
+            continue
+        if isinstance(v, str):
+            return v
+        if isinstance(v, (list, dict)):
+            s = _first_text(v)
+            if s:
+                return s
+    return _first_text(parsed)
+
+
+def _format_iso_time(ts: Any) -> str:
+    if not ts:
+        return ""
+    s = str(ts)[:19]
+    return s.replace(" ", "T")
+
+
 @router.get("/api/memory-feed")
 @cached(ttl=5)
 def api_memory_feed():
-    """Recent L0~L7 memory operations grouped by layer."""
+    """Recent L0~L7 memory operations from multiple sources."""
     layers = ["l1_raw", "l2_fact", "l3_summary", "l4_identity", "l5_knowledge", "l6_schema", "l7_intention"]
-    rows = _query_db(
-        "SELECT created_at, layer, op, content FROM memory_operations "
-        "ORDER BY created_at DESC LIMIT 20"
-    )
     recent = []
+
+    # L1_raw: S1_L1_UPSERT in pipeline_logs
+    rows = _query_db(
+        "SELECT created_at, parsed FROM pipeline_logs "
+        "WHERE step='S1_L1_UPSERT' ORDER BY created_at DESC LIMIT 10"
+    )
     for r in rows:
-        content = r[3] or ""
+        recent.append({
+            "time": _format_iso_time(r[0]),
+            "layer": "l1_raw",
+            "op": "UPSERT",
+            "summary": "写入 L1_RAW",
+        })
+
+    # L2_fact: memory_operations
+    rows = _query_db(
+        "SELECT created_at, op, content FROM memory_operations "
+        "WHERE layer='l2_fact' ORDER BY created_at DESC LIMIT 10"
+    )
+    for r in rows:
+        content = r[2] or ""
         summary = content[:60] + "..." if len(content) > 60 else content
         recent.append({
-            "time": r[0][:19] if r[0] else "",
-            "layer": (r[1] or "").lower(),
-            "op": r[2] or "",
+            "time": _format_iso_time(r[0]),
+            "layer": "l2_fact",
+            "op": r[1] or "",
             "summary": summary,
         })
+
+    # L3_summary: SUMMARY / DIGEST_SUMMARY in pipeline_logs
+    rows = _query_db(
+        "SELECT created_at, parsed FROM pipeline_logs "
+        "WHERE step IN ('SUMMARY','DIGEST_SUMMARY') ORDER BY created_at DESC LIMIT 10"
+    )
+    for r in rows:
+        parsed = {}
+        try:
+            if r[1]:
+                parsed = json.loads(r[1])
+        except Exception:
+            parsed = {}
+        summary = _extract_summary(parsed, ["summary"])
+        if len(summary) > 60:
+            summary = summary[:60] + "..."
+        recent.append({
+            "time": _format_iso_time(r[0]),
+            "layer": "l3_summary",
+            "op": "SUMMARY",
+            "summary": summary or "生成摘要",
+        })
+
+    # L4_identity: memory_operations
+    rows = _query_db(
+        "SELECT created_at, op, content FROM memory_operations "
+        "WHERE layer='l4_identity' ORDER BY created_at DESC LIMIT 10"
+    )
+    for r in rows:
+        content = r[2] or ""
+        summary = content[:60] + "..." if len(content) > 60 else content
+        recent.append({
+            "time": _format_iso_time(r[0]),
+            "layer": "l4_identity",
+            "op": r[1] or "",
+            "summary": summary,
+        })
+
+    # L5_knowledge: RECONCILE in pipeline_logs
+    rows = _query_db(
+        "SELECT created_at, parsed FROM pipeline_logs "
+        "WHERE step='RECONCILE' ORDER BY created_at DESC LIMIT 10"
+    )
+    for r in rows:
+        parsed = {}
+        try:
+            if r[1]:
+                parsed = json.loads(r[1])
+        except Exception:
+            parsed = {}
+        summary = _extract_summary(parsed, ["knowledge", "content", "summary", "result"])
+        if len(summary) > 60:
+            summary = summary[:60] + "..."
+        recent.append({
+            "time": _format_iso_time(r[0]),
+            "layer": "l5_knowledge",
+            "op": "RECONCILE",
+            "summary": summary or "知识层调和",
+        })
+
+    # L6_schema & L7_intention: SYSTEM2_AGENT in pipeline_logs
+    rows = _query_db(
+        "SELECT created_at, parsed FROM pipeline_logs "
+        "WHERE step='SYSTEM2_AGENT' ORDER BY created_at DESC LIMIT 20"
+    )
+    for r in rows:
+        parsed = {}
+        try:
+            if r[1]:
+                parsed = json.loads(r[1])
+        except Exception:
+            parsed = {}
+        schema_summary = _extract_summary(parsed, ["schema", "concept", "concepts", "name", "title"])
+        intention_summary = _extract_summary(parsed, ["intention", "intentions", "goal", "goals"])
+        if schema_summary:
+            if len(schema_summary) > 60:
+                schema_summary = schema_summary[:60] + "..."
+            recent.append({
+                "time": _format_iso_time(r[0]),
+                "layer": "l6_schema",
+                "op": "SYSTEM2",
+                "summary": schema_summary,
+            })
+        if intention_summary:
+            if len(intention_summary) > 60:
+                intention_summary = intention_summary[:60] + "..."
+            recent.append({
+                "time": _format_iso_time(r[0]),
+                "layer": "l7_intention",
+                "op": "SYSTEM2",
+                "summary": intention_summary,
+            })
+
+    recent.sort(key=lambda x: x["time"], reverse=True)
+    recent = recent[:20]
     return {"recent": recent, "layers": layers, "error": None}
 
 
@@ -391,7 +542,7 @@ def api_prefetch_feed():
     """Recent prefetch queries and hit counts from pipeline_logs."""
     rows = _query_db(
         "SELECT created_at, step, prompt, parsed FROM pipeline_logs "
-        "WHERE step LIKE 'READ_%' ORDER BY created_at DESC LIMIT 10"
+        "WHERE step IN ('READ_REQUEST','READ_SUMMARY') ORDER BY created_at DESC LIMIT 10"
     )
     recent = []
     for r in rows:
@@ -407,18 +558,18 @@ def api_prefetch_feed():
         hits = parsed.get("total_found", 0) if isinstance(parsed, dict) else 0
         reader = parsed.get("reader", "legacy") if isinstance(parsed, dict) else "legacy"
         recent.append({
-            "time": r[0][:19] if r[0] else "",
+            "time": _format_iso_time(r[0]),
             "query": query,
             "hits": hits,
             "reader": reader,
         })
 
     total_1h = _query_db(
-        "SELECT COUNT(*) FROM pipeline_logs WHERE step LIKE 'READ_%' "
+        "SELECT COUNT(*) FROM pipeline_logs WHERE step IN ('READ_REQUEST','READ_SUMMARY') "
         "AND created_at > datetime('now','-1 hour')"
     )
     total_today = _query_db(
-        "SELECT COUNT(*) FROM pipeline_logs WHERE step LIKE 'READ_%' "
+        "SELECT COUNT(*) FROM pipeline_logs WHERE step IN ('READ_REQUEST','READ_SUMMARY') "
         "AND created_at > date('now')"
     )
     return {
