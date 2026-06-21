@@ -105,10 +105,10 @@
       {name: 'Model / Reasoning', x: 20, y: 760, w: 1340, h: 110, color: '#8ab4e6'},
       {name: 'Model / Training', x: 20, y: 890, w: 1100, h: 220, color: '#8ab4e6'},
       {name: 'Distillation', x: 720, y: 930, w: 320, h: 140, color: '#7aa4d6'},
-      {name: 'Memory', x: 900, y: 90, w: 460, h: 670, color: '#8fc9a3'},
-      {name: 'Memory Tools', x: 900, y: 480, w: 160, h: 220, color: '#8fc9a3'},
-      {name: 'Local Memory', x: 900, y: 680, w: 160, h: 80, color: '#8fc9a3'},
-      {name: 'HY Memory', x: 1060, y: 300, w: 300, h: 320, color: '#a8b8e6'},
+      {name: 'Memory', x: 890, y: 80, w: 440, h: 700, color: '#8fc9a3'},
+      {name: 'Memory Tools', x: 900, y: 240, w: 140, h: 240, color: '#8fc9a3'},
+      {name: 'Local Memory', x: 900, y: 500, w: 140, h: 200, color: '#8fc9a3'},
+      {name: 'HY Memory', x: 1100, y: 260, w: 220, h: 400, color: '#a8b8e6'},
       {name: 'Storage', x: 1340, y: 90, w: 200, h: 640, color: '#7dd3d8'},
 
     ];
@@ -229,7 +229,7 @@
         // 记忆检索 -> Vector DB: right corridor down, then right into storage cluster
         x1 = a.x + 65;
         y1 = a.y;
-        var retrievalCorridorX = 1185;
+        var retrievalCorridorX = 1100;
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + retrievalCorridorX + ',' + y1 + ' L' + retrievalCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
@@ -272,11 +272,11 @@
         x2 = b.x + 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'MemoryProvider' && ['记忆检索', '记忆写入', '记忆文件'].indexOf(c[1]) >= 0) {
-        // MemoryProvider -> left-side Memory Tools / Local Memory: left corridor to avoid MemoryManager
+      } else if (c[0] === 'MemoryProvider' && ['记忆检索', '记忆写入'].indexOf(c[1]) >= 0) {
+        // MemoryProvider -> Memory Tools: left corridor to avoid MemoryManager
         x1 = a.x - 65;
         y1 = a.y;
-        var leftCorridorX = 1030;
+        var leftCorridorX = 920;
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + leftCorridorX + ',' + y1 + ' L' + leftCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
@@ -284,7 +284,7 @@
         // MemoryProvider -> HY Memory components: right corridor down, then into the HY cluster
         x1 = a.x + 65;
         y1 = a.y;
-        var rightCorridorX = 1190;
+        var rightCorridorX = 1100;
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + rightCorridorX + ',' + y1 + ' L' + rightCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
@@ -296,6 +296,29 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + storageCorridorX + ',' + y1 + ' L' + storageCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === '工具执行' && c[1] === 'memory') {
+        // Tool executor -> built-in memory tool: right then up into Local Memory cluster
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        var toolMemCorridorX = 800;
+        d = 'M' + x1 + ',' + y1 + ' L' + toolMemCorridorX + ',' + y1 + ' L' + toolMemCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === '后台复盘' && c[1] === 'memory') {
+        // Background review -> built-in memory tool: straight down into Local Memory cluster
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Agent Init' && c[1] === '记忆文件') {
+        // Agent Init -> Local Memory store: load MEMORY.md / USER.md at startup
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        var initMemCorridorX = 820;
+        d = 'M' + x1 + ',' + y1 + ' L' + initMemCorridorX + ',' + y1 + ' L' + initMemCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (x1 === x2 || y1 === y2) {
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else if (Math.abs(dx) > Math.abs(dy)) {
