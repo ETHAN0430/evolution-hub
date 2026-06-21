@@ -105,11 +105,12 @@
       {name: 'Model / Reasoning', x: 20, y: 760, w: 1340, h: 110, color: '#8ab4e6'},
       {name: 'Model / Training', x: 20, y: 890, w: 1100, h: 220, color: '#8ab4e6'},
       {name: 'Distillation', x: 720, y: 930, w: 320, h: 140, color: '#7aa4d6'},
-      {name: 'Memory', x: 890, y: 80, w: 440, h: 700, color: '#8fc9a3'},
-      {name: 'Memory Tools', x: 900, y: 240, w: 140, h: 240, color: '#8fc9a3'},
-      {name: 'Local Memory', x: 900, y: 500, w: 140, h: 200, color: '#8fc9a3'},
+      {name: 'Memory', x: 890, y: 80, w: 710, h: 700, color: '#8fc9a3'},
+      {name: 'Memory Tools', x: 900, y: 150, w: 140, h: 330, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1100, y: 260, w: 220, h: 400, color: '#a8b8e6'},
-      {name: 'Storage', x: 1340, y: 90, w: 200, h: 640, color: '#7dd3d8'},
+      {name: 'Memory Layers', x: 1340, y: 260, w: 160, h: 320, color: '#a8b8e6'},
+      {name: 'Retrieval', x: 1500, y: 500, w: 100, h: 220, color: '#7dd3d8'},
+      {name: 'Storage', x: 1600, y: 90, w: 200, h: 640, color: '#7dd3d8'},
 
     ];
 
@@ -218,21 +219,6 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'Post-Training' && c[1] === '微调') {
-        // Post-Training -> 微调: straight horizontal on the same row
-        x1 = a.x + 65;
-        y1 = a.y;
-        x2 = b.x - 65;
-        y2 = b.y;
-        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === '记忆检索' && c[1] === 'Vector DB') {
-        // 记忆检索 -> Vector DB: right corridor down, then right into storage cluster
-        x1 = a.x + 65;
-        y1 = a.y;
-        var retrievalCorridorX = 1100;
-        x2 = b.x - 65;
-        y2 = b.y;
-        d = 'M' + x1 + ',' + y1 + ' L' + retrievalCorridorX + ',' + y1 + ' L' + retrievalCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'Vector DB' && c[1] === 'RAG') {
         // Vector DB -> RAG: left out, then down into RAG from the right
         x1 = a.x - 65;
@@ -297,20 +283,28 @@
         var toolMemCorridorX = 800;
         d = 'M' + x1 + ',' + y1 + ' L' + toolMemCorridorX + ',' + y1 + ' L' + toolMemCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === '后台复盘' && c[1] === 'memory') {
-        // Background review -> built-in memory tool: straight down into Local Memory cluster
+        // Background review -> built-in memory tool: horizontal into the memory tool surface
         x1 = a.x + 65;
         y1 = a.y;
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'Agent Init' && c[1] === '记忆文件') {
-        // Agent Init -> Local Memory store: load MEMORY.md / USER.md at startup
+      } else if (c[0] === 'memory' && c[1] === '记忆文件') {
+        // memory tool -> local memory file: stay above the external-memory surface
         x1 = a.x + 65;
         y1 = a.y;
         x2 = b.x - 65;
         y2 = b.y;
-        var initMemCorridorX = 820;
-        d = 'M' + x1 + ',' + y1 + ' L' + initMemCorridorX + ',' + y1 + ' L' + initMemCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+        var memFileCorridorY = 120;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + memFileCorridorY + ' L' + x2 + ',' + memFileCorridorY + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Agent Init' && c[1] === '记忆文件') {
+        // Agent Init -> local memory file: up to top corridor, across to Storage, then down
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        var initMemCorridorY = 120;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + initMemCorridorY + ' L' + x2 + ',' + initMemCorridorY + ' L' + x2 + ',' + y2;
       } else if (c[0] === '记忆预取' && c[1] === '外部记忆') {
         // 记忆预取 -> 外部记忆: right out, then up into external memory
         x1 = a.x + 65;
@@ -319,22 +313,36 @@
         y2 = b.y;
         var prefetchCorridorX = 800;
         d = 'M' + x1 + ',' + y1 + ' L' + prefetchCorridorX + ',' + y1 + ' L' + prefetchCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'MemAgent' && ['L2_FACT', 'L3_SUMMARY', 'L4_IDENTITY'].indexOf(c[1]) >= 0) {
-        // MemAgent -> layer nodes: drop to a shared horizontal, then fan out
+      } else if (c[0] === 'MemAgent' && ['L2_FACT', 'L3_SUMMARY', 'L4_IDENTITY', 'L5_KNOWLEDGE'].indexOf(c[1]) >= 0) {
+        // MemAgent -> layer nodes: shared horizontal at MemAgent level, then fan out
         x1 = a.x;
         y1 = a.y + 17;
         x2 = b.x;
         y2 = b.y - 17;
-        var fanY = 410;
+        var fanY = 380;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + fanY + ' L' + x2 + ',' + fanY + ' L' + x2 + ',' + y2;
       } else if (c[0] === '记忆检索' && c[1] === 'Embed Service') {
-        // 记忆检索 -> Embed Service: right corridor down to storage cluster
+        // 记忆检索 -> Embed Service: right corridor down to retrieval cluster
         x1 = a.x + 65;
         y1 = a.y;
         x2 = b.x - 65;
         y2 = b.y;
         var embedCorridorX = 1100;
         d = 'M' + x1 + ',' + y1 + ' L' + embedCorridorX + ',' + y1 + ' L' + embedCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'S1 / MemoryWriter' && c[1] === 'L1_RAW') {
+        // S1 -> L1_RAW: drop down then right to avoid System 2 Writer
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'ANN 检索' && c[1] === 'Vector DB') {
+        // ANN 检索 -> Vector DB: right then up
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else if (x1 === x2 || y1 === y2) {
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else if (Math.abs(dx) > Math.abs(dy)) {

@@ -200,9 +200,9 @@
     "记忆文件": {
       "file": "tools/memory_tool.py",
       "loc": "MemoryStore",
-      "x": 940,
-      "y": 600,
-      "group": "memory",
+      "x": 1700,
+      "y": 190,
+      "group": "storage",
       "desc": "本地文件记忆实现（tools/memory_tool.py 里的 MemoryStore）。\n\n管理两个文件：MEMORY.md（agent 的笔记）和 USER.md（用户画像）。\n在 Agent Init 时从磁盘加载为 frozen snapshot 并注入 system prompt；会话期间 mid-session 写入会立即落盘，但下轮 session 才刷新 snapshot。\n\n它不是 MemoryProvider，不经过 MemoryManager；而是通过 tools registry 注册为 `memory` 工具，供模型和后台复盘显式调用。"
     },
     "MemAgent": {
@@ -240,7 +240,7 @@
     "Vector DB": {
       "file": "hy_memory/data/vector_store_chroma.py",
       "loc": "ChromaVectorStore",
-      "x": 1440,
+      "x": 1700,
       "y": 620,
       "group": "storage",
       "desc": "向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。\n\n每个节点同时保存两部分：embedding 向量（用于 ANN 语义召回）和原文 payload（如 content、layer、tags 等，用于返回人类可读内容）。"
@@ -248,7 +248,7 @@
     "Graph DB": {
       "file": "hy_memory/data/graph_store_kuzu.py",
       "loc": "KuzuGraphStore",
-      "x": 1440,
+      "x": 1700,
       "y": 720,
       "group": "storage",
       "desc": "图数据库。像知识图谱一样保存概念、主题和它们之间的关系。"
@@ -256,7 +256,7 @@
     "SQLite Session": {
       "file": "hermes_state.py",
       "loc": "SessionDB",
-      "x": 1440,
+      "x": 1700,
       "y": 650,
       "group": "storage",
       "desc": "本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。"
@@ -283,7 +283,7 @@
       "x": 450,
       "y": 970,
       "group": "provider",
-      "desc": "一句话：在预训练之后继续训练，让模型更听话、更安全、更符合人类偏好。\n\n例子：用高质量问答对教模型按指令回答；用人类偏好数据让模型学会“哪种回答更好”。\n\n主要方法：\n- SFT（监督微调）：用 (prompt, answer) pair 训练，让模型学会对话格式。\n- RLHF：训练奖励模型判断回答好坏，再用 PPO 等强化学习优化。\n- DPO：直接用偏好 pair 数据优化，不需要奖励模型。\n\n后训练的目标是让模型从“会续写文本”变成“会按指令 helpful 地回答”。终点是 Model Weights。\n\n注意：Post-Training 继续使用 Pre-training 阶段固定好的 Tokenizer，不会重新训练它。只有扩展词表时才需要重新训练或初始化新 token 的 Embedding。"
+      "desc": "一句话：在预训练之后继续训练，让模型更听话、更安全、更符合人类偏好。\n\n主要包括：\n- SFT（监督微调 / fine-tuning）：用 (prompt, answer) pair 训练，让模型学会对话格式。\n- RLHF：训练奖励模型判断回答好坏，再用 PPO 等强化学习优化。\n- DPO：直接用偏好 pair 数据优化，不需要奖励模型。\n\n后训练的目标是让模型从“会续写文本”变成“会按指令 helpful 地回答”。终点是 Model Weights。\n\n注意：后训练继续使用 Pre-training 阶段固定好的 Tokenizer，不会重新训练它。只有扩展词表时才需要重新训练或初始化新 token 的 Embedding。"
     },
     "KV Cache": {
       "x": 560,
@@ -321,12 +321,6 @@
       "group": "provider",
       "desc": "蒸馏里的学习者。用 Teacher 生成的输出当监督信号训练，参数量通常更小、推理更快。\n\nStudent 只需要自己的 tokenizer：把 Teacher 生成的文本重新切成 token，再按 next-token prediction 学习。训练完成后它的 weights 就是 Model Weights 的一部分。"
     },
-    "微调": {
-      "x": 650,
-      "y": 970,
-      "group": "provider",
-      "desc": "一句话：在预训练好的模型基础上，用自己的小批量高质量数据继续训练，让模型更懂你、输出更稳定。\n\n例子：把公司客服对话和售后文档整理成 prompt-response 对，训练后模型回答退换货问题时，会自动引用你们的政策术语和流程。\n\n后训练包括哪些？\n- SFT（监督微调）：用 (prompt, answer) 对训练，让模型学会对话格式和任务模式。\n- RLHF：训练奖励模型判断回答好坏，再用 PPO 等强化学习优化。\n- DPO：直接用“好回答 vs 坏回答”的偏好对训练，省去奖励模型。\n\n成本大概多少？\n- 7B-13B 模型：几百到几千美元（用 LoRA/QLoRA 还能更便宜）。\n- 30B-70B 模型：几千到几万美元。\n- 100B-400B+：几十万到上百万美元。\n数据清洗、人工标注、反复试错的成本，往往比纯算力还贵。\n\n和 RAG 怎么选？\n- 微调：让模型“内化”知识、格式、风格；适合高频、固定模式场景。\n- RAG：外挂可变的知识库；适合知识常更新、需要给出来源的场景。\n- 实际业务里两者常一起用：微调保证风格和格式，RAG 补充最新事实。"
-    },
     "RAG": {
       "x": 1280,
       "y": 840,
@@ -349,37 +343,13 @@
       "group": "hy",
       "desc": "异步深度加工层（System 2 Writer）。\n\n从已有的 L0/L1/L2/L4 记忆层出发，做更重的结构化处理：\n- Schema 归纳：提炼概念、心智模型 → L6_SCHEMA\n- 意图识别：提取前瞻意图 → L7_INTENTION\n- 约束标注：标注禁忌、偏好边界\n- 知识缺口扫描：审计记忆完整性\n\n这是异步路径：不一定每轮都跑，跑的时候生成/更新 Graph DB 里的概念和关系。"
     },
-    "Schema 归纳": {
-      "x": 1320,
-      "y": 320,
-      "group": "hy",
-      "desc": "从 L0-L4 记忆中归纳概念和心智模型，生成 L6_SCHEMA。"
-    },
-    "意图识别": {
-      "x": 1320,
-      "y": 380,
-      "group": "hy",
-      "desc": "提取用户的前瞻意图和目标，生成 L7_INTENTION。"
-    },
-    "约束标注": {
-      "x": 1320,
-      "y": 440,
-      "group": "hy",
-      "desc": "标注用户的禁忌、偏好边界和约束条件。"
-    },
-    "知识缺口": {
-      "x": 1320,
-      "y": 500,
-      "group": "hy",
-      "desc": "审计记忆完整性，发现缺失的关键信息。"
-    },
     "memory": {
       "file": "tools/memory_tool.py",
       "loc": "memory_tool",
-      "x": 940,
-      "y": 520,
+      "x": 980,
+      "y": 190,
       "group": "memory",
-      "desc": "Hermes 内置记忆工具（tools/memory_tool.py）。\n\n模型可显式调用：memory(action=add|replace|remove, target=memory|user, content=..., old_text=...)。\n也支持 batch operations：operations=[{action, content?, old_text?}, ...]。\n\n作用对象：\n- target=memory：写入 MEMORY.md，保存环境事实、项目约定、工具 quirks 等。\n- target=user：写入 USER.md，保存用户偏好、身份、沟通风格等。\n\n后台复盘（background review）也会调用此工具把提炼出的用户画像/偏好落盘。"
+      "desc": "Hermes 内置的本地文件记忆工具（tools/memory_tool.py）。\n\n模型可显式调用：memory(action=add|replace|remove, target=memory|user, content=..., old_text=...)。\n也支持 batch operations：operations=[{action, content?, old_text?}, ...]。\n\n作用对象：\n- target=memory：写入 MEMORY.md，保存环境事实、项目约定、工具 quirks 等。\n- target=user：写入 USER.md，保存用户偏好、身份、沟通风格等。\n\n关键区别：这个工具直接写本地文件，不经过 S1 / MemoryWriter，也不进入外部 Vector DB。它写入的内容只有两种生效方式：\n1. Agent Init 启动时把文件加载成 frozen snapshot 注入 system prompt。\n2. 下轮新会话重新加载 snapshot 时才能看到本轮写入。\n\n后台复盘（background review）也会调用此工具把提炼出的用户画像/偏好落盘。"
     },
     "记忆同步": {
       "x": 810,
@@ -394,40 +364,64 @@
       "desc": "外部记忆后端的数据入口（如 HY Memory、Honcho、Mem0 等）。\n\n接收两类输入：\n- 自动检索：每轮 LLM 调用前，由 记忆预取 把用户消息发过来做语义召回。\n- 自动写入：每轮结束后，由 记忆同步 把本轮（用户消息，助手回复）同步进来。\n- 显式工具：模型通过 记忆检索 / 记忆写入 等工具主动查询或修改记忆。\n\n数据落地：写入 Vector DB（语义向量）、Graph DB（概念关系）。\nHermes 同一时间只激活一个外部记忆后端。"
     },
     "L1_RAW": {
-      "x": 1200,
-      "y": 320,
+      "x": 1460,
+      "y": 300,
       "group": "hy",
       "desc": "原始对话 turn 的向量层。S1 / MemoryWriter 把本轮用户消息和助手回复 embedding 后存成 L1_RAW，同时保留原文 payload 在 Vector DB。"
     },
     "L2_FACT": {
-      "x": 1160,
-      "y": 440,
+      "x": 1380,
+      "y": 380,
       "group": "hy",
-      "desc": "事实层。MemAgent 从 L1_RAW 中提炼出的可验证事实，如“用户喜欢喝咖啡”。"
+      "desc": "事实层。MemAgent 从 L1_RAW 中提炼出的可验证事实。"
     },
     "L3_SUMMARY": {
-      "x": 1200,
-      "y": 440,
+      "x": 1460,
+      "y": 380,
       "group": "hy",
       "desc": "摘要层。MemAgent 从 L1_RAW 中提炼出的会话摘要。"
     },
     "L4_IDENTITY": {
-      "x": 1240,
-      "y": 440,
+      "x": 1380,
+      "y": 460,
       "group": "hy",
       "desc": "身份/偏好层。MemAgent 从 L1_RAW 中提炼出的用户画像、偏好、沟通风格等。"
     },
     "Embed Service": {
-      "x": 1380,
+      "x": 1520,
       "y": 560,
       "group": "hy",
       "desc": "记忆侧 embedding 服务。把查询文本或新记忆转成向量，供 Vector DB 做语义检索。"
     },
     "ANN 检索": {
-      "x": 1380,
+      "x": 1520,
       "y": 680,
       "group": "hy",
       "desc": "近似最近邻检索。用向量相似度在 Vector DB 中召回相关记忆节点。"
+    },
+    "L0_BASIC_INFO": {
+      "x": 1380,
+      "y": 300,
+      "group": "hy",
+      "desc": "基础画像层。用户的姓名、年龄、职业等硬信息，通常由 basic profile 工具提取并维护。"
+    },
+    "L5_KNOWLEDGE": {
+      "x": 1460,
+      "y": 460,
+      "group": "hy",
+      "desc": "领域知识层。MemAgent 从 L1_RAW 中提炼出的领域经验、技巧性知识。"
+    },
+    "L6_SCHEMA": {
+      "x": 1380,
+      "y": 540,
+      "group": "hy",
+      "desc": "Schema/心智模型层。System 2 Writer 从 L0/L2/L4 等层归纳出的概念模式和规律。"
+    },
+    "L7_INTENTION": {
+      "x": 1460,
+      "y": 540,
+      "group": "hy",
+      "desc": "意图层。System 2 Writer 从 L1_RAW 等层提取出的前瞻意图、目标。"
     }
   },
   "CONNECTIONS": [
@@ -548,10 +542,6 @@
       "Vector DB"
     ],
     [
-      "System 2 Writer",
-      "Graph DB"
-    ],
-    [
       "Turn Context",
       "SQLite Session"
     ],
@@ -666,16 +656,6 @@
       "Output Head"
     ],
     [
-      "Post-Training",
-      "微调",
-      "dashed"
-    ],
-    [
-      "微调",
-      "Model Weights",
-      "dashed"
-    ],
-    [
       "Vector DB",
       "RAG",
       "dashed"
@@ -699,26 +679,6 @@
       "记忆写入",
       "Vector DB",
       "dashed"
-    ],
-    [
-      "System 2 Writer",
-      "Schema 归纳"
-    ],
-    [
-      "Schema 归纳",
-      "意图识别"
-    ],
-    [
-      "意图识别",
-      "约束标注"
-    ],
-    [
-      "约束标注",
-      "知识缺口"
-    ],
-    [
-      "知识缺口",
-      "Graph DB"
     ],
     [
       "Turn Finalizer",
@@ -812,6 +772,44 @@
     [
       "ANN 检索",
       "Vector DB"
+    ],
+    [
+      "外部记忆",
+      "L0_BASIC_INFO",
+      "dashed"
+    ],
+    [
+      "L0_BASIC_INFO",
+      "Vector DB",
+      "dashed"
+    ],
+    [
+      "MemAgent",
+      "L5_KNOWLEDGE"
+    ],
+    [
+      "L5_KNOWLEDGE",
+      "Reconciler"
+    ],
+    [
+      "System 2 Writer",
+      "L6_SCHEMA"
+    ],
+    [
+      "System 2 Writer",
+      "L7_INTENTION"
+    ],
+    [
+      "L6_SCHEMA",
+      "Graph DB"
+    ],
+    [
+      "L7_INTENTION",
+      "Graph DB"
+    ],
+    [
+      "PostHook",
+      "Turn Finalizer"
     ]
   ]
 }
