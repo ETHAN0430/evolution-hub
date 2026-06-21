@@ -141,7 +141,7 @@
       "x": 510,
       "y": 610,
       "group": "pipeline",
-      "desc": "进入 LLM 前或工具结果返回后，如果上下文超过阈值，先压缩再交给 LLM。"
+      "desc": "进入 LLM 前或工具结果返回后，如果上下文超过阈值，先压缩再交给 LLM。\n不是简单截断：会先剪枝工具输出，然后调用一个 auxiliary（便宜/快速）LLM 把中间轮次 summarize 成摘要，同时保留开头和最新的对话。"
     },
     "PostHook": {
       "file": "agent/turn_finalizer.py",
@@ -189,7 +189,7 @@
       "x": 920,
       "y": 470,
       "group": "memory",
-      "desc": "具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。"
+      "desc": "具体负责“压缩对话长度”的工人。内部有自己的 OpenAI client，会调用 auxiliary LLM 做摘要；保留开头和最新内容，把中间部分压缩成 reference-only 的摘要。"
     },
     "MemoryManager": {
       "file": "agent/memory_manager.py",
