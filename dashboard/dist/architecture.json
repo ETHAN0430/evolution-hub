@@ -240,8 +240,8 @@
     "记忆检索": {
       "file": "hy_memory/coding/curator/tools.py",
       "loc": "search_memory",
-      "x": 1220,
-      "y": 620,
+      "x": 1000,
+      "y": 540,
       "group": "hy",
       "desc": "HY Memory 的语义搜索工具。根据 query 召回相关记忆（只返回 metadata，完整内容需要再 read）。\n\n底层查询：实际是对 Vector DB 做语义搜索，召回与 query 意思相近的记忆向量。"
     },

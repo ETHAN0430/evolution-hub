@@ -223,6 +223,14 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === '记忆检索' && c[1] === 'Vector DB') {
+        // 记忆检索 -> Vector DB: right corridor down, then right into storage cluster
+        x1 = a.x + 65;
+        y1 = a.y;
+        var retrievalCorridorX = 1185;
+        x2 = b.x - 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + retrievalCorridorX + ',' + y1 + ' L' + retrievalCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'Vector DB' && c[1] === 'RAG') {
         // Vector DB -> RAG: left out, then down into RAG from the right
         x1 = a.x - 65;
@@ -254,7 +262,7 @@
         x2 = b.x + 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'MemoryProvider' && ['S1 / MemoryWriter', '记忆写入', '记忆文件'].indexOf(c[1]) >= 0) {
+      } else if (c[0] === 'MemoryProvider' && ['S1 / MemoryWriter', '记忆检索', '记忆写入', '记忆文件'].indexOf(c[1]) >= 0) {
         // MemoryProvider -> left-side memory components: left corridor to avoid MemoryManager
         x1 = a.x - 65;
         y1 = a.y;
@@ -262,7 +270,7 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + leftCorridorX + ',' + y1 + ' L' + leftCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'MemoryProvider' && ['System 2 Writer', '记忆检索'].indexOf(c[1]) >= 0) {
+      } else if (c[0] === 'MemoryProvider' && ['System 2 Writer'].indexOf(c[1]) >= 0) {
         // MemoryProvider -> right-side HY components: right corridor to avoid MemoryManager
         x1 = a.x + 65;
         y1 = a.y;
