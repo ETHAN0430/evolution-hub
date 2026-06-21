@@ -219,21 +219,6 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'Vector DB' && c[1] === 'RAG') {
-        // Vector DB -> RAG: left out, then down into RAG from the right
-        x1 = a.x - 65;
-        y1 = a.y;
-        x2 = b.x + 65;
-        y2 = b.y;
-        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'RAG' && c[1] === 'LLM API') {
-        // RAG -> LLM API: up above the reasoning cluster, then left, then down into LLM API
-        x1 = a.x;
-        y1 = a.y - 17;
-        x2 = b.x;
-        y2 = b.y + 17;
-        var ragCorridorY = 750;
-        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + ragCorridorY + ' L' + x2 + ',' + ragCorridorY + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'Turn Finalizer' && ['Hermes CLI', 'API Server', 'Messaging Gateway', 'TUI Gateway'].indexOf(c[1]) >= 0) {
         // Turn Finalizer -> gateways: exit upward, bend slightly above, go left to streaming-output x, then down
         x1 = a.x;
