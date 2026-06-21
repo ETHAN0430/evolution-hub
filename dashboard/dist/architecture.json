@@ -325,7 +325,7 @@
       "x": 800,
       "y": 970,
       "group": "provider",
-      "desc": "一句话：让一个模型（Student）学另一个模型（Teacher）的输出分布，把能力从 Teacher 迁移到 Student。\n\n例子：Teacher 看到 \"我想吃\" 后输出 \"苹果\" 的概率分布（苹果 0.7、香蕉 0.2、西瓜 0.08...）。Student 不只看正确答案，还要尽量模仿这个分布。\n\nStudent 一定是小模型吗？\n不一定。常见做法是 Student 比 Teacher 小，为了压缩和加速（如大模型蒸馏到小模型）。但也可以把能力从一个强模型迁移到另一个同尺寸甚至更大的模型，比如从 Claude 蒸馏到 Kimi，或从推理模型蒸馏到对话模型。核心不是大小，而是 \"让 Student 模仿 Teacher 的输出分布\"。\n\n流程：\n1. 先用 Pre-training / Post-Training 得到一个强 Teacher。\n2. 准备一个 Student（可以是预训练好的模型，尺寸可大可小）。\n3. 对同样的输入，Teacher 输出软分布，Student 用 KL 散度去逼近。\n4. Student 的 weights 通过反向传播自己学出来，Teacher 只当裁判不贡献参数。\n\n蒸馏和 SFT/RLHF/DPO 是并行的后训练路径，终点都是 Model Weights。\n\n从 Student 的视角看：\nStudent 只感知到损失函数里多了一项“要拟合某个软分布”。它并不知道这个软分布来自一个更大的模型、一个更贵的模型，还是人类标注的分布。对 Student 来说，这就是一种特殊的训练目标，和普通 SFT 没有本质区别——区别只在标签是谁生成的。\n\n所以，Student 模型无法回答“你是不是蒸馏了某个模型”这种问题。它对自己的训练过程、数据来源、Teacher 是谁都没有记忆——就像你问一个人“你小学数学老师是谁”，他可能记得，但模型连这种元信息都没有被训练进去。"
+      "desc": "一句话：让 Student 学习 Teacher 的输出，把能力从 Teacher 迁移到 Student。\n\n例子：给 Teacher 和 Student 同样的输入“我想吃____”，Teacher 回答“苹果”。Student 学习让输出也偏向“苹果”。\n\n两种常见做法：\n- 白盒蒸馏：能拿到 Teacher 的 logits / 概率分布，Student 用 KL 散度拟合这个软分布。\n- 黑盒蒸馏（API 蒸馏）：只能拿到 Teacher 生成的文本，Student 把它当正确答案做 SFT。这是最常见的“抄别人模型”方式。\n\nTokenizer 怎么办？\nTeacher 和 Student 可以有不同的 tokenizer。Teacher 生成的是文本；Student 拿到文本后，用自己的 tokenizer 切成 token ID，再算损失。所以 Student 不需要知道 Teacher 的内部 tokenizer。\n\n流程：\n1. 准备一批 prompt。\n2. 用 Teacher（自有模型或 API）生成答案。\n3. Student 用自己的 tokenizer 把 prompt + 答案切成 token。\n4. 用 SFT 或 KL 散度训练 Student。\n5. Student 的 weights 成为 Model Weights。\n\n终点和 SFT/RLHF/DPO 一样，都是 Model Weights。"
     },
     "Post-Training": {
       "x": 450,
@@ -361,13 +361,13 @@
       "x": 800,
       "y": 1030,
       "group": "provider",
-      "desc": "蒸馏里的大模型。通常是一个已经 Pre-training / Post-Training 好的强模型，参数冻结，只用来生成软目标（soft target）给学生模型学习。"
+      "desc": "蒸馏里的强模型。可以是自有模型（白盒），也可以是第三方 API（黑盒，如 GPT-4 / Claude / Kimi）。\n\n关键：Student 只需要 Teacher 的输出，不需要 Teacher 的 tokenizer。\n- 白盒 Teacher：你能拿到它的 logits（概率分布），可以用 KL 散度让 Student 拟合软分布。\n- 黑盒 Teacher（API）：你只能拿到它生成的文本，退化成“用强模型的回答当标签”做 SFT。虽然拿不到概率分布，但效果通常也很好。\n\nTeacher 用自己的 tokenizer 处理输入并生成输出；Student 拿到文本后，用自己的 tokenizer 重新切分，然后学习。"
     },
     "Student": {
       "x": 950,
       "y": 970,
       "group": "provider",
-      "desc": "蒸馏里的小模型。用 Teacher 的软输出作为监督信号训练，参数量更小，推理更快。训练完成后它的 weights 就是 Model Weights 的一部分。"
+      "desc": "蒸馏里的学习者。用 Teacher 生成的输出当监督信号训练，参数量通常更小、推理更快。\n\nStudent 只需要自己的 tokenizer：把 Teacher 生成的文本重新切成 token，再按 next-token prediction 学习。训练完成后它的 weights 就是 Model Weights 的一部分。"
     },
     "微调": {
       "x": 650,
