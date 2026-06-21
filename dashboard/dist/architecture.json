@@ -370,13 +370,13 @@
     "Embed Service": {
       "x": 1520,
       "y": 560,
-      "group": "hy",
+      "group": "provider",
       "desc": "记忆侧 embedding 服务。把查询文本或新记忆转成向量，供 Vector DB 做语义检索。"
     },
     "ANN 检索": {
       "x": 1520,
       "y": 680,
-      "group": "hy",
+      "group": "provider",
       "desc": "近似最近邻检索。用向量相似度在 Vector DB 中召回相关记忆节点。"
     },
     "L0_BASIC_INFO": {

@@ -109,7 +109,7 @@
       {name: 'Tools', x: 900, y: 150, w: 220, h: 600, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1100, y: 260, w: 350, h: 400, color: '#8fc9a3'},
       {name: 'Memory Layers', x: 1340, y: 260, w: 160, h: 320, color: '#8fc9a3'},
-      {name: 'Retrieval', x: 1500, y: 500, w: 100, h: 220, color: '#7dd3d8'},
+      {name: 'Retrieval', x: 1500, y: 500, w: 100, h: 220, color: '#8ab4e6'},
       {name: 'Storage', x: 1600, y: 90, w: 200, h: 640, color: '#7dd3d8'},
 
     ];
