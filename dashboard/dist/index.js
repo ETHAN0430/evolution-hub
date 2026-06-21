@@ -15,7 +15,7 @@
   }
 
   function loadArchitecture() {
-    return authFetch(BASE + '/dist/architecture.json')
+    return authFetch(BASE + '/api/architecture')
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();

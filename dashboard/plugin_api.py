@@ -363,6 +363,15 @@ def api_timeline():
     }
 
 
+@router.get("/api/architecture")
+async def api_architecture():
+    """Serve the architecture graph data (nodes + connections) from the plugin dist directory."""
+    p = Path(__file__).resolve().parent / "dist" / "architecture.json"
+    if not p.exists():
+        raise HTTPException(404, "architecture.json not found")
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
 @router.get("/api/source")
 async def api_source(
     path: str = Query(..., description="Absolute or relative path to source file"),
