@@ -70,10 +70,10 @@
       "desc": "一句话：把输入文本切成模型能识别的 token ID。\n\n例子：\"我想吃苹果\" 可能被切成 [我, 想, 吃, 苹果]，对应整数列表 [1024, 2048, 3056, 4072]。\n\nTokenizer 没有神经网络权重，怎么切词？\nTokenizer 靠的是一个确定的切词规则和词表，不是神经网络。它用 BPE、WordPiece、SentencePiece、Unigram 等方法在语料上统计出“怎么切最划算”，然后固定下来。\n所以它没有“切得准不准”的神经网络判断，只有“按规则切”。同一个词它永远按同一个方式切，规则本身是在训练阶段从数据中学出来的。\n\n怎么避免切错词？\n运行时是没法改的，Tokenizer 由模型决定。只能在上游做选择：\n- 选词表更大、对目标语言更友好的模型（中文场景尤其重要）。\n- 对专有名词、数字、代码符号做预处理，比如加空格或特殊标记。\n- 如果是私有化部署，可以用领域语料重新训练 Tokenizer。\n- 特殊概念可以用特殊 token（如 <|tool|>）让它被当成一个整体。\n\n原理：Tokenizer 用 BPE 等规则把文本拆成词表里的单位。中文可能按字或子词切，英文常按子词切（如 \"playing\" → [\"play\", \"ing\"]）。不同模型词表不同，所以同一个文本在不同模型里 token 数可能差很多。\n\nTokenizer 切词时看整体句意吗？\n基本不看。主流 BPE/WordPiece 是局部贪心算法：只看相邻 token pair 哪个在训练语料里出现频率高，就合并哪个。\n比如 \"南京市长江大桥\"，如果 \"市长\" 这个 pair 出现频率高，就可能切成 [\"南京\", \"市长\", \"江大桥\"]；如果 \"南京市\" 和 \"长江大桥\" 频率高，就切成 [\"南京市\", \"长江大桥\"]。\n它不理解语义，只是按统计规则机械切分。所以中文没有空格，更容易切出人意外的结果。\n\n大厂（字节、阿里等）怎么做中文 Tokenizer？\n核心思路不神秘：用 SentencePiece / BPE 框架，在大量中文语料上训练，同时把词表扩展到几万甚至十几万个中文 token。\n具体做法包括：\n- 扩大中文词表，让常见中文词成为整体 token。\n- 在高质量中文语料（网页、书籍、对话、代码）上重新训练。\n- 对数字、日期、专有名词加特殊 token 或预处理。\n- 和 Llama 等英文模型不同，中文模型需要专门优化，否则会把常见词切成单字。\n\n核心算法很复杂吗？\n不复杂。BPE/SentencePiece 的核心就是反复合并频率最高的相邻 pair，伪代码很短。\n真正难的是工程和数据：用万亿级 token 清洗语料、设计词表大小、平衡多语言比例、对齐推理框架。算法简单，但做到极致需要大量投入。"
     },
     "Embedding": {
-      "x": 1520,
-      "y": 560,
+      "x": 720,
+      "y": 840,
       "group": "provider",
-      "desc": "记忆检索用的 embedding 服务。\n\n把查询文本或新记忆转成向量，供 ANN 检索在 Vector DB 中做语义召回。实际部署中常用 BGE 等通用 embedding 模型。"
+      "desc": "模型输入层的 Embedding（词嵌入）。\n\nTokenizer 输出的 token ID 在这里被映射成稠密向量，作为 Self-Attention 的输入。这些向量是模型权重的一部分，在预训练阶段学习得到。"
     },
     "自注意力": {
       "x": 930,
@@ -131,7 +131,7 @@
       "x": 510,
       "y": 470,
       "group": "pipeline",
-      "desc": "每轮 LLM 调用前，把当前用户消息发给外部记忆的检索链路做语义召回。\n\n流程：查询文本 → Embed Service → ANN 检索 → Vector DB，把召回的相关记忆注入 system prompt。\n\n本地 MEMORY.md / USER.md 不在每轮 prefetch，而是在 Agent Init 时作为 frozen snapshot 注入 system prompt。"
+      "desc": "每轮 LLM 调用前，把当前用户消息发给外部记忆的检索链路做语义召回。\n\n流程：查询文本 → Embedding → Vector DB，把召回的相关记忆注入 system prompt。\n\n本地 MEMORY.md / USER.md 不在每轮 prefetch，而是在 Agent Init 时作为 frozen snapshot 注入 system prompt。"
     },
     "PreHook": {
       "file": "hermes_cli/plugins.py",
@@ -203,29 +203,29 @@
       "x": 1200,
       "y": 460,
       "group": "hy",
-      "desc": "记忆提炼员。从 L1_RAW 中提取结构化信息：L2_FACT、L3_SUMMARY、L4_IDENTITY。"
+      "desc": "记忆提炼员。从 L1_RAW 中提取结构化信息：L2_FACT、L3_SUMMARY、L4_IDENTITY、L5_KNOWLEDGE。"
     },
     "Reconciler": {
       "file": "hy_memory/agent/reconciler.py",
       "loc": "MemoryReconciler",
-      "x": 1280,
-      "y": 700,
+      "x": 1380,
+      "y": 620,
       "group": "hy",
-      "desc": "记忆冲突检查员。对比新提取的 L2/L3/L4 和已有记忆，决定新增、替换还是更新，然后写入 Vector DB。"
+      "desc": "记忆冲突检查员。对比新提取的 L2/L3/L4/L5 和已有记忆，决定新增、替换还是更新，然后写入 Vector DB。"
     },
     "记忆检索": {
       "file": "hy_memory/coding/curator/tools.py",
       "loc": "search_memory",
       "x": 1020,
-      "y": 620,
+      "y": 470,
       "group": "hy",
-      "desc": "外部记忆后端暴露给模型的语义搜索工具（hy_memory/coding/curator/tools.py 里的 search_memory）。\n\n模型显式调用后，查询文本走 Embed Service → ANN 检索 → Vector DB，做语义召回并返回相关记忆的 metadata；如需完整内容还要再 read。"
+      "desc": "外部记忆后端暴露给模型的语义搜索工具。\n\n底层流程：查询文本先经过 Embedding 转成向量，再做三路检索 + 合并。\n1. Vector DB（语义检索）：ANN 找意思相近的记忆。\n2. BM25（关键词排序）：在候选池内按词频排名辅助精确命中。\n3. Graph DB（概念检索）：匹配已有概念/模式/意图。\n三路结果经 merge_with_graph_quota 合并后返回。"
     },
     "记忆写入": {
       "file": "hy_memory/coding/curator/tools.py",
       "loc": "create_memory",
       "x": 1020,
-      "y": 680,
+      "y": 300,
       "group": "hy",
       "desc": "外部记忆后端暴露给模型的写入工具（hy_memory/coding/curator/tools.py 里的 create_memory）。\n\n模型显式调用后，新记忆直接交给 S1 / MemoryWriter，进入写入流水线（L1_RAW → MemAgent → Reconciler），最终落盘到 Vector DB 或 Graph DB。"
     },
@@ -238,10 +238,10 @@
       "desc": "向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。\n\n每个节点同时保存两部分：embedding 向量（用于 ANN 语义召回）和原文 payload（如 content、layer、tags 等，用于返回人类可读内容）。"
     },
     "Graph DB": {
-      "file": "hy_memory/data/graph_store_kuzu.py",
+      "file": "/home/cyf/.hermes/hermes-agent/venv/lib/python3.11/site-packages/hy_memory/data/graph_store_kuzu.py",
       "loc": "KuzuGraphStore",
       "x": 1700,
-      "y": 720,
+      "y": 460,
       "group": "storage",
       "desc": "图数据库。像知识图谱一样保存概念、主题和它们之间的关系。"
     },
@@ -331,47 +331,41 @@
       "x": 1200,
       "y": 380,
       "group": "hy",
-      "desc": "原始对话 turn 的向量层。S1 / MemoryWriter 把本轮用户消息和助手回复 embedding 后存成 L1_RAW，同时保留原文 payload 在 Vector DB。"
+      "desc": "原始对话 turn 的向量层。S1 / MemoryWriter 把本轮用户消息和助手回复 embedding 后存为 L1_RAW，写入 Vector DB（语义索引）和 Graph DB（实体关联），同时向 MemAgent 投递一份供高层提取。"
     },
     "L2_FACT": {
-      "x": 1080,
+      "x": 1200,
       "y": 540,
       "group": "hy",
       "desc": "事实层。MemAgent 从 L1_RAW 中提炼出的可验证事实。"
     },
     "L3_SUMMARY": {
-      "x": 1080,
+      "x": 1200,
       "y": 620,
       "group": "hy",
       "desc": "摘要层。MemAgent 从 L1_RAW 中提炼出的会话摘要。"
     },
     "L4_IDENTITY": {
-      "x": 1080,
+      "x": 1200,
       "y": 700,
       "group": "hy",
       "desc": "身份/偏好层。MemAgent 从 L1_RAW 中提炼出的用户画像、偏好、沟通风格等。"
     },
-    "ANN 检索": {
-      "x": 1520,
-      "y": 680,
-      "group": "provider",
-      "desc": "近似最近邻检索。用向量相似度在 Vector DB 中召回相关记忆节点。"
-    },
     "L5_KNOWLEDGE": {
-      "x": 1200,
-      "y": 620,
+      "x": 1380,
+      "y": 700,
       "group": "hy",
       "desc": "领域知识层。MemAgent 从 L1_RAW 中提炼出的领域经验、技巧性知识。"
     },
     "L6_SCHEMA": {
-      "x": 1280,
-      "y": 620,
+      "x": 1380,
+      "y": 380,
       "group": "hy",
-      "desc": "Schema/心智模型层。System 2 Writer 从 L0/L2/L4 等层归纳出的概念模式和规律。"
+      "desc": "Schema / 心智模型层。System 2 Writer 从 L0/L2/L4 等层归纳出的概念模式和规律，写入 Vector DB。L7_INTENTION 负责关联 Graph DB。"
     },
     "L7_INTENTION": {
-      "x": 1360,
-      "y": 620,
+      "x": 1380,
+      "y": 460,
       "group": "hy",
       "desc": "意图层。System 2 Writer 从 L1_RAW 等层提取出的前瞻意图、目标。"
     },
@@ -680,30 +674,6 @@
       "L4_IDENTITY"
     ],
     [
-      "L2_FACT",
-      "Reconciler"
-    ],
-    [
-      "L3_SUMMARY",
-      "Reconciler"
-    ],
-    [
-      "L4_IDENTITY",
-      "Reconciler"
-    ],
-    [
-      "记忆检索",
-      "Embedding"
-    ],
-    [
-      "Embedding",
-      "ANN 检索"
-    ],
-    [
-      "ANN 检索",
-      "Vector DB"
-    ],
-    [
       "MemAgent",
       "L5_KNOWLEDGE"
     ],
@@ -718,10 +688,6 @@
     [
       "System 2 Writer",
       "L7_INTENTION"
-    ],
-    [
-      "L6_SCHEMA",
-      "Graph DB"
     ],
     [
       "L7_INTENTION",
@@ -741,23 +707,18 @@
       "System 1 Writer"
     ],
     [
-      "记忆预取",
-      "Embedding",
-      "dashed"
-    ],
-    [
       "后台复盘",
       "skill_manage",
       "dashed"
     ],
     [
-      "Vector DB",
-      "System 2 Writer",
+      "skill_manage",
+      "记忆/技能",
       "dashed"
     ],
     [
-      "skill_manage",
-      "记忆/技能",
+      "Vector DB",
+      "System 2 Writer",
       "dashed"
     ]
   ]

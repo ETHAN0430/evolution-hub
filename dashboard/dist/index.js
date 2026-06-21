@@ -107,7 +107,6 @@
       {name: 'Memory', x: 890, y: 90, w: 710, h: 650, color: '#8fc9a3'},
       {name: 'Tools', x: 900, y: 150, w: 220, h: 590, color: '#8fc9a3'},
 
-      {name: 'Retrieval', x: 1500, y: 500, w: 100, h: 220, color: '#8ab4e6'},
       {name: 'Storage', x: 1600, y: 90, w: 200, h: 640, color: '#7dd3d8'},
 
     ];
@@ -303,10 +302,25 @@
         // Vector DB -> System 2 Writer: read existing memories for async schema/intention induction
         x1 = a.x;
         y1 = a.y - 17;
+        x2 = b.x;
+        y2 = b.y - 17;
+        var s2ReadCorridorY = 260;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + s2ReadCorridorY + ' L' + x2 + ',' + s2ReadCorridorY + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Reconciler' && c[1] === 'Vector DB') {
+        // Reconciler -> Vector DB: exit right, go horizontal, enter Vector DB from the right
+        x1 = a.x + 65;
+        y1 = a.y;
         x2 = b.x + 65;
         y2 = b.y;
-        var system2ReadCorridorY = 260;
-        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + system2ReadCorridorY + ' L' + x2 + ',' + system2ReadCorridorY + ' L' + x2 + ',' + y2;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'skill_manage' && c[1] === '记忆/技能') {
+        // skill_manage -> 记忆/技能: right, then up to memory_tool's y, then right together into storage
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        var skillMergeX = 1200;
+        d = 'M' + x1 + ',' + y1 + ' L' + skillMergeX + ',' + y1 + ' L' + skillMergeX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (x1 === x2 || y1 === y2) {
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else if (Math.abs(dx) > Math.abs(dy)) {
