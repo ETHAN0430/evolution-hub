@@ -73,19 +73,13 @@
       "x": 280,
       "y": 780,
       "group": "provider",
-      "desc": "把每个 token ID 映射成一个高维向量（通常几百到几千维）。\n\n作用：把离散的 token 变成连续的语义表示，意思相近的词在向量空间里也相近。\n注意：Embedding 本身不包含位置信息，模型还不知道 token 的顺序。"
-    },
-    "Positional Encoding": {
-      "x": 420,
-      "y": 780,
-      "group": "provider",
-      "desc": "给每个 token 的 embedding 加上位置信号，让模型知道“这个词是第几个”。\n\nSelf-Attention 对输入顺序不敏感，不加重位置信息就无法区分：\n- '我吃苹果' 和 '苹果吃我'\n\n常见做法：sin/cos 固定位置编码（Transformer 原版）或可学习的 positional embedding。"
+      "desc": "把每个 token ID 映射成一个高维向量（通常几百到几千维）。\n\n作用：把离散的 token 变成连续的语义表示，意思相近的词在向量空间里也相近。\n\n自回归生成时，采样出的新 token 已经是一个整数 ID，不需要再分词，直接来这里查表拿到向量，再送入 Decoder 继续下一轮。"
     },
     "Multi-Head Self-Attention": {
-      "x": 700,
+      "x": 560,
       "y": 780,
       "group": "provider",
-      "desc": "Transformer 的核心计算层。\n\n对每个 token，它会计算它和序列中所有其它 token 的关联程度（Query-Key 点积），再用这个权重把大家的 Value 加权求和。\n\n多头 = 多组并行的 Q/K/V 投影，每组关注不同的关系（语法、指代、语义等）。\n\nKV Cache：实际推理时会把已经算过的 Key/Value 缓存起来，避免每生成一个新 token 都重新算一遍整个历史序列，从而大幅加速自回归生成。"
+      "desc": "Transformer 的核心计算层。\n\n对每个 token，它会计算它和序列中所有其它 token 的关联程度（Query-Key 点积），再用这个权重把大家的 Value 加权求和。\n\n多头 = 多组并行的 Q/K/V 投影，每组关注不同的关系（语法、指代、语义等）。\n\nDecoder：在 Decoder-only 自回归模型里，通常把 Self-Attention + FFN 这个整体叫做 Decoder。生成阶段它循环执行：\n新 token 的 embedding → Attention（看 KV Cache 里前面所有位置）→ FFN → Output Head → Sampling → 下一个 token ID → 回到 Embedding。\n\nRoPE：现代模型常把位置编码直接做在 Attention 里，对 Q/K 做旋转，而不是在 Embedding 后加独立的位置编码层。\n\nKV Cache：实际推理时会把已经算过的 Key/Value 缓存起来，避免每生成一个新 token 都重新算一遍整个历史序列，从而大幅加速自回归生成。"
     },
     "Feed-Forward Network": {
       "x": 840,
@@ -105,7 +99,7 @@
       "x": 510,
       "y": 190,
       "group": "pipeline",
-      "desc": "初始化 AIAgent 的地方。只在新建会话时跑一次：\n1. 设置 platform（cli/tui/api_server/...）\n2. 构建并缓存 system prompt\n3. 组装可用工具列表（含 MCP）\n4. 初始化会话状态（session_id、source、model 等）"
+      "desc": "初始化 AIAgent 的地方。只在新建会话时跑一次：\n1. 设置 platform（cli/tui/api_server/...）\n2. 构建并缓存 system prompt\n3. 组装可用工具列表（含 MCP），并按 platform / 用户配置过滤权限等级，标记需要审批的危险工具\n4. 初始化会话状态（session_id、source、model 等）\n5. Plan Mode 相关的元工具（如 create_todo / update_todo / complete_plan）如果启用，会在这里注册到可用工具集；Plan Mode 的实际触发是在每轮 Turn 里按需进行，不是只在初始化时一次。"
     },
     "Turn Context": {
       "file": "agent/turn_context.py",
@@ -113,7 +107,7 @@
       "x": 510,
       "y": 260,
       "group": "pipeline",
-      "desc": "每轮 Turn 的入口（prologue）。在调用 LLM 之前一次性完成：\n1. 安全 stdio guard\n2. 清洗用户输入（去掉非法 surrogate 字符）\n3. MCP 工具刷新\n4. 生成 task_id / turn_id\n5. 恢复或构建 system prompt\n6. 预飞上下文压缩（preflight compression）\n7. pre_llm_call 插件 Hook\n8. 外部记忆 prefetch\n9. 写入 session DB（crash resilience）\n10. 重置迭代预算、工具护栏等状态\n\n这些步骤在源码里都在 `build_turn_context()` 中顺序执行，图上为了清晰把它们展开了。"
+      "desc": "每轮 Turn 的入口（prologue）。在调用 LLM 之前一次性完成：\n1. 安全 stdio guard\n2. 清洗用户输入（去掉非法 surrogate 字符）\n3. MCP 工具刷新\n4. 生成 task_id / turn_id\n5. 恢复或构建 system prompt\n6. 预飞上下文压缩（preflight compression）\n7. pre_llm_call 插件 Hook\n8. 外部记忆 prefetch\n9. 写入 session DB（crash resilience）\n10. 重置迭代预算、工具护栏等状态\n11. 判断是否需要进入 Plan Mode：复杂或多步骤任务可以让模型先出 Todo List，经用户确认后再进入执行循环；简单任务直接走普通 ReAct\n\n这些步骤在源码里都在 `build_turn_context()` 中顺序执行，图上为了清晰把它们展开了。"
     },
     "MCP 刷新": {
       "file": "tools/mcp_tool.py",
@@ -145,7 +139,7 @@
       "x": 510,
       "y": 540,
       "group": "pipeline",
-      "desc": "通用插件 Hook 注入点。\"pre\" 型 Hook：\n- pre_llm_call：调用 LLM 前注入或修改上下文\n- pre_tool_call：工具执行前拦截或修改调用\n- pre_api_request：向模型服务商发请求前\n- pre_gateway_dispatch：Gateway 收到消息后、派发给 agent 前\n- pre_approval_request：危险操作需要用户审批前\n- on_session_start：新会话创建时\n- subagent_start：子 agent 启动时\n\npre_llm_call 返回的上下文会拼到当前用户消息里；记忆预取可以看成这类需求的专用实现，二者最终效果相同。\n\n注：本节点只代表主链路上的 pre_llm_call；其它 pre 型 Hook 发生在各自对应节点处，图中未单独标出。"
+      "desc": "通用插件 Hook 注入点。\"pre\" 型 Hook：\n- pre_llm_call：调用 LLM 前注入或修改上下文\n- pre_tool_call：工具执行前拦截或修改调用，常用于权限检查\n- pre_api_request：向模型服务商发请求前\n- pre_gateway_dispatch：Gateway 收到消息后、派发给 agent 前\n- pre_approval_request：危险操作需要用户审批前，Plan Mode 的计划确认、Ask Mode 的提问也可走这里\n- on_session_start：新会话创建时\n- subagent_start：子 agent 启动时\n\npre_llm_call 返回的上下文会拼到当前用户消息里；记忆预取可以看成这类需求的专用实现，二者最终效果相同。\n\n注：本节点只代表主链路上的 pre_llm_call；其它 pre 型 Hook 发生在各自对应节点处，图中未单独标出。"
     },
     "LLM API": {
       "file": "agent/conversation_loop.py",
@@ -153,7 +147,7 @@
       "x": 510,
       "y": 680,
       "group": "pipeline",
-      "desc": "真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。\n\n几个概念区分：\n- LLM（大语言模型）是任务/类别，不是具体架构。\n- Transformer 是当前 LLM 的主流实现（self-attention + FFN）。\n- JEPA / 世界模型是更远的方向，想从“预测下一个 token”转向“预测世界的未来状态”。\n\n调用本身走流式输出：chunk 会经“流式输出”节点推给 CLI / Gateway 等消费者；没有消费者时内部把整段回答收齐后再继续。transform_llm_output 等输出改写 Hook 在完整回答收齐后、交给用户前执行。\n\n流结束的判断：\n- 收到 API 的结束标记（如 SSE 的 [DONE] 或 finish_reason 不为 null）。\n- 连接自然断开。\n\n怎么知道要调工具：\n- 流结束后，把 chunk 拼成完整 assistant_message。\n- 如果消息里有 tool_calls / function_call，就进入“工具执行”节点。\n- 如果没有，就是最终答案，直接返回给用户。\n\n常见 finish_reason：stop（正常结束）、tool_calls（要调工具）、length（token 上限截断）、content_filter（安全过滤）。"
+      "desc": "真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。\n\n几个概念区分：\n- LLM（大语言模型）是任务/类别，不是具体架构。\n- Transformer 是当前 LLM 的主流实现（self-attention + FFN）。\n- JEPA / 世界模型是更远的方向，想从“预测下一个 token”转向“预测世界的未来状态”。\n\nPlan Mode / Ask Mode 也在这里体现：\n- Plan Mode：每轮 Turn 都可能触发；复杂任务先让模型生成步骤计划（常以 Todo List 形式），经用户确认后把计划注入上下文，再进入工具执行循环。\n- Ask Mode：模型发现信息不足或需要选择时，调用 approval / ask_user 等系统工具向用户提问，拿到回答后再继续生成。\n\n调用本身走流式输出：chunk 会经“流式输出”节点推给 CLI / Gateway 等消费者；没有消费者时内部把整段回答收齐后再继续。transform_llm_output 等输出改写 Hook 在完整回答收齐后、交给用户前执行。\n\n流结束的判断：\n- 收到 API 的结束标记（如 SSE 的 [DONE] 或 finish_reason 不为 null）。\n- 连接自然断开。\n\n怎么知道要调工具：\n- 流结束后，把 chunk 拼成完整 assistant_message。\n- 如果消息里有 tool_calls / function_call，就进入“工具执行”节点。\n- 如果没有，就是最终答案，直接返回给用户。\n\n常见 finish_reason：stop（正常结束）、tool_calls（要调工具）、length（token 上限截断）、content_filter（安全过滤）。"
     },
     "流式输出": {
       "file": "agent/conversation_loop.py",
@@ -169,7 +163,7 @@
       "x": 660,
       "y": 680,
       "group": "pipeline",
-      "desc": "让 AI 可以动手做事。Hermes 内置工具很多，主要包括：\n\n- 文件类：read_file、write_file、patch、search_files\n- 终端类：terminal、bash、code_execution\n- 浏览器类：browser、browser_cdp、computer_use\n- 记忆类：memory（记忆读写）、session_search（历史会话搜索）\n- 搜索/信息类：web_search、google_search、osv_check\n- 生成类：image_generation、tts\n- 协作类：delegate（子 agent）、mixture_of_agents\n- 平台类：discord、feishu、homeassistant\n- 其它：approval（危险操作审批）、checkpoint、kanban\n\n此外 MCP server 会动态注册更多工具，不同会话可用工具集可能不同。"
+      "desc": "让 AI 可以动手做事。Hermes 内置工具很多，主要包括：\n\n- 文件类：read_file、write_file、patch、search_files\n- 终端类：terminal、bash、code_execution\n- 浏览器类：browser、browser_cdp、computer_use\n- 记忆类：memory（记忆读写）、session_search（历史会话搜索）\n- 搜索/信息类：web_search、google_search、osv_check\n- 生成类：image_generation、tts\n- 协作类：delegate（子 agent）、mixture_of_agents\n- 平台类：discord、feishu、homeassistant\n- 其它：approval（危险操作审批 / 用户询问）、checkpoint、kanban\n\nPlan Mode 也可以理解为一类元工具：通过 create_todo、update_todo、complete_plan 等工具，让模型自己在执行过程中生成并跟踪 Todo List。这样 Plan Mode 就不必是独立流程，而是融入普通 ReAct 循环。\n\n工具权限与审批：\n- 每个工具 schema 带有权限等级（只读 / 写 / 执行 / 危险）。\n- Agent Init 会根据 platform 和用户配置过滤可用工具；pre_tool_call Hook 在执行前拦截越权调用。\n- approval / ask_user 是系统保留工具：模型遇到危险或不确定情况时调用它们，阻塞等待用户输入，结果再写回上下文继续循环。\n\n此外 MCP server 会动态注册更多工具，不同会话可用工具集可能不同。"
     },
     "上下文压缩": {
       "file": "agent/context_compressor.py",
@@ -315,59 +309,11 @@
       "group": "storage",
       "desc": "本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。"
     },
-    "Temperature": {
-      "x": 1120,
-      "y": 780,
-      "group": "provider",
-      "desc": "温度采样。Output Head 输出的是每个 token 的分数（logits），Temperature 控制采样的随机性：\n- T=0：总是取概率最高的 token（贪婪）。\n- T 低：回答更确定、更死板。\n- T 高：回答更随机、更有创造性。"
-    },
     "Pre-training": {
-      "x": 150,
+      "x": 400,
       "y": 1020,
       "group": "provider",
       "desc": "在大规模通用数据上从头训练基础模型，学习语言结构、知识和基本推理。"
-    },
-    "SFT / Fine-Tuning": {
-      "x": 400,
-      "y": 980,
-      "group": "provider",
-      "desc": "监督微调。用（问题，答案）pair 继续训练，让模型学会按指令格式回答。"
-    },
-    "RLHF": {
-      "x": 650,
-      "y": 940,
-      "group": "provider",
-      "desc": "Reinforcement Learning from Human Feedback。用人类偏好数据训练奖励模型，再用 RL 调大模型。"
-    },
-    "DPO": {
-      "x": 900,
-      "y": 940,
-      "group": "provider",
-      "desc": "Direct Preference Optimization。直接用偏好数据优化模型，省掉奖励模型和 RL。"
-    },
-    "Reward Model": {
-      "x": 650,
-      "y": 980,
-      "group": "provider",
-      "desc": "奖励模型。给 RLHF 提供“哪个回答更好”的打分信号。"
-    },
-    "Teacher Model": {
-      "x": 250,
-      "y": 980,
-      "group": "provider",
-      "desc": "能力强的教师模型，用来生成 soft target 指导学生模型。"
-    },
-    "Distillation": {
-      "x": 500,
-      "y": 980,
-      "group": "provider",
-      "desc": "知识蒸馏。让学生模型学习教师模型的输出分布，而不是直接学真实标签。"
-    },
-    "Student Model": {
-      "x": 750,
-      "y": 940,
-      "group": "provider",
-      "desc": "更小、更快的学生模型，蒸馏后接近教师模型能力。"
     },
     "Model Weights": {
       "x": 525,
@@ -375,11 +321,29 @@
       "group": "provider",
       "desc": "训练产出的模型参数。Hermes 运行时会把这些权重加载到推理层的 Decoder / Attention / FFN / Output Head 中。"
     },
-    "PPO": {
-      "x": 650,
-      "y": 900,
+    "Distillation": {
+      "x": 750,
+      "y": 940,
       "group": "provider",
-      "desc": "Proximal Policy Optimization。RLHF 里用来根据奖励模型信号更新策略的 RL 算法。"
+      "desc": "知识蒸馏（Knowledge Distillation）：用同一个 Student 模型结构，换一条 Loss 来训练，让它的输出分布逼近 Teacher。\n\n核心不是改模型结构，也不是复制 Teacher 的 weights，而是改损失函数：\n1. 对同一段输入，Teacher 输出软分布 P_teacher（logits 加 temperature 软化）。\n2. Student 输出自己的软分布 P_student。\n3. 损失函数加一项 KL(P_teacher || P_student)，逼 Student 模仿 Teacher 的“把握程度”。\n4. 通常还会保留原始 CrossEntropy，让 Student 同时学真实标签。\n\nTeacher 只是提供软目标的“裁判”，参数冻结；Student 的 weights 来自自己的初始化，通过反向传播更新。\n\n蒸馏和 SFT/RLHF/DPO 是并行的后训练路径，终点都是 Model Weights。"
+    },
+    "Post-Training": {
+      "x": 400,
+      "y": 940,
+      "group": "provider",
+      "desc": "预训练之后的所有训练统称，包括：\n- SFT（监督微调）：用高质量问答 pair 训练模型按指令回答。\n- RLHF：用人类偏好数据训练奖励模型，再用 PPO 等 RL 算法优化策略。\n- DPO：直接偏好优化，不需要奖励模型和 RL，用 pair 数据直接优化模型。\n\n后训练的目标是让模型更听话、更安全、更符合人类偏好。Hermes 运行时只加载后训练完成的模型权重，不执行后训练。"
+    },
+    "KV Cache": {
+      "x": 700,
+      "y": 780,
+      "group": "provider",
+      "desc": "Key-Value Cache。推理时缓存历史 token 的 key 和 value，避免每次生成新 token 时重新计算前面所有 token。\n\n没有 KV Cache，生成长文本时 Attention 计算量会随长度平方增长；有了 KV Cache，可以近似线性增长。DeepSeek 的 MLA 就是把这个缓存进一步压缩。"
+    },
+    "Sampling": {
+      "x": 1120,
+      "y": 780,
+      "group": "provider",
+      "desc": "采样策略。Output Head 输出 logits z 后，在这里决定下一个 token 怎么选。\n\nTemperature 公式：\n  P(i) = exp(z_i / T) / Σ_j exp(z_j / T)\n  T → 0：greedy；T = 1：原始分布；T > 1：更随机。\n\nTop-k：保留概率最高的 k 个 token，重新归一化后采样。\nTop-p / nucleus：保留累计概率 ≥ p 的最小 token 集合，重新归一化后采样。\n\n自回归循环：采样得到的是一个 token ID（整数），它不会重新走 Tokenizer，而是直接回到 Embedding 查表，再和 KV Cache 一起进入 Decoder（Self-Attention + FFN）下一轮。"
     }
   },
   "CONNECTIONS": [
@@ -420,7 +384,7 @@
       "Tokenizer"
     ],
     [
-      "Output Head",
+      "Sampling",
       "LLM API",
       "dashed"
     ],
@@ -597,71 +561,47 @@
       "Embedding"
     ],
     [
-      "Embedding",
-      "Positional Encoding"
+      "Feed-Forward Network",
+      "Output Head"
+    ],
+    [
+      "Output Head",
+      "Sampling"
+    ],
+    [
+      "Model Weights",
+      "Multi-Head Self-Attention"
+    ],
+    [
+      "Pre-training",
+      "Post-Training"
+    ],
+    [
+      "Post-Training",
+      "Model Weights"
+    ],
+    [
+      "Multi-Head Self-Attention",
+      "KV Cache",
+      "dashed"
     ],
     [
       "Multi-Head Self-Attention",
       "Feed-Forward Network"
     ],
     [
-      "Feed-Forward Network",
-      "Output Head"
-    ],
-    [
-      "Output Head",
-      "Temperature"
-    ],
-    [
-      "Pre-training",
-      "SFT / Fine-Tuning"
-    ],
-    [
-      "SFT / Fine-Tuning",
-      "RLHF"
-    ],
-    [
-      "SFT / Fine-Tuning",
-      "DPO"
-    ],
-    [
-      "Reward Model",
-      "RLHF"
-    ],
-    [
-      "DPO",
-      "Model Weights"
-    ],
-    [
-      "Positional Encoding",
-      "Multi-Head Self-Attention"
-    ],
-    [
-      "RLHF",
-      "PPO"
-    ],
-    [
-      "PPO",
-      "Model Weights"
-    ],
-    [
-      "Teacher Model",
       "Distillation",
-      "dashed"
-    ],
-    [
-      "Distillation",
-      "Student Model",
-      "dashed"
-    ],
-    [
-      "Student Model",
       "Model Weights",
       "dashed"
     ],
     [
-      "Model Weights",
+      "Embedding",
       "Multi-Head Self-Attention"
+    ],
+    [
+      "Sampling",
+      "Embedding",
+      "dashed"
     ]
   ]
 }

@@ -50,7 +50,19 @@
     {term: 'Loop', def: '循环。说人话：模型生成→调工具→再生成，反复直到任务完成。AI 圈啥都要叫 loop，agent loop、feedback loop、training loop，显得高级。'},
     {term: 'Context', def: '上下文。说人话：模型当前能看到的对话历史和背景。Context 长就是 token 贵，短就是模型忘事。搞不清时说“我 context 不够”就行了。'},
     {term: 'Harness', def: 'Harness（框架/脚手架）。说人话：把模型、工具、数据包在一起跑的一坨代码。非叫 Harness，跟骑马套鞍似的，也不知道在套谁。'},
-    {term: 'Prompt vs Skill', def: '最好的 prompt 就是你的大脑：临场判断、上下文理解、随机应变。一旦某个流程固定下来、可以复用，它就变成了 skill。Prompt 是手动的，skill 是沉淀后的 prompt。'}
+    {term: 'Prompt vs Skill', def: '最好的 prompt 就是你的大脑：临场判断、上下文理解、随机应变。一旦某个流程固定下来、可以复用，它就变成了 skill。Prompt 是手动的，skill 是沉淀后的 prompt。'},
+    {term: 'Greedy Decoding', def: '永远选概率最大的 token。简单、稳定，但回答千篇一律，复杂问题容易车轱辘话。很多模型默认推理就用它，因为便宜可控。'},
+    {term: 'Temperature', def: '控制采样随机性的温度参数。T=0 退化成 greedy，T=1 是原始分布，T>1 更随机。说人话：让模型老实点还是放飞自我。'},
+    {term: 'Top-k Sampling', def: '只在概率最高的 k 个 token 里采样。k=1 就是 greedy，k 越大越多样。问题是 k 固定，可能把明显很差的词也塞进候选集。'},
+    {term: 'Top-p / Nucleus Sampling', def: '从累计概率达到 p 的最小 token 集合里采样。比 top-k 灵活，能自动根据分布调整候选集大小。名字起得跟核物理似的，其实就这么点事。'},
+    {term: 'Beam Search', def: '同时保留多条候选序列，按整体概率选最好的。翻译、搜索类任务常用。开放式对话里容易生成无聊的安全答案，因为候选越往后越趋同。'},
+    {term: 'Repetition Penalty', def: '重复惩罚。模型老说同一句话？给已经出现过的 token logits 打个折，逼它换词。调太高了会胡言乱语。'},
+    {term: 'Logits', def: '模型输出层给的原始分数，还没经过 softmax。说人话：每个候选 token 的“得分”，分越高越可能是答案，但不是概率。softmax 之后才变成概率。'},
+    {term: 'Plan Mode', def: '计划模式。每轮 Turn 里，遇到复杂任务时让模型列步骤（Todo List），给用户确认后再执行。说人话：先打草稿再动工，避免模型一上来就把你代码库改崩。不是只在会话开头跑一次，而是按需触发。'},
+    {term: 'Distillation / 蒸馏', def: '知识蒸馏：用同一个学生模型结构，换一条损失函数来训练，让它输出的软分布去逼近老师。老师不是损失函数本身，而是提供软目标的参考答案；weights 还是学生自己的。说白了就是小学生抄学霸的解题思路，而不是只抄答案。'},
+    {term: 'Ask Mode', def: '询问模式。模型发现信息不够或需要选择时，停下来问用户。Hermes 里通常通过 approval / ask_user 工具实现：模型调用工具 → 前端阻塞等输入 → 回答写回上下文继续。'},
+    {term: 'Tool Permissions', def: '工具权限。不同工具危险等级不同（只读 / 写 / 执行 / 危险）。Agent Init 按配置过滤可用工具，pre_tool_call 拦截越权，approval 处理危险操作。'},
+    {term: 'RoPE（Rotary Positional Embedding）', def: '旋转位置编码。现代大模型常用的位置编码方式，不再作为独立层，而是把位置信息融进 Self-Attention 的 Q/K 向量里做旋转。说人话：给每个 token 的查询/键向量“拧”一下角度，让模型既能知道位置，又不破坏 attention 的结构。'}
   ];
 
   var SOURCE_BASE = (typeof window.__HERMES_SOURCE_BASE__ === 'string' && window.__HERMES_SOURCE_BASE__)
@@ -154,21 +166,22 @@
         y2 = b.y - 17;
         var tokenizerCorridorY = 750;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + tokenizerCorridorY + ' L' + x2 + ',' + tokenizerCorridorY + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'Output Head' && c[1] === 'LLM API') {
-        // Output Head -> LLM API: up, then left to below LLM API, then up into its bottom
+      } else if (c[0] === 'Sampling' && c[1] === 'LLM API') {
+        // Sampling -> LLM API: up, then left to below LLM API, then up into its bottom
         x1 = a.x;
         y1 = a.y - 17;
         x2 = b.x;
         y2 = b.y + 17;
         var outputCorridorY = 720;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + outputCorridorY + ' L' + x2 + ',' + outputCorridorY + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'Turn Finalizer' && c[1] === '后台复盘') {
-        // Turn Finalizer -> 后台复盘: go up to Agent Init height, then right into 后台复盘
+      } else if (c[0] === 'Sampling' && c[1] === 'Embedding') {
+        // Sampling -> Embedding: autoregressive feedback loop for next-token generation
         x1 = a.x;
         y1 = a.y - 17;
-        x2 = b.x - 65;
-        y2 = b.y;
-        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
+        x2 = b.x;
+        y2 = b.y - 17;
+        var loopCorridorY = 735;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + loopCorridorY + ' L' + x2 + ',' + loopCorridorY + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'Turn Finalizer' && ['Hermes CLI', 'API Server', 'Messaging Gateway', 'TUI Gateway'].indexOf(c[1]) >= 0) {
         // Turn Finalizer -> gateways: exit upward, bend slightly above, go left to streaming-output x, then down
         x1 = a.x;
