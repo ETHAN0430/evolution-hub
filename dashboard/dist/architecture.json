@@ -64,31 +64,31 @@
       "desc": "Terminal/UI 网关。给 Desktop、Dashboard、TUI 这些 UI 客户端提供统一的后端会话服务。"
     },
     "Tokenizer": {
-      "x": 420,
+      "x": 510,
       "y": 840,
       "group": "provider",
       "desc": "一句话：把输入文本切成模型能识别的 token ID。\n\n例子：\"我想吃苹果\" 可能被切成 [我, 想, 吃, 苹果]，对应整数列表 [1024, 2048, 3056, 4072]。\n\nTokenizer 没有神经网络权重，怎么切词？\nTokenizer 靠的是一个确定的切词规则和词表，不是神经网络。它用 BPE、WordPiece、SentencePiece、Unigram 等方法在语料上统计出“怎么切最划算”，然后固定下来。\n所以它没有“切得准不准”的神经网络判断，只有“按规则切”。同一个词它永远按同一个方式切，规则本身是在训练阶段从数据中学出来的。\n\n怎么避免切错词？\n运行时是没法改的，Tokenizer 由模型决定。只能在上游做选择：\n- 选词表更大、对目标语言更友好的模型（中文场景尤其重要）。\n- 对专有名词、数字、代码符号做预处理，比如加空格或特殊标记。\n- 如果是私有化部署，可以用领域语料重新训练 Tokenizer。\n- 特殊概念可以用特殊 token（如 <|tool|>）让它被当成一个整体。\n\n原理：Tokenizer 用 BPE 等规则把文本拆成词表里的单位。中文可能按字或子词切，英文常按子词切（如 \"playing\" → [\"play\", \"ing\"]）。不同模型词表不同，所以同一个文本在不同模型里 token 数可能差很多。\n\nTokenizer 切词时看整体句意吗？\n基本不看。主流 BPE/WordPiece 是局部贪心算法：只看相邻 token pair 哪个在训练语料里出现频率高，就合并哪个。\n比如 \"南京市长江大桥\"，如果 \"市长\" 这个 pair 出现频率高，就可能切成 [\"南京\", \"市长\", \"江大桥\"]；如果 \"南京市\" 和 \"长江大桥\" 频率高，就切成 [\"南京市\", \"长江大桥\"]。\n它不理解语义，只是按统计规则机械切分。所以中文没有空格，更容易切出人意外的结果。\n\n大厂（字节、阿里等）怎么做中文 Tokenizer？\n核心思路不神秘：用 SentencePiece / BPE 框架，在大量中文语料上训练，同时把词表扩展到几万甚至十几万个中文 token。\n具体做法包括：\n- 扩大中文词表，让常见中文词成为整体 token。\n- 在高质量中文语料（网页、书籍、对话、代码）上重新训练。\n- 对数字、日期、专有名词加特殊 token 或预处理。\n- 和 Llama 等英文模型不同，中文模型需要专门优化，否则会把常见词切成单字。\n\n核心算法很复杂吗？\n不复杂。BPE/SentencePiece 的核心就是反复合并频率最高的相邻 pair，伪代码很短。\n真正难的是工程和数据：用万亿级 token 清洗语料、设计词表大小、平衡多语言比例、对齐推理框架。算法简单，但做到极致需要大量投入。"
     },
     "Embedding": {
-      "x": 560,
+      "x": 650,
       "y": 840,
       "group": "provider",
       "desc": "一句话：把每个 token ID 映射成一个高维向量。\n\n例子：\"我\" 变成 [0.1, -0.3, 0.7, ...]，\"苹果\" 变成 [0.8, 0.2, -0.1, ...]；意思相近的词在向量空间里距离更近。\n\nEmbedding 要不要训练？\nEmbedding 矩阵是模型权重的一部分，会在预训练里通过反向传播一起学出来。预训练完成后，每个 token ID 都对应一个固定向量。\n所以 Embedding 训练属于 model train。如果后面要新增 token（比如扩展词表），需要给新 token 初始化 embedding，然后再训练或微调。\n\n原理：Embedding 层本质上是一个查找表（lookup table），每个 token ID 对应一个固定向量。它把离散的整数变成连续的语义表示，但这一步还不包含位置信息。\n\n里面有权重的地方：token ID 到向量的 Embedding 矩阵。"
     },
     "自注意力": {
-      "x": 840,
+      "x": 930,
       "y": 840,
       "group": "provider",
       "desc": "一句话：让模型看到上下文里哪些词之间有关系。\n\n例子：在 \"我想吃苹果\" 中，\"吃\" 会重点关注 \"我\"（谁吃）和 \"苹果\"（吃什么）；\"苹果\" 会回头看 \"吃\"，知道自己是被吃的对象。\n\n原理：每个 token 用 Query 去和序列中其他 token 的 Key 做点积，得到注意力权重，再用权重对 Value 加权求和。多头 = 多组并行的 Q/K/V，每组关注不同关系（语法、指代、语义等）。\nDecoder-only 自回归模型里，自注意力 + 前馈网络 整体就是 Decoder。现代模型常用 RoPE 把位置信息融进 Attention 的 Q/K。推理时用 KV Cache 避免重复计算历史 token。\n\n里面有权重的地方：Q/K/V 投影矩阵、输出投影矩阵、LayerNorm 参数。\n\n神经网络的核心：自注意力 + 前馈网络 就是 Transformer 的一层。大模型通常堆叠几十层这样的结构，Embedding 把输入变成向量，Output Head 把最后一层输出变回词表分数。\n\n上下文长度是怎么撑大的？\n- 位置编码外推/插值：RoPE base 缩放、位置插值（PI）、NTK-aware / YaRN，让只在 128k 上训练过的模型也能处理 1M 位置。\n- Attention 优化：FlashAttention 减少显存读写；稀疏 attention、滑动窗口、Ring Attention / 序列并行降低 O(N²) 成本。\n- 但 Self-Attention 理论复杂度仍是 O(N²)，1M context 的 attention 计算量约为 128k 的 64 倍。\n\n为什么有的模型 1M、有的 200k？\n- 训练时最大序列长度不同；直接训练到 1M 比训练到 128k 再外推更稳，但贵很多。\n- 是否愿意投入稀疏 attention、序列并行、长文本数据清洗等工程。\n- 产品定位：大多数任务 200k 够用，1M 主要给代码库、长视频、长文档等场景。"
     },
     "前馈网络": {
-      "x": 1120,
+      "x": 1210,
       "y": 840,
       "group": "provider",
       "desc": "一句话：对每个 token 的向量单独做非线性变换，加工语义。\n\n例子：Attention 已经让 \"吃\" 带上了 \"我\" 和 \"苹果\" 的信息；前馈网络 把这个混合后的向量进一步映射到更接近 [食物动作] 的语义空间。\n\n原理：前馈网络 通常是两个全连接层夹一个激活函数（如 GELU）的 MLP。它不看其他 token，只处理当前位置的向量，给模型增加非线性拟合能力，让 Attention 提取的关系能进一步组合和变换。\n\n里面有权重的地方：两个全连接层的权重和偏置、LayerNorm 参数。\n\n和自注意力一起，前馈网络构成 Transformer 的一层神经网络。"
     },
     "Output Head": {
-      "x": 1260,
+      "x": 1350,
       "y": 840,
       "group": "provider",
       "desc": "一句话：把最后一个位置的向量投影回词表大小，输出下一个 token 的分数。\n\n例子：模型处理完 \"我想吃苹果\" 后，Output Head 输出下一个词的 logits：\"因为\"=3.2，\"所以\"=1.5，\"然后\"=0.8，\"今天\"=0.3。\n\n原理：Output Head 是一个线性层。输入是当前位置最后的 hidden state（一个高维向量），通过一个“投影矩阵”把它映射到词表大小（比如词表 5 万个 token，输出就是 5 万个数）。每个数就是对应 token 的 logit（未归一化分数），后面过 softmax 变成概率，交给 Sampling 选择。“投影矩阵”说人话：就是一个大表格，把“当前语义向量”翻译成“每个候选词应该得多少分”。\n\n里面有权重的地方：最后一层 hidden state 到词表的投影矩阵。"
@@ -262,61 +262,61 @@
       "desc": "本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。"
     },
     "Pre-training": {
-      "x": 720,
+      "x": 810,
       "y": 1030,
       "group": "provider",
       "desc": "一句话：在大规模通用数据上从头训练基础模型，让它学会语言结构、世界知识和基本推理。\n\n例子：用海量网页、书籍、代码训练，模型看到 \"苹果是水果\"、\"1+1=2\" 这样的模式。\n\n训练什么？\n- Embedding 矩阵：从随机初始化开始学习每个 token 的向量。\n- Attention / FFN 权重：学习怎么混上下文、怎么加工语义。\n- Output Head：学习怎么预测下一个 token。\n\n输入数据会先经过训练好的 Tokenizer 切成 token ID，再送进模型做 next-token prediction。预训练完成后得到的基础模型就是 Teacher 或进一步 Post-Training 的起点。"
     },
     "Model Weights": {
-      "x": 920,
+      "x": 1010,
       "y": 910,
       "group": "provider",
       "desc": "训练产出的模型参数。Hermes 运行时会把这些权重加载到推理层的 Self-Attention / FFN / Output Head / Embedding 中，让模型开始工作。\n\n来源可以是 Pre-training、Post-Training（SFT/RLHF/DPO）或 Distillation 的 Student。\n\n注意：Hermes 运行时只加载这些权重做推理，不会在线训练或修改模型权重。如果用用户案例去改进模型，那是离线后训练（Post-Training）的事，需要先清洗、标注数据，再单独跑训练流程。\n\n注意：Model Weights 只作用于神经网络的计算层——Embedding、Attention、FFN、Output Head。Tokenizer 是切词规则，不是神经网络权重；KV Cache 是运行时缓存；Sampling 是解码策略，都不属于 Model Weights。\n\n具体包括：Embedding 矩阵、Self-Attention 的 Q/K/V 和输出投影、FFN 的两层权重、Output Head 投影，以及 LayerNorm 参数。Tokenizer、KV Cache、Sampling 不属于 Model Weights。\n\n模型规模与能力：\n- <7B：手机/边缘设备、简单对话、低延迟。\n- 7B-13B：个人/小团队，日常问答、基础代码。\n- 30B-70B：企业级，复杂推理、长上下文、多语言、代码能力明显变强。\n- 100B-200B：接近顶尖水平，数学/科学推理、复杂指令。\n- 400B+：当前第一梯队，跨领域专家级能力。\n\n但参数量不是唯一决定因素。训练数据质量、后训练方法、上下文长度、推理预算、工具使用都会影响实际表现。\n\n成本：参数量每大一级，推理成本大致按倍数涨。7B 便宜，70B 贵 10 倍左右，400B+ 更贵。output token 通常比 input 贵 2~5 倍，因为生成必须串行。"
     },
     "Distillation": {
-      "x": 1070,
+      "x": 1160,
       "y": 970,
       "group": "provider",
       "desc": "一句话：让 Student 学习 Teacher 的输出，把能力从 Teacher 迁移到 Student。\n\n例子：给 Teacher 和 Student 同样的输入“我想吃____”，Teacher 回答“苹果”。Student 学习让输出也偏向“苹果”。\n\n两种常见做法：\n- 白盒蒸馏：能拿到 Teacher 的 logits / 概率分布，Student 用 KL 散度拟合这个软分布。\n- 黑盒蒸馏（API 蒸馏）：只能拿到 Teacher 生成的文本，Student 把它当正确答案做 SFT。这是最常见的“抄别人模型”方式。\n\nTokenizer 怎么办？\nTeacher 和 Student 可以有不同的 tokenizer。Teacher 生成的是文本；Student 拿到文本后，用自己的 tokenizer 切成 token ID，再算损失。所以 Student 不需要知道 Teacher 的内部 tokenizer。\n\n流程：\n1. 准备一批 prompt。\n2. 用 Teacher（自有模型或 API）生成答案。\n3. Student 用自己的 tokenizer 把 prompt + 答案切成 token。\n4. 用 SFT 或 KL 散度训练 Student。\n5. Student 的 weights 成为 Model Weights。\n\n终点和 SFT/RLHF/DPO 一样，都是 Model Weights。"
     },
     "Post-Training": {
-      "x": 720,
+      "x": 810,
       "y": 970,
       "group": "provider",
       "desc": "一句话：在预训练之后继续训练，让模型更听话、更安全、更符合人类偏好。\n\n主要包括：\n- SFT（监督微调 / fine-tuning）：用 (prompt, answer) pair 训练，让模型学会对话格式。\n- RLHF：训练奖励模型判断回答好坏，再用 PPO 等强化学习优化。\n- DPO：直接用偏好 pair 数据优化，不需要奖励模型。\n\n后训练的目标是让模型从“会续写文本”变成“会按指令 helpful 地回答”。终点是 Model Weights。\n\n注意：后训练继续使用 Pre-training 阶段固定好的 Tokenizer，不会重新训练它。只有扩展词表时才需要重新训练或初始化新 token 的 Embedding。"
     },
     "KV Cache": {
-      "x": 840,
+      "x": 930,
       "y": 800,
       "group": "provider",
       "desc": "一句话：缓存每个历史 token 的 Key（K）和 Value（V）矩阵，避免生成新 token 时重算整段历史。\n\n存在哪里？怎么索引？\nKV Cache 不是按 token 文字存的字典，而是按位置顺序存的列表/队列。每个位置存一对 (K, V) 张量。\n用 \"我想吃苹果\" 举例，Prompt 阶段算完后缓存长这样：\n  cache[0] = (K_我, V_我)\n  cache[1] = (K_想, V_想)\n  cache[2] = (K_吃, V_吃)\n  cache[3] = (K_苹, V_苹)\n  cache[4] = (K_果, V_果)\n注意：同一个字如果出现在不同位置，K/V 也不同。因为 Attention 里有位置信息（RoPE），而且上下文不一样。\n\n循环命中是怎么回事？继续上面的例子：\n1. Sampling 选出 \"因为\"，计算它的 Q_因为、K_因为、V_因为。\n2. 把 (K_因为, V_因为) 追加到 cache[5]。\n3. 用 Q_因为 和 cache[0..5] 的所有 K 算注意力，再对 6 个 V 加权求和，得到 \"因为\" 位置的输出。\n4. Output Head 在这个输出上预测下一个 token，Sampling 选出 \"今天\"，计算 Q_今天、K_今天、V_今天。\n5. 追加到 cache[6]，用 Q_今天 和 cache[0..6] 的 K/V 继续算。\n每一轮只新增一个位置的 K/V，前面所有位置的 K/V 直接从缓存读，不用重算。\n\nQ/K/V 到底是什么？用 \"我想吃苹果\" 里的 \"吃\" 和 \"苹果\" 举例：\n- Query（Q）：当前 token 的查询意图。比如 \"吃\" 的 Q 在问：\"我要找谁？吃什么？\"\n- Key（K）：每个 token 的索引标签，用来被查询匹配。比如 \"苹果\" 的 K 上写着：\"我是食物，可以被吃\"；\"我\" 的 K 上写着：\"我是施动者\"\n- Value（V）：每个 token 的实际内容，用来被加权组合。比如 \"苹果\" 的 V 保存了\"苹果\"这个词的完整语义\n\n注意力权重 = softmax(Q × K^T / √d)。\"吃\" 的 Q 和 \"苹果\" 的 K 匹配度高，所以 \"苹果\" 的 V 会获得更多权重，输出里就带上\"苹果\"的语义。\n\n矩阵形状上，K 和 V 通常保存为 [序列长度, 注意力头数, 每头维度]。没有 KV Cache，生成长度 N 的文本 Attention 计算量是 O(N²)；有了 KV Cache，每步近似 O(N)。\n\n上下文越长，KV Cache 越占显存。1M token 的 KV Cache 可能几十 GB。\n\n降低成本的方法：\n- Prompt caching：跨轮复用长 prompt 的 KV Cache，避免每次重新计算。\n- KV Cache 量化：把 K/V 从 fp16 压到 int8/int4，省显存。\n- Offload：把 KV Cache 放到 CPU/SSD，牺牲速度换容量。\n- 上下文压缩：把历史 summarize 变短，直接减少 KV Cache 长度。"
     },
     "Sampling": {
-      "x": 1400,
+      "x": 1490,
       "y": 840,
       "group": "provider",
       "desc": "一句话：按策略从候选词中选出下一个 token。\n\n例子：Output Head 给了 \"我想吃苹果\" 后面的候选分数。如果 temperature=0，直接选分数最高的 \"因为\"；如果 temperature=0.7，\"因为\" 概率最大但 \"所以\" 或 \"然后\" 也有机会；如果 temperature=1.5，可能选出 \"今天\" 这种上下文不通顺的词。\n\n原理：Sampling 接收 logits z，通过 temperature 调整分布尖锐程度：P(i) = exp(z_i/T) / Σ_j exp(z_j/T)。T→0 时 greedy，T=1 是原始分布，T>1 更随机。常用策略还有 Top-k（只保留前 k 个）、Top-p/nucleus（保留累计概率 ≥ p 的最小集合）、Repetition Penalty（惩罚重复词）。采样得到的是一个 token ID。"
     },
     "Training Data": {
-      "x": 420,
+      "x": 510,
       "y": 1090,
       "group": "provider",
       "desc": "训练模型用的原始语料。可以包括网页、书籍、代码、对话记录等。数据质量直接决定模型能力。"
     },
     "Tokenizer Training": {
-      "x": 420,
+      "x": 510,
       "y": 1030,
       "group": "provider",
       "desc": "Tokenizer Training 不是训练神经网络，而是训练一个统计切词器。\n\n做什么：用 Training Data 跑 BPE / SentencePiece / Unigram 等算法，决定：\n- 词表里有哪些 token\n- 遇到新词时按什么规则切分/合并\n\n注意：token ID 本身没有被“预训练”。token ID 只是词表里的整数编号，像字典页码。真正在 Pre-training 里被学出来的是每个 token ID 对应的 Embedding 向量，以及 Attention、FFN、Output Head 的权重。\n\n所以流程是：\n1. Tokenizer Training：从原始文本中学切词规则。\n2. Pre-training：用固定好的 Tokenizer 把文本切成 token ID，再训练神经网络权重。"
     },
     "Teacher": {
-      "x": 1070,
+      "x": 1160,
       "y": 1030,
       "group": "provider",
       "desc": "蒸馏里的强模型。可以是自有模型（白盒），也可以是第三方 API（黑盒，如 GPT-4 / Claude / Kimi）。\n\n关键：Student 只需要 Teacher 的输出，不需要 Teacher 的 tokenizer。\n- 白盒 Teacher：你能拿到它的 logits（概率分布），可以用 KL 散度让 Student 拟合软分布。\n- 黑盒 Teacher（API）：你只能拿到它生成的文本，退化成“用强模型的回答当标签”做 SFT。虽然拿不到概率分布，但效果通常也很好。\n\nTeacher 用自己的 tokenizer 处理输入并生成输出；Student 拿到文本后，用自己的 tokenizer 重新切分，然后学习。"
     },
     "Student": {
-      "x": 1220,
+      "x": 1310,
       "y": 970,
       "group": "provider",
       "desc": "蒸馏里的学习者。用 Teacher 生成的输出当监督信号训练，参数量通常更小、推理更快。\n\nStudent 只需要自己的 tokenizer：把 Teacher 生成的文本重新切成 token，再按 next-token prediction 学习。训练完成后它的 weights 就是 Model Weights 的一部分。"
