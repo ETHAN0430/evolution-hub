@@ -99,7 +99,7 @@
       "x": 510,
       "y": 190,
       "group": "pipeline",
-      "desc": "初始化 AIAgent 的地方。只在新建会话时跑一次：\n1. 设置 platform（cli/tui/api_server/...）\n2. 构建并缓存 system prompt\n3. 组装可用工具列表（含 MCP），并按 platform / 用户配置过滤权限等级，标记需要审批的危险工具\n4. 初始化会话状态（session_id、source、model 等）\n5. Plan Mode 相关的元工具（如 create_todo / update_todo / complete_plan）如果启用，会在这里注册到可用工具集；Plan Mode 的实际触发是在每轮 Turn 里按需进行，不是只在初始化时一次。"
+      "desc": "初始化 AIAgent 的地方。只在新建会话时跑一次：\n1. 设置 platform（cli/tui/api_server/...）\n2. 构建并缓存 system prompt\n3. 加载本地 记忆/技能 文件（MEMORY.md、USER.md、skill 列表）作为 frozen snapshot 注入 system prompt\n4. 组装可用工具列表（含 MCP），并按 platform / 用户配置过滤权限等级，标记需要审批的危险工具\n5. 初始化会话状态（session_id、source、model 等）\n6. Plan Mode 相关的元工具（如 create_todo / update_todo / complete_plan）如果启用，会在这里注册到可用工具集；Plan Mode 的实际触发是在每轮 Turn 里按需进行，不是只在初始化时一次。"
     },
     "Turn Context": {
       "file": "agent/turn_context.py",
