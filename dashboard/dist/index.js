@@ -106,7 +106,7 @@
       {name: 'Model / Training', x: 20, y: 890, w: 1100, h: 220, color: '#8ab4e6'},
       {name: 'Distillation', x: 720, y: 930, w: 320, h: 140, color: '#7aa4d6'},
       {name: 'Memory', x: 900, y: 90, w: 420, h: 640, color: '#8fc9a3'},
-      {name: 'HY Memory', x: 920, y: 300, w: 340, h: 340, color: '#a8b8e6'},
+      {name: 'HY Memory', x: 900, y: 300, w: 460, h: 340, color: '#a8b8e6'},
       {name: 'Storage', x: 1340, y: 90, w: 200, h: 640, color: '#7dd3d8'},
 
     ];
@@ -262,24 +262,32 @@
         x2 = b.x + 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'MemoryProvider' && ['S1 / MemoryWriter', '记忆检索', '记忆写入', '记忆文件'].indexOf(c[1]) >= 0) {
-        // MemoryProvider -> left-side memory components: left corridor to avoid MemoryManager
+      } else if (c[0] === 'MemoryProvider' && ['记忆检索', '记忆写入', '记忆文件'].indexOf(c[1]) >= 0) {
+        // MemoryProvider -> left-side tools / 记忆文件: left corridor to avoid MemoryManager
         x1 = a.x - 65;
         y1 = a.y;
-        var leftCorridorX = 1035;
+        var leftCorridorX = 1030;
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + leftCorridorX + ',' + y1 + ' L' + leftCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'MemoryProvider' && ['System 2 Writer'].indexOf(c[1]) >= 0) {
-        // MemoryProvider -> right-side HY components: right corridor to avoid MemoryManager
+      } else if (c[0] === 'MemoryProvider' && c[1] === 'S1 / MemoryWriter') {
+        // MemoryProvider -> S1 / MemoryWriter: right corridor down, then left into middle column
         x1 = a.x + 65;
         y1 = a.y;
-        var rightCorridorX = 1185;
+        var midCorridorX = 1190;
         x2 = b.x - 65;
         y2 = b.y;
-        d = 'M' + x1 + ',' + y1 + ' L' + rightCorridorX + ',' + y1 + ' L' + rightCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+        d = 'M' + x1 + ',' + y1 + ' L' + midCorridorX + ',' + y1 + ' L' + midCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'MemoryProvider' && c[1] === 'System 2 Writer') {
+        // MemoryProvider -> System 2 Writer: right corridor down, then right into right column
+        x1 = a.x + 65;
+        y1 = a.y;
+        var midCorridorX = 1190;
+        x2 = b.x - 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + midCorridorX + ',' + y1 + ' L' + midCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'MemoryProvider' && c[1] === 'cache.db') {
-        // MemoryProvider -> cache.db: route around the HY sub-cluster
+        // MemoryProvider -> cache.db: right corridor down, then right into storage cluster
         x1 = a.x + 65;
         y1 = a.y;
         var storageCorridorX = 1300;

@@ -224,7 +224,7 @@
     "MemAgent": {
       "file": "hy_memory/agent/mem_agent.py",
       "loc": "MemAgent",
-      "x": 1000,
+      "x": 1110,
       "y": 420,
       "group": "hy",
       "desc": "记忆提炼员。从 L1_RAW 中提取结构化信息：L2_FACT、L3_SUMMARY、L4_IDENTITY。"
@@ -232,7 +232,7 @@
     "Reconciler": {
       "file": "hy_memory/agent/reconciler.py",
       "loc": "MemoryReconciler",
-      "x": 1000,
+      "x": 1110,
       "y": 500,
       "group": "hy",
       "desc": "记忆冲突检查员。对比新提取的 L2/L3/L4 和已有记忆，决定新增、替换还是更新，然后写入 Vector DB。"
@@ -240,7 +240,7 @@
     "记忆检索": {
       "file": "hy_memory/coding/curator/tools.py",
       "loc": "search_memory",
-      "x": 1000,
+      "x": 960,
       "y": 540,
       "group": "hy",
       "desc": "HY Memory 的语义搜索工具。根据 query 召回相关记忆（只返回 metadata，完整内容需要再 read）。\n\n底层查询：实际是对 Vector DB 做语义搜索，召回与 query 意思相近的记忆向量。"
@@ -248,7 +248,7 @@
     "记忆写入": {
       "file": "hy_memory/coding/curator/tools.py",
       "loc": "create_memory",
-      "x": 1000,
+      "x": 960,
       "y": 620,
       "group": "hy",
       "desc": "HY Memory 的写入工具。支持 create / update / delete 记忆。\n\n底层写入：新记忆经过处理后，最终写入 Vector DB（语义向量）或 Graph DB（概念关系），具体取决于记忆类型。"
@@ -360,7 +360,7 @@
     "S1 / MemoryWriter": {
       "file": "hy_memory/pipelines/writer.py",
       "loc": "MemoryWriter",
-      "x": 1000,
+      "x": 1110,
       "y": 340,
       "group": "hy",
       "desc": "同步写入层（MemoryWriter）。\n\n流程：\n1. 把对话做 embedding，存成 L1_RAW（原始记忆向量）。\n2. 交给 MemAgent 提取：\n   - L2_FACT：可验证的事实\n   - L3_SUMMARY：摘要\n   - L4_IDENTITY：用户身份/偏好\n3. Reconciler 检查新旧记忆冲突，决定新增、替换或更新。\n\n这是实时路径：每次对话后同步执行，结果写入 Vector DB。"
@@ -368,31 +368,31 @@
     "System 2 Writer": {
       "file": "hy_memory/pipelines/system2_writer.py",
       "loc": "System2Writer",
-      "x": 1220,
+      "x": 1260,
       "y": 340,
       "group": "hy",
       "desc": "异步深度加工层（System 2 Writer）。\n\n从已有的 L0/L1/L2/L4 记忆层出发，做更重的结构化处理：\n- Schema 归纳：提炼概念、心智模型 → L6_SCHEMA\n- 意图识别：提取前瞻意图 → L7_INTENTION\n- 约束标注：标注禁忌、偏好边界\n- 知识缺口扫描：审计记忆完整性\n\n这是异步路径：不一定每轮都跑，跑的时候生成/更新 Graph DB 里的概念和关系。"
     },
     "Schema 归纳": {
-      "x": 1220,
+      "x": 1260,
       "y": 400,
       "group": "hy",
       "desc": "从 L0-L4 记忆中归纳概念和心智模型，生成 L6_SCHEMA。"
     },
     "意图识别": {
-      "x": 1220,
+      "x": 1260,
       "y": 460,
       "group": "hy",
       "desc": "提取用户的前瞻意图和目标，生成 L7_INTENTION。"
     },
     "约束标注": {
-      "x": 1220,
+      "x": 1260,
       "y": 520,
       "group": "hy",
       "desc": "标注用户的禁忌、偏好边界和约束条件。"
     },
     "知识缺口": {
-      "x": 1220,
+      "x": 1260,
       "y": 580,
       "group": "hy",
       "desc": "审计记忆完整性，发现缺失的关键信息。"
