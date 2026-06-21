@@ -251,13 +251,6 @@
       return makeOrthogonalLink(c, i);
     });
 
-    // Visual loop annotation around LLM API and 工具执行
-    var loopAnnotation = h('path', {
-      d: 'M 445,680 L 445,640 L 725,640 L 725,760 L 445,760 L 445,680',
-      fill: 'none', stroke: '#f4a68e', strokeWidth: 2, strokeDasharray: '4,3',
-      markerEnd: 'url(#eh-arrow)'
-    });
-
     var nodes = Object.keys(NODES).map(function (name) {
       var n = NODES[name];
       var c = COLORS[n.group];
@@ -297,7 +290,6 @@
         'HERMES · HY MEMORY EVOLUTION ARCHITECTURE'),
       clusters,
       links,
-      loopAnnotation,
       nodes
     );
   }
