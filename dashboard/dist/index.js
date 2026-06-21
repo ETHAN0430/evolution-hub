@@ -45,6 +45,7 @@
     {term: 'Thinking / Reasoning 模式', def: '模型“思考”的三种真相：Level 1 是纯 prompt 注入，system prompt 里加一句“请逐步思考”；Level 2 是训练出来的思考标记，模型通过 RL/SFT 自己学会吐 <think> 块，关掉只是过滤输出；Level 3 才是真正的推理时计算，比如 o1 的 reasoning_effort，会多花算力做搜索、验证、反思。99% 的 thinking 开关都是 Level 1 或 2。'},
     {term: 'CoT（Chain-of-Thought）', def: 'prompt 里写“请逐步思考”。小学老师天天说“把过程写出来”，到 AI 圈就变成学术术语了，服了。'},
     {term: 'Post-Training / 后训练', def: '预训练之后继续训练。包括 SFT、RLHF、DPO。一帮人不敢叫“再训练”，非要叫 Post-Training，显得洋气。'},
+    {term: '训练 / Training', def: '这词很宽泛，不要只从技术视角理解。模型训练是更新神经网络权重；Agent 训练是让模型学会用工具或遵循流程；Skill 训练是把好用的 prompt 沉淀下来；人还能军训、健身。本架构图的 Model / Training 专指模型权重训练。'},
     {term: 'PreHook / PostHook', def: 'LLM 调用前后插点代码。Pre=前，Post=后，Hook=钩子。三个字说明白的事非要整俩英文词，装逼指数拉满。'},
     {term: 'S1 / S2（System 1 / System 2）', def: '快思考 vs 慢思考。把“直觉反应”和“深思熟虑”说成 S1/S2，学术圈最爱的降维打击式命名。'},
     {term: 'Prompt Engineering', def: '调 prompt。说人话：跟模型说话的方式多试几遍，找最容易出好答案的说法。也被包装成一门学问，还出了各种“工程方法论”。'},
@@ -61,10 +62,13 @@
     {term: 'Logits', def: '模型输出层给的原始分数，还没经过 softmax。说人话：每个候选 token 的“得分”，分越高越可能是答案，但不是概率。softmax 之后才变成概率。'},
     {term: 'Detokenization', def: '把模型生成的 token ID 序列反向查表，变回人类能看的文本。说人话：Tokenizer 把字切成数字，Detokenization 把数字拼回字。流式输出时每生成一个 token 就增量解码一个 chunk。'},
     {term: 'Plan Mode', def: '计划模式。每轮 Turn 里，遇到复杂任务时让模型列步骤（Todo List），给用户确认后再执行。说人话：先打草稿再动工，避免模型一上来就把你代码库改崩。不是只在会话开头跑一次，而是按需触发。'},
-    {term: 'Distillation / 蒸馏', def: '知识蒸馏：用同一个学生模型结构，换一条损失函数来训练，让它输出的软分布去逼近老师。老师不是损失函数本身，而是提供软目标的参考答案；weights 还是学生自己的。说白了就是小学生抄学霸的解题思路，而不是只抄答案。'},
+    {term: 'Distillation / 蒸馏', def: '知识蒸馏：让一个模型（Student）学另一个模型（Teacher）的输出分布，把能力从 Teacher 迁移到 Student。Student 通常更小，但不一定。Student 只感知到损失函数变了，它并不知道软目标来自更大的模型、更贵的模型还是人类标注；对它来说这就是一种特殊的训练目标。所以你问它“你是不是蒸馏了 Claude”，它也不知道。'},
     {term: 'Ask Mode', def: '询问模式。模型发现信息不够或需要选择时，停下来问用户。Hermes 里通常通过 approval / ask_user 工具实现：模型调用工具 → 前端阻塞等输入 → 回答写回上下文继续。'},
     {term: 'Tool Permissions', def: '工具权限。不同工具危险等级不同（只读 / 写 / 执行 / 危险）。Agent Init 按配置过滤可用工具，pre_tool_call 拦截越权，approval 处理危险操作。'},
-    {term: 'RoPE（Rotary Positional Embedding）', def: '旋转位置编码。现代大模型常用的位置编码方式，不再作为独立层，而是把位置信息融进 Self-Attention 的 Q/K 向量里做旋转。说人话：给每个 token 的查询/键向量“拧”一下角度，让模型既能知道位置，又不破坏 attention 的结构。'}
+    {term: 'Q / K / V', def: 'Attention 里的三个角色。Q（Query）是当前 token 的查询意图；K（Key）是每个 token 的索引标签，用来被匹配；V（Value）是每个 token 的实际内容，用来被加权组合。注意力权重 = softmax(Q × K^T)，输出 = 权重 × V。'},
+    {term: 'RoPE（Rotary Positional Embedding）', def: '旋转位置编码。现代大模型常用的位置编码方式，不再作为独立层，而是把位置信息融进 Self-Attention 的 Q/K 向量里做旋转。说人话：给每个 token 的查询/键向量“拧”一下角度，让模型既能知道位置，又不破坏 attention 的结构。'},
+    {term: '参数量 vs 推理成本', def: '参数量越大，每 token 推理越贵。因为每 forward 都要做更多矩阵乘法和内存读写。7B 便宜，70B 贵 10 倍左右，400B+ 更贵。上下文长度、batch size、量化、KV Cache 也会影响最终成本。'},
+    {term: 'Input / Output Token 定价', def: 'Input token 便宜是因为 prompt 可以并行处理，GPU 利用率高。Output token 贵是因为自回归生成必须串行，每生成一个 token 都要重新加载权重前向传播一次。所以 API 里 output 通常比 input 贵 2~5 倍。另外 API 定价一般还会覆盖硬件折旧、电费、运维和利润；早期毛利可能到成本的 5~10 倍，价格战激烈时可能只有 1~2 倍甚至亏本。'}
   ];
 
   var SOURCE_BASE = (typeof window.__HERMES_SOURCE_BASE__ === 'string' && window.__HERMES_SOURCE_BASE__)
@@ -95,8 +99,8 @@
       {name: 'User', x: 20, y: 90, w: 170, h: 640, color: '#d4c5a9'},
       {name: 'Gateway', x: 210, y: 90, w: 190, h: 640, color: '#e6c875'},
       {name: 'Agent', x: 420, y: 90, w: 460, h: 650, color: '#f4a68e'},
-      {name: 'Model / Reasoning', x: 20, y: 740, w: 1240, h: 80, color: '#8ab4e6'},
-      {name: 'Model / Training', x: 20, y: 830, w: 1000, h: 220, color: '#8ab4e6'},
+      {name: 'Model / Reasoning', x: 20, y: 760, w: 1280, h: 110, color: '#8ab4e6'},
+      {name: 'Model / Training', x: 20, y: 890, w: 1100, h: 220, color: '#8ab4e6'},
       {name: 'Memory', x: 900, y: 90, w: 420, h: 640, color: '#8fc9a3'},
       {name: 'Storage', x: 1340, y: 90, w: 200, h: 640, color: '#7dd3d8'},
 
@@ -166,7 +170,7 @@
         y1 = a.y + 17;
         x2 = b.x;
         y2 = b.y - 17;
-        var tokenizerCorridorY = 750;
+        var tokenizerCorridorY = 745;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + tokenizerCorridorY + ' L' + x2 + ',' + tokenizerCorridorY + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'Sampling' && c[1] === 'LLM API') {
         // Sampling -> LLM API: up, then left to below LLM API, then up into its bottom
@@ -174,7 +178,7 @@
         y1 = a.y - 17;
         x2 = b.x;
         y2 = b.y + 17;
-        var outputCorridorY = 720;
+        var outputCorridorY = 745;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + outputCorridorY + ' L' + x2 + ',' + outputCorridorY + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'Sampling' && c[1] === 'Embedding') {
         // Sampling -> Embedding: autoregressive feedback loop for next-token generation
@@ -182,8 +186,24 @@
         y1 = a.y - 17;
         x2 = b.x;
         y2 = b.y - 17;
-        var loopCorridorY = 735;
+        var loopCorridorY = 860;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + loopCorridorY + ' L' + x2 + ',' + loopCorridorY + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Model Weights' && ['Embedding', 'Multi-Head Self-Attention', 'Feed-Forward Network', 'Output Head'].indexOf(c[1]) >= 0) {
+        // Model Weights -> inference layers: fan out below the node into the reasoning cluster
+        x1 = a.x;
+        y1 = a.y + 17;
+        x2 = b.x;
+        y2 = b.y - 17;
+        var weightsCorridorY = 880;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + weightsCorridorY + ' L' + x2 + ',' + weightsCorridorY + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Student' && c[1] === 'Model Weights') {
+        // Student -> Model Weights: vertical-first to avoid crossing Post-Training line
+        x1 = a.x;
+        y1 = a.y - 17;
+        x2 = a.x > b.x ? b.x + 65 : b.x - 65;
+        y2 = b.y;
+        var studentCorridorY = 900;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + studentCorridorY + ' L' + x2 + ',' + studentCorridorY + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'Turn Finalizer' && ['Hermes CLI', 'API Server', 'Messaging Gateway', 'TUI Gateway'].indexOf(c[1]) >= 0) {
         // Turn Finalizer -> gateways: exit upward, bend slightly above, go left to streaming-output x, then down
         x1 = a.x;
@@ -268,6 +288,35 @@
     );
   }
 
+  function formatDesc(text) {
+    var lines = text.split('\n');
+    var out = [];
+    var bullets = [];
+    function flushBullets() {
+      if (bullets.length) {
+        var items = bullets.map(function (b, i) { return h('li', {className: 'eh-detail-li', key: i}, b); });
+        out.push(h('ul', {className: 'eh-detail-ul', key: 'ul-' + out.length}, items));
+        bullets = [];
+      }
+    }
+    lines.forEach(function (raw) {
+      var line = raw.replace(/^[\s\u3000]+|[\s\u3000]+$/g, '');
+      if (!line) { flushBullets(); return; }
+      if (/^[-–—•]/.test(line)) {
+        bullets.push(line.replace(/^[-–—•]\s*/, ''));
+        return;
+      }
+      flushBullets();
+      if (/[：:?？!！]$/.test(line)) {
+        out.push(h('h4', {className: 'eh-detail-h4', key: 'h-' + out.length}, line));
+      } else {
+        out.push(h('p', {className: 'eh-detail-p', key: 'p-' + out.length}, line));
+      }
+    });
+    flushBullets();
+    return h('div', {className: 'eh-detail-desc'}, out);
+  }
+
   function DetailPanel(props) {
     var detail = props.detail;
     var onClose = props.onClose;
@@ -285,7 +334,7 @@
       h('div', {className: 'eh-detail-body'},
         !detail.showCode
           ? h('div', {className: 'eh-detail-intro'},
-              h('div', {className: 'eh-detail-desc'}, (detail.desc || '暂无介绍').replace(/([。；])/g, '$1\n')),
+              formatDesc(detail.desc || '暂无介绍'),
               detail.src ? h('button', {className: 'eh-detail-action', onClick: onViewSource}, '查看源码') : null
             )
           : detail.loading

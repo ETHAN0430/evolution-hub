@@ -65,33 +65,33 @@
     },
     "Tokenizer": {
       "x": 140,
-      "y": 780,
+      "y": 840,
       "group": "provider",
-      "desc": "把原始文本切成模型能处理的 token。\n\n例如：\n- 'hello world' 可能被切成 ['hello', ' world']\n- 中文常按字或子词切分\n- 不同服务商（OpenAI、Anthropic）有各自的词表和 BPE 规则\n\nTokenizer 的输出是一串整数 token ID，后面才交给 embedding 层。"
+      "desc": "一句话：把输入文本切成模型能识别的 token ID。\n\n例子：\"我想吃苹果\" 可能被切成 [我, 想, 吃, 苹果]，对应整数列表 [1024, 2048, 3056, 4072]。\n\nTokenizer 要不要训练？\nTokenizer 本身也要在语料上训练，但它训练的是“怎么切”和“词表”，不是神经网络权重。常见方法有 BPE、WordPiece、SentencePiece、Unigram。训练完成后，词表和合并规则就固定了。\n它属于模型训练的“前置准备阶段”，不是反向传播更新神经网络参数的那个 model train。\n\n怎么避免切错词？\n运行时是没法改的，Tokenizer 由模型决定。只能在上游做选择：\n- 选词表更大、对目标语言更友好的模型（中文场景尤其重要）。\n- 对专有名词、数字、代码符号做预处理，比如加空格或特殊标记。\n- 如果是私有化部署，可以用领域语料重新训练 Tokenizer。\n- 特殊概念可以用特殊 token（如 <|tool|>）让它被当成一个整体。\n\n原理：Tokenizer 用 BPE 等规则把文本拆成词表里的单位。中文可能按字或子词切，英文常按子词切（如 \"playing\" → [\"play\", \"ing\"]）。不同模型词表不同，所以同一个文本在不同模型里 token 数可能差很多。"
     },
     "Embedding": {
       "x": 280,
-      "y": 780,
+      "y": 840,
       "group": "provider",
-      "desc": "把每个 token ID 映射成一个高维向量（通常几百到几千维）。\n\n作用：把离散的 token 变成连续的语义表示，意思相近的词在向量空间里也相近。\n\n自回归生成时，采样出的新 token 已经是一个整数 ID，不需要再分词，直接来这里查表拿到向量，再送入 Decoder 继续下一轮。"
+      "desc": "一句话：把每个 token ID 映射成一个高维向量。\n\n例子：\"我\" 变成 [0.1, -0.3, 0.7, ...]，\"苹果\" 变成 [0.8, 0.2, -0.1, ...]；意思相近的词在向量空间里距离更近。\n\nEmbedding 要不要训练？\nEmbedding 矩阵是模型权重的一部分，会在预训练里通过反向传播一起学出来。预训练完成后，每个 token ID 都对应一个固定向量。\n所以 Embedding 训练属于 model train。如果后面要新增 token（比如扩展词表），需要给新 token 初始化 embedding，然后再训练或微调。\n\n原理：Embedding 层本质上是一个查找表（lookup table），每个 token ID 对应一个固定向量。它把离散的整数变成连续的语义表示，但这一步还不包含位置信息。"
     },
     "Multi-Head Self-Attention": {
       "x": 560,
-      "y": 780,
+      "y": 840,
       "group": "provider",
-      "desc": "Transformer 的核心计算层。\n\n对每个 token，它会计算它和序列中所有其它 token 的关联程度（Query-Key 点积），再用这个权重把大家的 Value 加权求和。\n\n多头 = 多组并行的 Q/K/V 投影，每组关注不同的关系（语法、指代、语义等）。\n\nDecoder：在 Decoder-only 自回归模型里，通常把 Self-Attention + FFN 这个整体叫做 Decoder。生成阶段它循环执行：\n新 token 的 embedding → Attention（看 KV Cache 里前面所有位置）→ FFN → Output Head → Sampling → 下一个 token ID → 回到 Embedding。\n\nRoPE：现代模型常把位置编码直接做在 Attention 里，对 Q/K 做旋转，而不是在 Embedding 后加独立的位置编码层。\n\nKV Cache：实际推理时会把已经算过的 Key/Value 缓存起来，避免每生成一个新 token 都重新算一遍整个历史序列，从而大幅加速自回归生成。"
+      "desc": "一句话：让模型看到上下文里哪些词之间有关系。\n\n例子：在 \"我想吃苹果\" 中，\"吃\" 会重点关注 \"我\"（谁吃）和 \"苹果\"（吃什么）；\"苹果\" 会回头看 \"吃\"，知道自己是被吃的对象。\n\n原理：每个 token 用 Query 去和序列中其他 token 的 Key 做点积，得到注意力权重，再用权重对 Value 加权求和。多头 = 多组并行的 Q/K/V，每组关注不同关系（语法、指代、语义等）。\nDecoder-only 自回归模型里，Self-Attention + FFN 整体就是 Decoder。现代模型常用 RoPE 把位置信息融进 Attention 的 Q/K。推理时用 KV Cache 避免重复计算历史 token。"
     },
     "Feed-Forward Network": {
       "x": 840,
-      "y": 780,
+      "y": 840,
       "group": "provider",
-      "desc": "对每个 token 单独做非线性变换。\n\n结构：一般是两个全连接层夹一个激活函数（如 GELU）。\n作用：给模型增加非线性拟合能力，让 attention 提取的关系能进一步组合、变换。\n注意：这一层每个 token 各自计算，不看其它 token。"
+      "desc": "一句话：对每个 token 的向量单独做非线性变换，加工语义。\n\n例子：Attention 已经让 \"吃\" 带上了 \"我\" 和 \"苹果\" 的信息；FFN 把这个混合后的向量进一步映射到更接近 [食物动作] 的语义空间。\n\n原理：FFN 通常是两个全连接层夹一个激活函数（如 GELU）的 MLP。它不看其他 token，只处理当前位置的向量，给模型增加非线性拟合能力，让 Attention 提取的关系能进一步组合和变换。"
     },
     "Output Head": {
       "x": 980,
-      "y": 780,
+      "y": 840,
       "group": "provider",
-      "desc": "把最后一层的隐藏状态投影回词表大小，输出下一个 token 的分数（logits），再经 softmax 得到概率分布。\n\n实际生成时不会直接取概率最大的 token，而是按 temperature、top-p、top-k 等策略采样，让回答更自然、有变化。"
+      "desc": "一句话：把最后一个位置的向量投影回词表大小，输出下一个 token 的分数。\n\n例子：模型处理完 \"我想吃苹果\" 后，Output Head 输出下一个词的 logits：\"因为\"=3.2，\"所以\"=1.5，\"然后\"=0.8，\"今天\"=0.3。\n\n原理：Output Head 是一个线性层，输入是最后一层 hidden state，输出维度等于词表大小。每个值就是对应 token 的 logit（未归一化分数），后面会过 softmax 变成概率，再交给 Sampling 选择。"
     },
     "Agent Init": {
       "file": "agent/agent_init.py",
@@ -147,7 +147,7 @@
       "x": 510,
       "y": 680,
       "group": "pipeline",
-      "desc": "真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。\n\n几个概念区分：\n- LLM（大语言模型）是任务/类别，不是具体架构。\n- Transformer 是当前 LLM 的主流实现（self-attention + FFN）。\n- JEPA / 世界模型是更远的方向，想从“预测下一个 token”转向“预测世界的未来状态”。\n\nPlan Mode / Ask Mode 也在这里体现：\n- Plan Mode：每轮 Turn 都可能触发；复杂任务先让模型生成步骤计划（常以 Todo List 形式），经用户确认后把计划注入上下文，再进入工具执行循环。\n- Ask Mode：模型发现信息不足或需要选择时，调用 approval / ask_user 等系统工具向用户提问，拿到回答后再继续生成。\n\n从 token 到文本：Sampling 产出的是 token ID 序列，返回给 LLM API 之前会经过 detokenization（反向查 Tokenizer 词表）变回文本。流式输出时这个转换是增量进行的：每生成一个 token ID，就立即解码成文本 chunk 推给前端。\n\n调用本身走流式输出：chunk 会经“流式输出”节点推给 CLI / Gateway 等消费者；没有消费者时内部把整段回答收齐后再继续。transform_llm_output 等输出改写 Hook 在完整回答收齐后、交给用户前执行。\n\n流结束的判断：\n- 收到 API 的结束标记（如 SSE 的 [DONE] 或 finish_reason 不为 null）。\n- 连接自然断开。\n\n怎么知道要调工具：\n- 流结束后，把 chunk 拼成完整 assistant_message。\n- 如果消息里有 tool_calls / function_call，就进入“工具执行”节点。\n- 如果没有，就是最终答案，直接返回给用户。\n\n常见 finish_reason：stop（正常结束）、tool_calls（要调工具）、length（token 上限截断）、content_filter（安全过滤）。"
+      "desc": "一句话：把准备好的“信”发给模型，等模型回信。这里的调用是推理（inference），不是训练模型权重。\n\n真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。\n\n几个概念区分：\n- LLM（大语言模型）是任务/类别，不是具体架构。\n- Transformer 是当前 LLM 的主流实现（self-attention + FFN）。\n- JEPA / 世界模型是更远的方向，想从“预测下一个 token”转向“预测世界的未来状态”。\n\nPlan Mode / Ask Mode 也在这里体现：\n- Plan Mode：每轮 Turn 都可能触发；复杂任务先让模型生成步骤计划（常以 Todo List 形式），经用户确认后把计划注入上下文，再进入工具执行循环。\n- Ask Mode：模型发现信息不足或需要选择时，调用 approval / ask_user 等系统工具向用户提问，拿到回答后再继续生成。\n\n从 token 到文本：Sampling 产出的是 token ID 序列，返回给 LLM API 之前会经过 detokenization（反向查 Tokenizer 词表）变回文本。流式输出时这个转换是增量进行的：每生成一个 token ID，就立即解码成文本 chunk 推给前端。\n\n关于多轮对话：大多数 LLM API 调用是“无状态”的——每轮都要把完整历史重新发一遍，服务端重新 tokenizer / embedding 全部内容。KV Cache 主要在同一轮生成内部起作用，跨轮通常不保留（除非服务商支持 prompt caching 或本地有状态推理如 vLLM）。这也是 Hermes 要做上下文压缩的原因：中间轮次被 summarize，只保留开头和最近几轮，降低重复计算和费用。\n\n调用本身走流式输出：chunk 会经“流式输出”节点推给 CLI / Gateway 等消费者；没有消费者时内部把整段回答收齐后再继续。transform_llm_output 等输出改写 Hook 在完整回答收齐后、交给用户前执行。\n\n流结束的判断：\n- 收到 API 的结束标记（如 SSE 的 [DONE] 或 finish_reason 不为 null）。\n- 连接自然断开。\n\n怎么知道要调工具：\n- 流结束后，把 chunk 拼成完整 assistant_message。\n- 如果消息里有 tool_calls / function_call，就进入“工具执行”节点。\n- 如果没有，就是最终答案，直接返回给用户。\n\n常见 finish_reason：stop（正常结束）、tool_calls（要调工具）、length（token 上限截断）、content_filter（安全过滤）。\n\n模型为什么会输出工具调用格式？\n一是 system prompt 里已经写好了可用工具的 schema 和使用示例；二是模型在后训练（SFT/RLHF）中学过“这种请求应该生成 JSON/XML/特殊 token”。所以模型不是突然决定调工具，而是根据 prompt 里的指示和训练得到的模式，生成一段能被解析成 tool_calls 的文本。\n\n流式场景下，这段 JSON 也是 chunk 一个个吐出来的。你可以实时看到“模型正在写工具调用”，但实际执行工具必须等整个 tool_call 消息完整（finish_reason=tool_calls），因为需要完整的函数名和参数。\n\n一次工具调用回复长什么样？\nassistant_message 通常同时包含两部分：\n- content：自然语言文本，比如“我需要查一下文件”或空字符串。\n- tool_calls：结构化数组，每个元素包含 tool id、函数名、参数 JSON。\n\n示例：\n{\n  \"content\": \"我来帮你搜索相关文件\",\n  \"tool_calls\": [{\n    \"id\": \"call_abc\",\n    \"type\": \"function\",\n    \"function\": {\n      \"name\": \"search_files\",\n      \"arguments\": \"{\\\"query\\\": \\\"main.py\\\"}\"\n    }\n  }]\n}\n\nLLM API / 框架拿到这个消息后，先解析 tool_calls 数组，把 name 和 arguments 提取出来，再交给工具执行节点。如果有多个 tool_calls，会并发执行。"
     },
     "流式输出": {
       "file": "agent/conversation_loop.py",
@@ -155,7 +155,7 @@
       "x": 320,
       "y": 680,
       "group": "gateway",
-      "desc": "LLM 流式输出的分发点。有实时消费者（CLI 终端、TUI 面板、Messaging Gateway SSE 等）时，chunk 一边生成一边推给用户；没有消费者时由内部缓冲区收齐后再继续。\n\n注意：transform_llm_output 等输出改写 Hook 在完整回答收齐后才执行，流式阶段无法拦截敏感/违规内容。内容安全需要靠上游 system prompt、模型服务商 safety 设置或 pre_llm_call 等更上游的手段，不能单靠流式输出节点。\n\n但这里可以作为一个实时探测点：对流过的 chunk 做异步内容安全扫描，发现异常时触发熔断、告警或切到人工审核，作为第二道防线。"
+      "desc": "LLM 流式输出的分发点。有实时消费者（CLI 终端、TUI 面板、Messaging Gateway SSE 等）时，chunk 一边生成一边推给用户；没有消费者时由内部缓冲区收齐后再继续。\n\n注意：transform_llm_output 等输出改写 Hook 在完整回答收齐后才执行，流式阶段无法拦截敏感/违规内容。内容安全需要靠上游 system prompt、模型服务商 safety 设置或 pre_llm_call 等更上游的手段，不能单靠流式输出节点。\n\n但这里可以作为一个实时探测点：对流过的 chunk 做异步内容安全扫描，发现异常时触发熔断、告警或切到人工审核，作为第二道防线。\n\n注意：如果模型正在生成工具调用（function calling），流式输出会先吐工具调用 JSON 的字符。前端可以实时显示“正在调用工具”，但实际执行要等到流结束、tool_call 完整后再进入工具执行节点。"
     },
     "工具执行": {
       "file": "agent/tool_executor.py",
@@ -310,40 +310,64 @@
       "desc": "本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。"
     },
     "Pre-training": {
-      "x": 400,
-      "y": 1020,
+      "x": 450,
+      "y": 960,
       "group": "provider",
-      "desc": "在大规模通用数据上从头训练基础模型，学习语言结构、知识和基本推理。"
+      "desc": "一句话：在大规模通用数据上从头训练基础模型，让它学会语言结构、世界知识和基本推理。\n\n例子：用海量网页、书籍、代码训练，模型看到 \"苹果是水果\"、\"1+1=2\" 这样的模式。\n\n训练什么？\n- Embedding 矩阵：从随机初始化开始学习每个 token 的向量。\n- Attention / FFN 权重：学习怎么混上下文、怎么加工语义。\n- Output Head：学习怎么预测下一个 token。\n\n输入数据会先经过训练好的 Tokenizer 切成 token ID，再送进模型做 next-token prediction。预训练完成后得到的基础模型就是 Teacher 或进一步 Post-Training 的起点。"
     },
     "Model Weights": {
-      "x": 525,
-      "y": 860,
+      "x": 650,
+      "y": 920,
       "group": "provider",
-      "desc": "训练产出的模型参数。Hermes 运行时会把这些权重加载到推理层的 Decoder / Attention / FFN / Output Head 中。"
+      "desc": "训练产出的模型参数。Hermes 运行时会把这些权重加载到推理层的 Attention / FFN / Output Head / Embedding 中，让模型开始工作。\n\n来源可以是 Pre-training、Post-Training（SFT/RLHF/DPO）或 Distillation 的 Student。\n\n注意：Hermes 运行时只加载这些权重做推理，不会在线训练或修改模型权重。如果用用户案例去改进模型，那是离线后训练（Post-Training）的事，需要先清洗、标注数据，再单独跑训练流程。\n\n注意：Model Weights 只作用于神经网络的计算层——Embedding、Attention、FFN、Output Head。Tokenizer 是切词规则，不是神经网络权重；KV Cache 是运行时缓存；Sampling 是解码策略，都不属于 Model Weights。"
     },
     "Distillation": {
       "x": 750,
-      "y": 940,
+      "y": 1040,
       "group": "provider",
-      "desc": "知识蒸馏（Knowledge Distillation）：用同一个 Student 模型结构，换一条 Loss 来训练，让它的输出分布逼近 Teacher。\n\n核心不是改模型结构，也不是复制 Teacher 的 weights，而是改损失函数：\n1. 对同一段输入，Teacher 输出软分布 P_teacher（logits 加 temperature 软化）。\n2. Student 输出自己的软分布 P_student。\n3. 损失函数加一项 KL(P_teacher || P_student)，逼 Student 模仿 Teacher 的“把握程度”。\n4. 通常还会保留原始 CrossEntropy，让 Student 同时学真实标签。\n\nTeacher 只是提供软目标的“裁判”，参数冻结；Student 的 weights 来自自己的初始化，通过反向传播更新。\n\n蒸馏和 SFT/RLHF/DPO 是并行的后训练路径，终点都是 Model Weights。"
+      "desc": "一句话：让一个模型（Student）学另一个模型（Teacher）的输出分布，把能力从 Teacher 迁移到 Student。\n\n例子：Teacher 看到 \"我想吃\" 后输出 \"苹果\" 的概率分布（苹果 0.7、香蕉 0.2、西瓜 0.08...）。Student 不只看正确答案，还要尽量模仿这个分布。\n\nStudent 一定是小模型吗？\n不一定。常见做法是 Student 比 Teacher 小，为了压缩和加速（如大模型蒸馏到小模型）。但也可以把能力从一个强模型迁移到另一个同尺寸甚至更大的模型，比如从 Claude 蒸馏到 Kimi，或从推理模型蒸馏到对话模型。核心不是大小，而是 \"让 Student 模仿 Teacher 的输出分布\"。\n\n流程：\n1. 先用 Pre-training / Post-Training 得到一个强 Teacher。\n2. 准备一个 Student（可以是预训练好的模型，尺寸可大可小）。\n3. 对同样的输入，Teacher 输出软分布，Student 用 KL 散度去逼近。\n4. Student 的 weights 通过反向传播自己学出来，Teacher 只当裁判不贡献参数。\n\n蒸馏和 SFT/RLHF/DPO 是并行的后训练路径，终点都是 Model Weights。\n\n从 Student 的视角看：\nStudent 只感知到损失函数里多了一项“要拟合某个软分布”。它并不知道这个软分布来自一个更大的模型、一个更贵的模型，还是人类标注的分布。对 Student 来说，这就是一种特殊的训练目标，和普通 SFT 没有本质区别——区别只在标签是谁生成的。\n\n所以，Student 模型无法回答“你是不是蒸馏了某个模型”这种问题。它对自己的训练过程、数据来源、Teacher 是谁都没有记忆——就像你问一个人“你小学数学老师是谁”，他可能记得，但模型连这种元信息都没有被训练进去。"
     },
     "Post-Training": {
-      "x": 400,
-      "y": 940,
+      "x": 450,
+      "y": 1040,
       "group": "provider",
-      "desc": "预训练之后的所有训练统称，包括：\n- SFT（监督微调）：用高质量问答 pair 训练模型按指令回答。\n- RLHF：用人类偏好数据训练奖励模型，再用 PPO 等 RL 算法优化策略。\n- DPO：直接偏好优化，不需要奖励模型和 RL，用 pair 数据直接优化模型。\n\n后训练的目标是让模型更听话、更安全、更符合人类偏好。Hermes 运行时只加载后训练完成的模型权重，不执行后训练。"
+      "desc": "一句话：在预训练之后继续训练，让模型更听话、更安全、更符合人类偏好。\n\n例子：用高质量问答对教模型按指令回答；用人类偏好数据让模型学会“哪种回答更好”。\n\n主要方法：\n- SFT（监督微调）：用 (prompt, answer) pair 训练，让模型学会对话格式。\n- RLHF：训练奖励模型判断回答好坏，再用 PPO 等强化学习优化。\n- DPO：直接用偏好 pair 数据优化，不需要奖励模型。\n\n后训练的目标是让模型从“会续写文本”变成“会按指令 helpful 地回答”。终点是 Model Weights。"
     },
     "KV Cache": {
-      "x": 700,
-      "y": 780,
+      "x": 560,
+      "y": 800,
       "group": "provider",
-      "desc": "Key-Value Cache。推理时缓存历史 token 的 key 和 value，避免每次生成新 token 时重新计算前面所有 token。\n\n没有 KV Cache，生成长文本时 Attention 计算量会随长度平方增长；有了 KV Cache，可以近似线性增长。DeepSeek 的 MLA 就是把这个缓存进一步压缩。"
+      "desc": "一句话：缓存每个历史 token 的 Key（K）和 Value（V）矩阵，避免生成新 token 时重算整段历史。\n\n存在哪里？怎么索引？\nKV Cache 不是按 token 文字存的字典，而是按位置顺序存的列表/队列。每个位置存一对 (K, V) 张量。\n用 \"我想吃苹果\" 举例，Prompt 阶段算完后缓存长这样：\n  cache[0] = (K_我, V_我)\n  cache[1] = (K_想, V_想)\n  cache[2] = (K_吃, V_吃)\n  cache[3] = (K_苹, V_苹)\n  cache[4] = (K_果, V_果)\n注意：同一个字如果出现在不同位置，K/V 也不同。因为 Attention 里有位置信息（RoPE），而且上下文不一样。\n\n循环命中是怎么回事？继续上面的例子：\n1. Sampling 选出 \"因为\"，计算它的 Q_因为、K_因为、V_因为。\n2. 把 (K_因为, V_因为) 追加到 cache[5]。\n3. 用 Q_因为 和 cache[0..5] 的所有 K 算注意力，再对 6 个 V 加权求和，得到 \"因为\" 位置的输出。\n4. Output Head 在这个输出上预测下一个 token，Sampling 选出 \"今天\"，计算 Q_今天、K_今天、V_今天。\n5. 追加到 cache[6]，用 Q_今天 和 cache[0..6] 的 K/V 继续算。\n每一轮只新增一个位置的 K/V，前面所有位置的 K/V 直接从缓存读，不用重算。\n\nQ/K/V 到底是什么？用 \"我想吃苹果\" 里的 \"吃\" 和 \"苹果\" 举例：\n- Query（Q）：当前 token 的查询意图。比如 \"吃\" 的 Q 在问：\"我要找谁？吃什么？\"\n- Key（K）：每个 token 的索引标签，用来被查询匹配。比如 \"苹果\" 的 K 上写着：\"我是食物，可以被吃\"；\"我\" 的 K 上写着：\"我是施动者\"\n- Value（V）：每个 token 的实际内容，用来被加权组合。比如 \"苹果\" 的 V 保存了\"苹果\"这个词的完整语义\n\n注意力权重 = softmax(Q × K^T / √d)。\"吃\" 的 Q 和 \"苹果\" 的 K 匹配度高，所以 \"苹果\" 的 V 会获得更多权重，输出里就带上\"苹果\"的语义。\n\n矩阵形状上，K 和 V 通常保存为 [序列长度, 注意力头数, 每头维度]。没有 KV Cache，生成长度 N 的文本 Attention 计算量是 O(N²)；有了 KV Cache，每步近似 O(N)。"
     },
     "Sampling": {
       "x": 1120,
-      "y": 780,
+      "y": 840,
       "group": "provider",
-      "desc": "采样策略。Output Head 输出 logits z 后，在这里决定下一个 token 怎么选。\n\nTemperature 公式：\n  P(i) = exp(z_i / T) / Σ_j exp(z_j / T)\n  T → 0：greedy；T = 1：原始分布；T > 1：更随机。\n\nTop-k：保留概率最高的 k 个 token，重新归一化后采样。\nTop-p / nucleus：保留累计概率 ≥ p 的最小 token 集合，重新归一化后采样。\n\n自回归循环：采样得到的是一个 token ID（整数），它不会重新走 Tokenizer，而是直接回到 Embedding 查表，再和 KV Cache 一起进入 Decoder（Self-Attention + FFN）下一轮。"
+      "desc": "一句话：按策略从候选词中选出下一个 token。\n\n例子：Output Head 给了 \"我想吃苹果\" 后面的候选分数。如果 temperature=0，直接选分数最高的 \"因为\"；如果 temperature=0.7，\"因为\" 概率最大但 \"所以\" 或 \"然后\" 也有机会；如果 temperature=1.5，可能选出 \"今天\" 这种上下文不通顺的词。\n\n原理：Sampling 接收 logits z，通过 temperature 调整分布尖锐程度：P(i) = exp(z_i/T) / Σ_j exp(z_j/T)。T→0 时 greedy，T=1 是原始分布，T>1 更随机。常用策略还有 Top-k（只保留前 k 个）、Top-p/nucleus（保留累计概率 ≥ p 的最小集合）、Repetition Penalty（惩罚重复词）。采样得到的是一个 token ID。"
+    },
+    "Training Data": {
+      "x": 150,
+      "y": 960,
+      "group": "provider",
+      "desc": "训练模型用的原始语料。可以包括网页、书籍、代码、对话记录等。数据质量直接决定模型能力。"
+    },
+    "Tokenizer Training": {
+      "x": 150,
+      "y": 1040,
+      "group": "provider",
+      "desc": "在训练数据上学习怎么切词以及词表。Tokenizer 训练完成后词表和合并规则就固定了，后续 Pre-training 用它把文本变成 token ID。"
+    },
+    "Teacher": {
+      "x": 750,
+      "y": 960,
+      "group": "provider",
+      "desc": "蒸馏里的大模型。通常是一个已经 Pre-training / Post-Training 好的强模型，参数冻结，只用来生成软目标（soft target）给学生模型学习。"
+    },
+    "Student": {
+      "x": 900,
+      "y": 1040,
+      "group": "provider",
+      "desc": "蒸馏里的小模型。用 Teacher 的软输出作为监督信号训练，参数量更小，推理更快。训练完成后它的 weights 就是 Model Weights 的一部分。"
     }
   },
   "CONNECTIONS": [
@@ -590,11 +614,6 @@
       "Feed-Forward Network"
     ],
     [
-      "Distillation",
-      "Model Weights",
-      "dashed"
-    ],
-    [
       "Embedding",
       "Multi-Head Self-Attention"
     ],
@@ -602,6 +621,46 @@
       "Sampling",
       "Embedding",
       "dashed"
+    ],
+    [
+      "Training Data",
+      "Pre-training"
+    ],
+    [
+      "Training Data",
+      "Tokenizer Training"
+    ],
+    [
+      "Tokenizer Training",
+      "Pre-training"
+    ],
+    [
+      "Pre-training",
+      "Teacher"
+    ],
+    [
+      "Teacher",
+      "Distillation"
+    ],
+    [
+      "Distillation",
+      "Student"
+    ],
+    [
+      "Student",
+      "Model Weights"
+    ],
+    [
+      "Model Weights",
+      "Embedding"
+    ],
+    [
+      "Model Weights",
+      "Feed-Forward Network"
+    ],
+    [
+      "Model Weights",
+      "Output Head"
     ]
   ]
 }

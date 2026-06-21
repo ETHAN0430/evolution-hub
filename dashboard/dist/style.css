@@ -230,10 +230,44 @@
 }
 
 .eh-detail-desc {
-  white-space: pre-line;
   color: var(--eh-text);
   font-size: 13px;
   line-height: 1.55;
+}
+
+.eh-detail-h4 {
+  color: var(--eh-accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin: 14px 0 6px;
+}
+
+.eh-detail-h4:first-child {
+  margin-top: 0;
+}
+
+.eh-detail-p {
+  margin: 0 0 10px;
+}
+
+.eh-detail-ul {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.eh-detail-li {
+  position: relative;
+  padding-left: 14px;
+  margin-bottom: 6px;
+}
+
+.eh-detail-li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--eh-muted);
 }
 
 .eh-detail-action {
