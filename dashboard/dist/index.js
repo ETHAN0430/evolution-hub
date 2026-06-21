@@ -62,10 +62,10 @@
       {name: 'User', x: 20, y: 90, w: 170, h: 640, color: '#d4c5a9'},
       {name: 'Gateway', x: 210, y: 90, w: 190, h: 640, color: '#e6c875'},
       {name: 'Agent', x: 420, y: 90, w: 460, h: 650, color: '#f4a68e'},
-      {name: 'AI Providers', x: 500, y: 740, w: 160, h: 80, color: '#8ab4e6'},
+      {name: 'Model', x: 420, y: 740, w: 780, h: 80, color: '#8ab4e6'},
       {name: 'Memory', x: 900, y: 90, w: 200, h: 640, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1120, y: 90, w: 200, h: 640, color: '#a8b8e6'},
-      {name: 'Storage', x: 660, y: 820, w: 860, h: 110, color: '#7dd3d8'}
+      {name: 'Storage', x: 660, y: 830, w: 860, h: 110, color: '#7dd3d8'}
     ];
 
     var clusters = CLUSTERS.map(function (c, i) {
