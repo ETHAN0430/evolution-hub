@@ -235,14 +235,6 @@
         x2 = b.x + 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === '工具执行' && c[1] === 'memory') {
-        // Tool executor -> built-in memory tool: right then up into Local Memory cluster
-        x1 = a.x + 65;
-        y1 = a.y;
-        x2 = b.x - 65;
-        y2 = b.y;
-        var toolMemCorridorX = 800;
-        d = 'M' + x1 + ',' + y1 + ' L' + toolMemCorridorX + ',' + y1 + ' L' + toolMemCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === '后台复盘' && c[1] === 'memory') {
         // Background review -> built-in memory tool: horizontal into the memory tool surface
         x1 = a.x + 65;
