@@ -64,6 +64,8 @@
     'MemAgent': {file: 'hy_memory/agent/mem_agent.py', loc: 'MemAgent', x: 1140, y: 420, group: 'hy', desc: '记忆提炼员。自动从对话里提取重要事实、身份信息和摘要。'},
     'Reconciler': {file: 'hy_memory/agent/reconciler.py', loc: 'MemoryReconciler', x: 1140, y: 520, group: 'hy', desc: '记忆冲突检查员。看看新信息和旧记忆有没有矛盾，决定是新增、替换还是更新。'},
     'System 2': {file: 'hy_memory/pipelines/system2_writer.py', loc: 'System2Writer', x: 1140, y: 620, group: 'hy', desc: '深度思考层。把零散事实组织成概念、意图和知识图谱。'},
+    '记忆检索': {file: 'hy_memory/coding/curator/tools.py', loc: 'search_memory', x: 1280, y: 260, group: 'hy', desc: 'HY Memory 的语义搜索工具。根据 query 召回相关记忆（只返回 metadata，完整内容需要再 read）。'},
+    '记忆写入': {file: 'hy_memory/coding/curator/tools.py', loc: 'create_memory', x: 1280, y: 460, group: 'hy', desc: 'HY Memory 的写入工具。支持 create / update / delete 记忆。'},
 
     // ── Persistent stores (foundation) ──────────────────────────────────────
     'Vector DB': {file: 'hy_memory/data/vector_store_chroma.py', loc: 'ChromaVectorStore', x: 720, y: 860, group: 'storage', desc: '向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。'},
@@ -113,6 +115,8 @@
 
     // HY Memory internal flow
     ['HY Memory', 'S1 Writer'],
+    ['HY Memory', '记忆检索'],
+    ['HY Memory', '记忆写入'],
     ['S1 Writer', 'Vector DB'],
     ['S1 Writer', 'MemAgent'], ['MemAgent', 'Reconciler'],
     ['Reconciler', 'Vector DB'],
