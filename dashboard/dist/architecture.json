@@ -512,10 +512,6 @@
       "dashed"
     ],
     [
-      "System 1 Writer",
-      "MemAgent"
-    ],
-    [
       "Reconciler",
       "Vector DB"
     ],
@@ -666,18 +662,6 @@
       "L2_FACT"
     ],
     [
-      "MemAgent",
-      "L3_SUMMARY"
-    ],
-    [
-      "MemAgent",
-      "L4_IDENTITY"
-    ],
-    [
-      "MemAgent",
-      "L5_KNOWLEDGE"
-    ],
-    [
       "L5_KNOWLEDGE",
       "Reconciler"
     ],
@@ -720,6 +704,18 @@
       "Vector DB",
       "System 2 Writer",
       "dashed"
+    ],
+    [
+      "L4_IDENTITY",
+      "L5_KNOWLEDGE"
+    ],
+    [
+      "L2_FACT",
+      "L3_SUMMARY"
+    ],
+    [
+      "L3_SUMMARY",
+      "L4_IDENTITY"
     ]
   ]
 }
