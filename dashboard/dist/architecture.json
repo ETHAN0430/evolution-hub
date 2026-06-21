@@ -208,7 +208,7 @@
     "MemAgent": {
       "file": "hy_memory/agent/mem_agent.py",
       "loc": "MemAgent",
-      "x": 810,
+      "x": 1200,
       "y": 380,
       "group": "hy",
       "desc": "记忆提炼员。从 L1_RAW 中提取结构化信息：L2_FACT、L3_SUMMARY、L4_IDENTITY。"
@@ -216,7 +216,7 @@
     "Reconciler": {
       "file": "hy_memory/agent/reconciler.py",
       "loc": "MemoryReconciler",
-      "x": 810,
+      "x": 1200,
       "y": 500,
       "group": "hy",
       "desc": "记忆冲突检查员。对比新提取的 L2/L3/L4 和已有记忆，决定新增、替换还是更新，然后写入 Vector DB。"
@@ -324,16 +324,16 @@
     "S1 / MemoryWriter": {
       "file": "hy_memory/pipelines/writer.py",
       "loc": "MemoryWriter",
-      "x": 810,
-      "y": 260,
+      "x": 1200,
+      "y": 300,
       "group": "hy",
       "desc": "同步写入层（MemoryWriter）。\n\n流程：\n1. 把对话做 embedding，存成 L1_RAW（原始记忆向量）。\n2. 交给 MemAgent 提取：\n   - L2_FACT：可验证的事实\n   - L3_SUMMARY：摘要\n   - L4_IDENTITY：用户身份/偏好\n3. Reconciler 检查新旧记忆冲突，决定新增、替换或更新。\n\n这是实时路径：每次对话后同步执行，结果写入 Vector DB。"
     },
     "System 2 Writer": {
       "file": "hy_memory/pipelines/system2_writer.py",
       "loc": "System2Writer",
-      "x": 960,
-      "y": 260,
+      "x": 1380,
+      "y": 300,
       "group": "hy",
       "desc": "异步深度加工层（System 2 Writer）。\n\n从已有的 L0/L1/L2/L4 记忆层出发，做更重的结构化处理：\n- Schema 归纳：提炼概念、心智模型 → L6_SCHEMA\n- 意图识别：提取前瞻意图 → L7_INTENTION\n- 约束标注：标注禁忌、偏好边界\n- 知识缺口扫描：审计记忆完整性\n\n这是异步路径：不一定每轮都跑，跑的时候生成/更新 Graph DB 里的概念和关系。"
     },
@@ -344,25 +344,25 @@
       "desc": "Turn Finalizer 内部调用的外部记忆同步动作。\n\n在 `finalize_turn()` 末尾触发：把本轮用户消息和助手回复直接交给 S1 / MemoryWriter，进入 HY Memory 的写入流水线（L1_RAW → MemAgent → Reconciler → Vector DB），并发起下一轮 prefetch 预热。\n\n注意：虽然源码方法叫 sync_all，但 Hermes 同一时间只允许激活一个外部记忆后端，所以这里的 \"all\" 实际上是\"当前已注册的那个外部后端\"。"
     },
     "L1_RAW": {
-      "x": 1130,
+      "x": 1460,
       "y": 300,
       "group": "hy",
       "desc": "原始对话 turn 的向量层。S1 / MemoryWriter 把本轮用户消息和助手回复 embedding 后存成 L1_RAW，同时保留原文 payload 在 Vector DB。"
     },
     "L2_FACT": {
-      "x": 1050,
+      "x": 1380,
       "y": 380,
       "group": "hy",
       "desc": "事实层。MemAgent 从 L1_RAW 中提炼出的可验证事实。"
     },
     "L3_SUMMARY": {
-      "x": 1130,
+      "x": 1460,
       "y": 380,
       "group": "hy",
       "desc": "摘要层。MemAgent 从 L1_RAW 中提炼出的会话摘要。"
     },
     "L4_IDENTITY": {
-      "x": 1050,
+      "x": 1380,
       "y": 460,
       "group": "hy",
       "desc": "身份/偏好层。MemAgent 从 L1_RAW 中提炼出的用户画像、偏好、沟通风格等。"
@@ -380,25 +380,25 @@
       "desc": "近似最近邻检索。用向量相似度在 Vector DB 中召回相关记忆节点。"
     },
     "L0_BASIC_INFO": {
-      "x": 1050,
+      "x": 1380,
       "y": 300,
       "group": "hy",
       "desc": "基础画像层。用户的姓名、年龄、职业等硬信息，通常由 basic profile 工具提取并维护。"
     },
     "L5_KNOWLEDGE": {
-      "x": 1130,
+      "x": 1460,
       "y": 460,
       "group": "hy",
       "desc": "领域知识层。MemAgent 从 L1_RAW 中提炼出的领域经验、技巧性知识。"
     },
     "L6_SCHEMA": {
-      "x": 1050,
+      "x": 1380,
       "y": 540,
       "group": "hy",
       "desc": "Schema/心智模型层。System 2 Writer 从 L0/L2/L4 等层归纳出的概念模式和规律。"
     },
     "L7_INTENTION": {
-      "x": 1130,
+      "x": 1460,
       "y": 540,
       "group": "hy",
       "desc": "意图层。System 2 Writer 从 L1_RAW 等层提取出的前瞻意图、目标。"

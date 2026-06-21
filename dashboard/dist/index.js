@@ -106,9 +106,9 @@
       {name: 'Model / Training', x: 420, y: 890, w: 1380, h: 220, color: '#8ab4e6'},
       {name: 'Distillation', x: 1060, y: 930, w: 320, h: 140, color: '#7aa4d6'},
       {name: 'Memory', x: 890, y: 90, w: 710, h: 650, color: '#8fc9a3'},
-      {name: 'Tools', x: 900, y: 150, w: 140, h: 590, color: '#8fc9a3'},
-      {name: 'HY Memory', x: 760, y: 150, w: 280, h: 450, color: '#8fc9a3'},
-      {name: 'Memory Layers', x: 1040, y: 260, w: 240, h: 320, color: '#8fc9a3'},
+      {name: 'Tools', x: 900, y: 150, w: 220, h: 590, color: '#8fc9a3'},
+      {name: 'HY Memory', x: 1100, y: 260, w: 350, h: 400, color: '#8fc9a3'},
+      {name: 'Memory Layers', x: 1340, y: 260, w: 160, h: 320, color: '#8fc9a3'},
       {name: 'Retrieval', x: 1500, y: 500, w: 100, h: 220, color: '#8ab4e6'},
       {name: 'Storage', x: 1600, y: 90, w: 200, h: 640, color: '#7dd3d8'},
 
