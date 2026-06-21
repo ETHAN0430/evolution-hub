@@ -225,6 +225,14 @@
         y2 = b.y;
         var cliCorridorX = 410;
         d = 'M' + x1 + ',' + y1 + ' L' + cliCorridorX + ',' + y1 + ' L' + cliCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === '工具执行' && c[1] === '上下文压缩') {
+        // Return loop: go up from tool, left, then down into context compression
+        x1 = a.x;
+        y1 = a.y - 17;
+        x2 = b.x;
+        y2 = b.y - 17;
+        var loopY = 540;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + loopY + ' L' + x2 + ',' + loopY + ' L' + x2 + ',' + y2;
       } else if (x1 === x2 || y1 === y2) {
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else if (Math.abs(dx) > Math.abs(dy)) {
