@@ -242,21 +242,13 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === '后台复盘' && c[1] === 'skill') {
-        // Background review -> skill: drop down into the skill tool node
+      } else if (c[0] === '后台复盘' && c[1] === 'skill_manage') {
+        // Background review -> skill_manage: drop down into the skill tool node
         x1 = a.x + 65;
         y1 = a.y;
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'memory_tool' && c[1] === '记忆文件') {
-        // memory_tool -> local memory file: stay above the external-memory surface
-        x1 = a.x + 65;
-        y1 = a.y;
-        x2 = b.x - 65;
-        y2 = b.y;
-        var memFileCorridorY = 120;
-        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + memFileCorridorY + ' L' + x2 + ',' + memFileCorridorY + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'Agent Init' && c[1] === '记忆文件') {
         // Agent Init -> local memory file: up to top corridor, across to Storage, then down
         x1 = a.x + 65;
@@ -265,6 +257,14 @@
         y2 = b.y;
         var initMemCorridorY = 120;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + initMemCorridorY + ' L' + x2 + ',' + initMemCorridorY + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Turn Finalizer' && c[1] === 'SQLite Session') {
+        // Turn Finalizer -> SQLite Session: top corridor to avoid crossing System 2 Writer
+        x1 = a.x;
+        y1 = a.y - 17;
+        x2 = b.x - 65;
+        y2 = b.y;
+        var sqliteCorridorY = 120;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + sqliteCorridorY + ' L' + x2 + ',' + sqliteCorridorY + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'MemAgent' && ['L2_FACT', 'L3_SUMMARY', 'L4_IDENTITY', 'L5_KNOWLEDGE'].indexOf(c[1]) >= 0) {
         // MemAgent -> layer nodes: shared horizontal at MemAgent level, then fan out
         x1 = a.x;

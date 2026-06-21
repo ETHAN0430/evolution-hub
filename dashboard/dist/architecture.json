@@ -257,7 +257,7 @@
       "file": "hermes_state.py",
       "loc": "SessionDB",
       "x": 1700,
-      "y": 650,
+      "y": 280,
       "group": "storage",
       "desc": "本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。"
     },
@@ -411,7 +411,7 @@
       "group": "memory",
       "desc": "Hermes 内置的本地文件记忆工具（tools/memory_tool.py）。\n\n模型可显式调用：memory(action=add|replace|remove, target=memory|user, content=..., old_text=...)。\n也支持 batch operations：operations=[{action, content?, old_text?}, ...]。\n\n作用对象：\n- target=memory：写入 MEMORY.md，保存环境事实、项目约定、工具 quirks 等。\n- target=user：写入 USER.md，保存用户偏好、身份、沟通风格等。\n\n关键区别：memory_tool 直接写本地文件，不经过 S1 / MemoryWriter，也不进入外部 Vector DB。它写入的内容只有两种生效方式：\n1. Agent Init 启动时把文件加载成 frozen snapshot 注入 system prompt。\n2. 下轮新会话重新加载 snapshot 时才能看到本轮写入。\n\n后台复盘（background review）也会调用此工具把提炼出的用户画像/偏好落盘。"
     },
-    "skill": {
+    "skill_manage": {
       "file": "tools/skill_manage.py",
       "loc": "skill_manage",
       "x": 980,
@@ -774,7 +774,7 @@
     ],
     [
       "后台复盘",
-      "skill",
+      "skill_manage",
       "dashed"
     ]
   ]
