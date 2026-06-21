@@ -92,7 +92,6 @@
     // Hermes turn pipeline (spine). The agent loop is the cycle between LLM and tools.
     ['输入清洗', 'MCP 刷新'], ['MCP 刷新', '记忆预取'], ['记忆预取', '预压缩'], ['预压缩', '插件上下文'], ['插件上下文', '消息构建'], ['消息构建', 'LLM API'],
     ['LLM API', '工具执行'],
-    ['工具执行', 'LLM API'],
     ['工具执行', '上下文压缩', 'dashed'],
     ['上下文压缩', 'LLM API', 'dashed'],
     ['工具执行', '输出后处理'],
