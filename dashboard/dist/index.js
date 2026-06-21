@@ -247,8 +247,8 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'Agent Init' && c[1] === '记忆文件') {
-        // Agent Init -> local memory file: up to top corridor, across to Storage, then down
+      } else if (c[0] === 'Agent Init' && c[1] === '记忆/技能') {
+        // Agent Init -> 记忆/技能: up to top corridor, across to Storage, then down
         x1 = a.x + 65;
         y1 = a.y;
         x2 = b.x - 65;
