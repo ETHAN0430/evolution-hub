@@ -271,8 +271,8 @@
         y2 = b.y - 17;
         var fanY = 500;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + fanY + ' L' + x2 + ',' + fanY + ' L' + x2 + ',' + y2;
-      } else if (c[0] === '记忆检索' && c[1] === 'Embed Service') {
-        // 记忆检索 -> Embed Service: up to Embed Service height, then right into retrieval cluster
+      } else if (c[0] === '记忆检索' && c[1] === 'Embedding') {
+        // 记忆检索 -> Embedding: up to Embedding height, then right into retrieval cluster
         x1 = a.x + 65;
         y1 = a.y;
         x2 = b.x - 65;
@@ -299,8 +299,8 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === '记忆预取' && c[1] === 'Embed Service') {
-        // 记忆预取 -> Embed Service: auto recall goes through the retrieval path
+      } else if (c[0] === '记忆预取' && c[1] === 'Embedding') {
+        // 记忆预取 -> Embedding: auto recall goes through the retrieval path
         x1 = a.x + 65;
         y1 = a.y;
         x2 = b.x - 65;
