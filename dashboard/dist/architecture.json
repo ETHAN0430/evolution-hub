@@ -131,7 +131,7 @@
       "x": 510,
       "y": 470,
       "group": "pipeline",
-      "desc": "每轮 LLM 调用前，把当前用户消息发给外部记忆后端做语义召回，\n把相关上下文注入 system prompt。\n\n本地 MEMORY.md / USER.md 不在每轮 prefetch，而是在 Agent Init 时作为 frozen snapshot 注入 system prompt。"
+      "desc": "每轮 LLM 调用前，把当前用户消息发给外部记忆的检索链路做语义召回。\n\n流程：查询文本 → Embed Service → ANN 检索 → Vector DB，把召回的相关记忆注入 system prompt。\n\n本地 MEMORY.md / USER.md 不在每轮 prefetch，而是在 Agent Init 时作为 frozen snapshot 注入 system prompt。"
     },
     "PreHook": {
       "file": "hermes_cli/plugins.py",
@@ -227,7 +227,7 @@
       "x": 940,
       "y": 300,
       "group": "hy",
-      "desc": "外部记忆后端暴露给模型的语义搜索工具。\n\n模型显式调用后，外部记忆后端对 Vector DB 做语义召回，返回相关记忆的 metadata；\n如需完整内容还要再 read。"
+      "desc": "外部记忆后端暴露给模型的语义搜索工具（hy_memory/coding/curator/tools.py 里的 search_memory）。\n\n模型显式调用后，查询文本走 Embed Service → ANN 检索 → Vector DB，做语义召回并返回相关记忆的 metadata；如需完整内容还要再 read。"
     },
     "记忆写入": {
       "file": "hy_memory/coding/curator/tools.py",
@@ -235,7 +235,7 @@
       "x": 940,
       "y": 360,
       "group": "hy",
-      "desc": "外部记忆后端暴露给模型的写入工具。\n\n模型显式调用后，外部记忆后端把新记忆写入 Vector DB 或 Graph DB。"
+      "desc": "外部记忆后端暴露给模型的写入工具（hy_memory/coding/curator/tools.py 里的 create_memory）。\n\n模型显式调用后，新记忆直接交给 S1 / MemoryWriter，进入写入流水线（L1_RAW → MemAgent → Reconciler），最终落盘到 Vector DB 或 Graph DB。"
     },
     "Vector DB": {
       "file": "hy_memory/data/vector_store_chroma.py",
@@ -338,7 +338,7 @@
     "System 2 Writer": {
       "file": "hy_memory/pipelines/system2_writer.py",
       "loc": "System2Writer",
-      "x": 1320,
+      "x": 1380,
       "y": 260,
       "group": "hy",
       "desc": "异步深度加工层（System 2 Writer）。\n\n从已有的 L0/L1/L2/L4 记忆层出发，做更重的结构化处理：\n- Schema 归纳：提炼概念、心智模型 → L6_SCHEMA\n- 意图识别：提取前瞻意图 → L7_INTENTION\n- 约束标注：标注禁忌、偏好边界\n- 知识缺口扫描：审计记忆完整性\n\n这是异步路径：不一定每轮都跑，跑的时候生成/更新 Graph DB 里的概念和关系。"
@@ -355,13 +355,7 @@
       "x": 810,
       "y": 300,
       "group": "pipeline",
-      "desc": "Turn Finalizer 内部调用的外部记忆同步动作。\n\n在 `finalize_turn()` 末尾触发：把本轮用户消息和助手回复写入外部记忆后端，\n并发起下一轮 prefetch 预热。\n\n注意：虽然源码方法叫 sync_all，但 Hermes 同一时间只允许激活一个外部记忆后端，\n所以这里的 \"all\" 实际上是\"当前已注册的那个外部后端\"。"
-    },
-    "外部记忆": {
-      "x": 1020,
-      "y": 180,
-      "group": "memory",
-      "desc": "外部记忆后端的数据入口（如 HY Memory、Honcho、Mem0 等）。\n\n接收两类输入：\n- 自动检索：每轮 LLM 调用前，由 记忆预取 把用户消息发过来做语义召回。\n- 自动写入：每轮结束后，由 记忆同步 把本轮（用户消息，助手回复）同步进来。\n- 显式工具：模型通过 记忆检索 / 记忆写入 等工具主动查询或修改记忆。\n\n数据落地：写入 Vector DB（语义向量）、Graph DB（概念关系）。\nHermes 同一时间只激活一个外部记忆后端。"
+      "desc": "Turn Finalizer 内部调用的外部记忆同步动作。\n\n在 `finalize_turn()` 末尾触发：把本轮用户消息和助手回复直接交给 S1 / MemoryWriter，进入 HY Memory 的写入流水线（L1_RAW → MemAgent → Reconciler → Vector DB），并发起下一轮 prefetch 预热。\n\n注意：虽然源码方法叫 sync_all，但 Hermes 同一时间只允许激活一个外部记忆后端，所以这里的 \"all\" 实际上是\"当前已注册的那个外部后端\"。"
     },
     "L1_RAW": {
       "x": 1460,
@@ -671,16 +665,6 @@
       "dashed"
     ],
     [
-      "记忆检索",
-      "Vector DB",
-      "dashed"
-    ],
-    [
-      "记忆写入",
-      "Vector DB",
-      "dashed"
-    ],
-    [
       "Turn Finalizer",
       "记忆同步"
     ],
@@ -702,32 +686,6 @@
       "Agent Init",
       "记忆文件",
       "dashed"
-    ],
-    [
-      "记忆预取",
-      "外部记忆",
-      "dashed"
-    ],
-    [
-      "记忆同步",
-      "外部记忆",
-      "dashed"
-    ],
-    [
-      "外部记忆",
-      "记忆检索"
-    ],
-    [
-      "外部记忆",
-      "记忆写入"
-    ],
-    [
-      "外部记忆",
-      "S1 / MemoryWriter"
-    ],
-    [
-      "外部记忆",
-      "System 2 Writer"
     ],
     [
       "S1 / MemoryWriter",
@@ -774,11 +732,6 @@
       "Vector DB"
     ],
     [
-      "外部记忆",
-      "L0_BASIC_INFO",
-      "dashed"
-    ],
-    [
       "L0_BASIC_INFO",
       "Vector DB",
       "dashed"
@@ -810,6 +763,30 @@
     [
       "PostHook",
       "Turn Finalizer"
+    ],
+    [
+      "记忆同步",
+      "S1 / MemoryWriter",
+      "dashed"
+    ],
+    [
+      "记忆写入",
+      "S1 / MemoryWriter"
+    ],
+    [
+      "记忆预取",
+      "Embed Service",
+      "dashed"
+    ],
+    [
+      "S1 / MemoryWriter",
+      "System 2 Writer",
+      "dashed"
+    ],
+    [
+      "S1 / MemoryWriter",
+      "L0_BASIC_INFO",
+      "dashed"
     ]
   ]
 }

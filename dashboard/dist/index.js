@@ -107,7 +107,7 @@
       {name: 'Distillation', x: 720, y: 930, w: 320, h: 140, color: '#7aa4d6'},
       {name: 'Memory', x: 890, y: 80, w: 710, h: 700, color: '#8fc9a3'},
       {name: 'Memory Tools', x: 900, y: 150, w: 140, h: 330, color: '#8fc9a3'},
-      {name: 'HY Memory', x: 1100, y: 260, w: 220, h: 400, color: '#a8b8e6'},
+      {name: 'HY Memory', x: 1100, y: 260, w: 350, h: 400, color: '#a8b8e6'},
       {name: 'Memory Layers', x: 1340, y: 260, w: 160, h: 320, color: '#a8b8e6'},
       {name: 'Retrieval', x: 1500, y: 500, w: 100, h: 220, color: '#7dd3d8'},
       {name: 'Storage', x: 1600, y: 90, w: 200, h: 640, color: '#7dd3d8'},
@@ -243,14 +243,6 @@
         var replyCorridorY = 120;
         var replyCorridorX = 320;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + replyCorridorY + ' L' + replyCorridorX + ',' + replyCorridorY + ' L' + replyCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === '记忆同步' && c[1] === '外部记忆') {
-        // 记忆同步 -> 外部记忆: right out, then up into the external memory box
-        x1 = a.x + 65;
-        y1 = a.y;
-        x2 = b.x - 65;
-        y2 = b.y;
-        var syncCorridorX = 920;
-        d = 'M' + x1 + ',' + y1 + ' L' + syncCorridorX + ',' + y1 + ' L' + syncCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === '工具执行' && c[1] === '上下文压缩') {
         // Tool -> context compressor: straight up, then left (vertical-first L)
         x1 = a.x;
@@ -258,22 +250,6 @@
         x2 = b.x + 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === '外部记忆' && ['记忆检索', '记忆写入'].indexOf(c[1]) >= 0) {
-        // 外部记忆 -> Memory Tools: left corridor down into the tool surface
-        x1 = a.x - 65;
-        y1 = a.y;
-        var leftCorridorX = 920;
-        x2 = b.x - 65;
-        y2 = b.y;
-        d = 'M' + x1 + ',' + y1 + ' L' + leftCorridorX + ',' + y1 + ' L' + leftCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === '外部记忆' && ['S1 / MemoryWriter', 'System 2 Writer'].indexOf(c[1]) >= 0) {
-        // 外部记忆 -> HY Memory components: right corridor down, then into the HY cluster
-        x1 = a.x + 65;
-        y1 = a.y;
-        var rightCorridorX = 1100;
-        x2 = b.x - 65;
-        y2 = b.y;
-        d = 'M' + x1 + ',' + y1 + ' L' + rightCorridorX + ',' + y1 + ' L' + rightCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === '工具执行' && c[1] === 'memory') {
         // Tool executor -> built-in memory tool: right then up into Local Memory cluster
         x1 = a.x + 65;
@@ -305,14 +281,6 @@
         y2 = b.y;
         var initMemCorridorY = 120;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + initMemCorridorY + ' L' + x2 + ',' + initMemCorridorY + ' L' + x2 + ',' + y2;
-      } else if (c[0] === '记忆预取' && c[1] === '外部记忆') {
-        // 记忆预取 -> 外部记忆: right out, then up into external memory
-        x1 = a.x + 65;
-        y1 = a.y;
-        x2 = b.x - 65;
-        y2 = b.y;
-        var prefetchCorridorX = 800;
-        d = 'M' + x1 + ',' + y1 + ' L' + prefetchCorridorX + ',' + y1 + ' L' + prefetchCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'MemAgent' && ['L2_FACT', 'L3_SUMMARY', 'L4_IDENTITY', 'L5_KNOWLEDGE'].indexOf(c[1]) >= 0) {
         // MemAgent -> layer nodes: shared horizontal at MemAgent level, then fan out
         x1 = a.x;
@@ -343,6 +311,35 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === '记忆同步' && c[1] === 'S1 / MemoryWriter') {
+        // 记忆同步 -> S1: straight into the HY Memory write path
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === '记忆写入' && c[1] === 'S1 / MemoryWriter') {
+        // 记忆写入 -> S1: explicit write tool feeds the write pipeline
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'S1 / MemoryWriter' && c[1] === 'System 2 Writer') {
+        // S1 -> System 2 Writer: horizontal pipeline handoff
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === '记忆预取' && c[1] === 'Embed Service') {
+        // 记忆预取 -> Embed Service: auto recall goes through the retrieval path
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        var prefetchEmbedCorridorX = 1100;
+        d = 'M' + x1 + ',' + y1 + ' L' + prefetchEmbedCorridorX + ',' + y1 + ' L' + prefetchEmbedCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (x1 === x2 || y1 === y2) {
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else if (Math.abs(dx) > Math.abs(dy)) {
