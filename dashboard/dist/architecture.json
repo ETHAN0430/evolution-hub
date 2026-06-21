@@ -195,7 +195,7 @@
       "x": 810,
       "y": 190,
       "group": "pipeline",
-      "desc": "在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。\n\n这是 Self-Improvement 吗？\n算一种，但它是系统层面的自我改进，不是改模型权重。它让 Agent 从对话中学习用户习惯、错误模式、有效流程，并沉淀成记忆或技能，下次对话就能用。\n\n和“Memory updated”有什么关系？\n用户看到的“Memory updated”通常就是这类机制的结果：系统从对话里提炼出事实/偏好，写进了长期记忆（通过 MemoryManager / HY Memory / 记忆文件）。\nHermes 里具体实现有两条路径：\n- 自动：后台复盘在每轮结束后触发，异步写入。\n- 显式：模型调用 memory / 记忆写入 工具，把重要信息写进记忆。"
+      "desc": "在后台 fork 一个独立 agent 复盘本轮对话，把值得记住的东西写进记忆/技能存储，不会回流到当前主对话。\n\n具体流程：\n1. 触发：每轮 Turn 结束后，Turn Finalizer 调用 background_review，启动一个后台线程/子 agent。\n2. 读对话：后台 agent 读取本轮完整对话（包括用户消息、模型输出、工具执行结果）。\n3. 提炼：判断有没有值得沉淀的信息，比如：\n   - 用户偏好（\"我喜欢简洁回答\"、\"用 Python\"）\n   - 事实（\"我在做 XX 项目\"、\"我的 API key 是 ...\"）\n   - 可复用的 skill/prompt 模式\n   - 之前犯的错误和正确做法\n4. 写入：通过 MemoryManager 或直接调用记忆/技能工具，把提炼结果写进长期存储（HY Memory、记忆文件、skills）。\n5. 不回流：后台复盘是异步的，写入结果不会插入当前对话，用户本轮看不到变化。\n6. 下次生效：下轮对话开始时，MemoryManager.prefetch_all 会从记忆库里召回相关内容，拼进 system prompt。\n\n这是 Self-Improvement 吗？\n算系统层面的 Self-Improvement，但不是改模型权重。它让 Agent 越用越懂你，但能力提升来自记忆/技能，不是神经网络参数更新。\n\n和“Memory updated”的关系：\n用户看到的“Memory updated”就是这种写入成功的反馈。它可能是后台复盘自动写的，也可能是模型在本轮显式调用 memory / 记忆写入 工具写的。"
     },
     "MemoryManager": {
       "file": "agent/memory_manager.py",
