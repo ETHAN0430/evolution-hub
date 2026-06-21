@@ -211,20 +211,20 @@
       "x": 1110,
       "y": 140,
       "group": "memory",
-      "desc": "外部记忆服务的标准接口（抽象基类）。MemoryManager 只认这个接口，\n具体实现包括：记忆文件（memory_tool）和 HY Memory 内部组件（S1 Writer / System 2 / 记忆工具 / cache.db）。\n核心方法：system_prompt_block()、prefetch()、sync_turn()、get_tool_schemas()。"
+      "desc": "外部记忆服务的标准接口（抽象基类）。MemoryManager 只认这个接口。\n三种调用通道都落在同一个 MemoryProvider 上：\n- 自动检索：prefetch(query)，在每次 LLM 调用前由系统触发（对应图上的 记忆预取）。\n- 自动写入：sync_turn(msg, asst)，在每轮结束后由系统触发（对应图上的 后台复盘）。\n- 显式工具：get_tool_schemas() / handle_tool_call()，模型主动说“帮我记住/搜一下”时调用（对应 Memory Tools cluster）。\n\n具体实现包括：记忆文件（memory_tool）和 HY Memory 内部组件（S1 Writer / System 2 / 记忆工具 / cache.db）。"
     },
     "记忆文件": {
       "file": "tools/memory_tool.py",
       "loc": "MemoryStore",
-      "x": 1000,
-      "y": 660,
+      "x": 960,
+      "y": 720,
       "group": "memory",
       "desc": "本地保存的长期记忆实现（基于 memory_tool）。作为 MemoryProvider 接入 Hermes，\n支持 prefetch() 自动召回和工具显式读写。"
     },
     "MemAgent": {
       "file": "hy_memory/agent/mem_agent.py",
       "loc": "MemAgent",
-      "x": 1110,
+      "x": 1160,
       "y": 420,
       "group": "hy",
       "desc": "记忆提炼员。从 L1_RAW 中提取结构化信息：L2_FACT、L3_SUMMARY、L4_IDENTITY。"
@@ -232,7 +232,7 @@
     "Reconciler": {
       "file": "hy_memory/agent/reconciler.py",
       "loc": "MemoryReconciler",
-      "x": 1110,
+      "x": 1160,
       "y": 500,
       "group": "hy",
       "desc": "记忆冲突检查员。对比新提取的 L2/L3/L4 和已有记忆，决定新增、替换还是更新，然后写入 Vector DB。"
@@ -360,7 +360,7 @@
     "S1 / MemoryWriter": {
       "file": "hy_memory/pipelines/writer.py",
       "loc": "MemoryWriter",
-      "x": 1110,
+      "x": 1160,
       "y": 340,
       "group": "hy",
       "desc": "同步写入层（MemoryWriter）。\n\n流程：\n1. 把对话做 embedding，存成 L1_RAW（原始记忆向量）。\n2. 交给 MemAgent 提取：\n   - L2_FACT：可验证的事实\n   - L3_SUMMARY：摘要\n   - L4_IDENTITY：用户身份/偏好\n3. Reconciler 检查新旧记忆冲突，决定新增、替换或更新。\n\n这是实时路径：每次对话后同步执行，结果写入 Vector DB。"
@@ -368,31 +368,31 @@
     "System 2 Writer": {
       "file": "hy_memory/pipelines/system2_writer.py",
       "loc": "System2Writer",
-      "x": 1260,
+      "x": 1280,
       "y": 340,
       "group": "hy",
       "desc": "异步深度加工层（System 2 Writer）。\n\n从已有的 L0/L1/L2/L4 记忆层出发，做更重的结构化处理：\n- Schema 归纳：提炼概念、心智模型 → L6_SCHEMA\n- 意图识别：提取前瞻意图 → L7_INTENTION\n- 约束标注：标注禁忌、偏好边界\n- 知识缺口扫描：审计记忆完整性\n\n这是异步路径：不一定每轮都跑，跑的时候生成/更新 Graph DB 里的概念和关系。"
     },
     "Schema 归纳": {
-      "x": 1260,
+      "x": 1280,
       "y": 400,
       "group": "hy",
       "desc": "从 L0-L4 记忆中归纳概念和心智模型，生成 L6_SCHEMA。"
     },
     "意图识别": {
-      "x": 1260,
+      "x": 1280,
       "y": 460,
       "group": "hy",
       "desc": "提取用户的前瞻意图和目标，生成 L7_INTENTION。"
     },
     "约束标注": {
-      "x": 1260,
+      "x": 1280,
       "y": 520,
       "group": "hy",
       "desc": "标注用户的禁忌、偏好边界和约束条件。"
     },
     "知识缺口": {
-      "x": 1260,
+      "x": 1280,
       "y": 580,
       "group": "hy",
       "desc": "审计记忆完整性，发现缺失的关键信息。"
