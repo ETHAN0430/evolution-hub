@@ -64,52 +64,64 @@
       "desc": "Terminal/UI 网关。给 Desktop、Dashboard、TUI 这些 UI 客户端提供统一的后端会话服务。"
     },
     "Tokenizer": {
-      "file": "agent/anthropic_adapter.py",
-      "loc": "build_anthropic_client",
-      "x": 460,
+      "x": 220,
       "y": 780,
       "group": "provider",
       "desc": "把原始文本切成模型能处理的 token。\n\n例如：\n- 'hello world' 可能被切成 ['hello', ' world']\n- 中文常按字或子词切分\n- 不同服务商（OpenAI、Anthropic）有各自的词表和 BPE 规则\n\nTokenizer 的输出是一串整数 token ID，后面才交给 embedding 层。"
     },
     "Embedding": {
-      "file": "agent/anthropic_adapter.py",
-      "loc": "build_anthropic_client",
-      "x": 590,
+      "x": 380,
       "y": 780,
       "group": "provider",
       "desc": "把每个 token ID 映射成一个高维向量（通常几百到几千维）。\n\n作用：把离散的 token 变成连续的语义表示，意思相近的词在向量空间里也相近。\n注意：Embedding 本身不包含位置信息，模型还不知道 token 的顺序。"
     },
     "Positional Encoding": {
-      "file": "agent/anthropic_adapter.py",
-      "loc": "build_anthropic_client",
-      "x": 720,
+      "x": 540,
       "y": 780,
       "group": "provider",
       "desc": "给每个 token 的 embedding 加上位置信号，让模型知道“这个词是第几个”。\n\nSelf-Attention 对输入顺序不敏感，不加重位置信息就无法区分：\n- '我吃苹果' 和 '苹果吃我'\n\n常见做法：sin/cos 固定位置编码（Transformer 原版）或可学习的 positional embedding。"
     },
     "Multi-Head Self-Attention": {
-      "file": "agent/anthropic_adapter.py",
-      "loc": "build_anthropic_client",
-      "x": 850,
+      "x": 700,
       "y": 780,
       "group": "provider",
-      "desc": "Transformer 的核心计算层。\n\n对每个 token，它会计算它和序列中所有其它 token 的关联程度（Query-Key 点积），再用这个权重把大家的 Value 加权求和。\n\n多头 = 多组并行的 Q/K/V 投影，每组关注不同的关系（语法、指代、语义等）。"
+      "desc": "Transformer 的核心计算层。\n\n对每个 token，它会计算它和序列中所有其它 token 的关联程度（Query-Key 点积），再用这个权重把大家的 Value 加权求和。\n\n多头 = 多组并行的 Q/K/V 投影，每组关注不同的关系（语法、指代、语义等）。\n\nKV Cache：实际推理时会把已经算过的 Key/Value 缓存起来，避免每生成一个新 token 都重新算一遍整个历史序列，从而大幅加速自回归生成。"
     },
     "Feed-Forward Network": {
-      "file": "agent/anthropic_adapter.py",
-      "loc": "build_anthropic_client",
-      "x": 980,
+      "x": 860,
       "y": 780,
       "group": "provider",
       "desc": "对每个 token 单独做非线性变换。\n\n结构：一般是两个全连接层夹一个激活函数（如 GELU）。\n作用：给模型增加非线性拟合能力，让 attention 提取的关系能进一步组合、变换。\n注意：这一层每个 token 各自计算，不看其它 token。"
     },
     "Output Head": {
-      "file": "agent/anthropic_adapter.py",
-      "loc": "build_anthropic_client",
-      "x": 1110,
+      "x": 1020,
       "y": 780,
       "group": "provider",
       "desc": "把最后一层的隐藏状态投影回词表大小，输出下一个 token 的分数（logits），再经 softmax 得到概率分布。\n\n实际生成时不会直接取概率最大的 token，而是按 temperature、top-p、top-k 等策略采样，让回答更自然、有变化。"
+    },
+    "Training Data": {
+      "x": 150,
+      "y": 820,
+      "group": "provider",
+      "desc": "训练模型用的数据。预训练阶段通常是海量互联网文本、代码、书籍等；微调阶段则是特定领域或任务的高质量数据。"
+    },
+    "Pre-training": {
+      "x": 350,
+      "y": 820,
+      "group": "provider",
+      "desc": "在大规模通用数据上从头训练模型，让模型学会语言结构、世界知识和基本推理能力。\n\n这一步消耗的算力最大，产出的是基础模型（base model）。"
+    },
+    "Fine-Tuning / SFT": {
+      "x": 550,
+      "y": 820,
+      "group": "provider",
+      "desc": "在预训练好的模型基础上，用特定领域或任务数据继续训练，让模型更适合目标场景。\n\n常见方式：\n- SFT（监督微调）：用（问题，答案）pair 继续训练\n- 指令微调：让模型学会按指令格式回答\n- RLHF / DPO：用人类偏好数据对齐\n\n注意：写 system prompt、改提示词（prompt engineering）**不算**微调，因为模型权重没变；微调会实际更新模型参数。"
+    },
+    "Model Weights": {
+      "x": 750,
+      "y": 820,
+      "group": "provider",
+      "desc": "训练产出的模型参数（权重）。\n\n这些权重会被加载到 Embedding、Self-Attention、FFN、Output Head 等每一层中，支撑左侧的推理链路。\n\nHermes 运行时只加载已经训练好的 weights，不更新它们。"
     },
     "Agent Init": {
       "file": "agent/agent_init.py",
@@ -165,7 +177,7 @@
       "x": 510,
       "y": 680,
       "group": "pipeline",
-      "desc": "真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。\n\n调用本身走流式输出：chunk 会经“流式输出”节点推给 CLI / Gateway 等消费者；没有消费者时内部把整段回答收齐后再继续。transform_llm_output 等输出改写 Hook 在完整回答收齐后、交给用户前执行。"
+      "desc": "真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。\n\n几个概念区分：\n- LLM（大语言模型）是任务/类别，不是具体架构。\n- Transformer 是当前 LLM 的主流实现（self-attention + FFN）。\n- JEPA / 世界模型是更远的方向，想从“预测下一个 token”转向“预测世界的未来状态”。\n\n调用本身走流式输出：chunk 会经“流式输出”节点推给 CLI / Gateway 等消费者；没有消费者时内部把整段回答收齐后再继续。transform_llm_output 等输出改写 Hook 在完整回答收齐后、交给用户前执行。"
     },
     "流式输出": {
       "file": "agent/conversation_loop.py",
@@ -181,7 +193,7 @@
       "x": 660,
       "y": 680,
       "group": "pipeline",
-      "desc": "让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。"
+      "desc": "让 AI 可以动手做事。Hermes 内置工具很多，主要包括：\n\n- 文件类：read_file、write_file、patch、search_files\n- 终端类：terminal、bash、code_execution\n- 浏览器类：browser、browser_cdp、computer_use\n- 记忆类：memory（记忆读写）、session_search（历史会话搜索）\n- 搜索/信息类：web_search、google_search、osv_check\n- 生成类：image_generation、tts\n- 协作类：delegate（子 agent）、mixture_of_agents\n- 平台类：discord、feishu、homeassistant\n- 其它：approval（危险操作审批）、checkpoint、kanban\n\n此外 MCP server 会动态注册更多工具，不同会话可用工具集可能不同。"
     },
     "上下文压缩": {
       "file": "agent/context_compressor.py",
@@ -189,7 +201,7 @@
       "x": 510,
       "y": 610,
       "group": "pipeline",
-      "desc": "进入 LLM 前或工具结果返回后，如果上下文超过阈值，先压缩再交给 LLM。\n阈值 = max(模型窗口 * 50%, 64K)。\n压缩分两步：\n1. 廉价预处理：规则化剪枝工具输出，去掉冗余细节，不调用 LLM。\n2. auxiliary LLM 摘要：用便宜/快速的模型把中间轮次 summarize 成摘要，保留开头和最新对话。"
+      "desc": "进入 LLM 前或工具结果返回后，如果上下文超过阈值，先压缩再交给 LLM。\n阈值 = max(模型窗口 * 50%, 64K)。\n压缩分两步：\n1. 廉价预处理：规则化剪枝工具输出，去掉冗余细节，不调用 LLM。\n2. auxiliary LLM 摘要：用便宜/快速的模型把中间轮次 summarize 成摘要，保留开头和最新对话。\n\n摘要用的 prompt 其实很复杂，不是一句“总结一下”，而是一个结构化模板，要求模型输出：\n- Active Task（当前未完成任务）\n- Goal / Constraints / Completed Actions\n- Active State / In Progress / Blocked\n- Key Decisions / Resolved Questions / Pending Asks\n- Relevant Files / Remaining Work / Critical Context\n\n关键洞察：压缩主要针对中间轮次，最开头的 system prompt / 初始约束和最近几轮通常会被保留。所以哪怕对话被反复 compact，最开头的核心指令一直都会在。"
     },
     "PostHook": {
       "file": "agent/turn_finalizer.py",
@@ -306,24 +318,24 @@
     "Vector DB": {
       "file": "hy_memory/data/vector_store_chroma.py",
       "loc": "ChromaVectorStore",
-      "x": 720,
-      "y": 860,
+      "x": 1440,
+      "y": 200,
       "group": "storage",
       "desc": "向量数据库。用“意思相近”来搜索记忆，而不是只匹配关键词。"
     },
     "Graph DB": {
       "file": "hy_memory/data/graph_store_kuzu.py",
       "loc": "KuzuGraphStore",
-      "x": 960,
-      "y": 860,
+      "x": 1440,
+      "y": 350,
       "group": "storage",
       "desc": "图数据库。像知识图谱一样保存概念、主题和它们之间的关系。"
     },
     "cache.db": {
       "file": "hy_memory/data/cache_sqlite.py",
       "loc": "SqliteCache",
-      "x": 1200,
-      "y": 860,
+      "x": 1440,
+      "y": 500,
       "group": "storage",
       "desc": "本地小数据库。记录系统运行日志、任务队列和一些临时数据。"
     },
@@ -331,9 +343,51 @@
       "file": "hermes_state.py",
       "loc": "SessionDB",
       "x": 1440,
-      "y": 860,
+      "y": 650,
       "group": "storage",
       "desc": "本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。"
+    },
+    "GPU / HBM": {
+      "x": 300,
+      "y": 940,
+      "group": "hardware",
+      "desc": "GPU 高带宽显存（HBM）。推理时模型权重和 KV Cache 都住在这里，是 LLM 服务的核心瓶颈。\n\n显存容量决定了能同时跑多大的模型、多大的 batch、多长的上下文。KV Cache 随序列长度线性增长，长上下文很容易把 HBM 打满。"
+    },
+    "CPU RAM / SSD": {
+      "x": 600,
+      "y": 940,
+      "group": "hardware",
+      "desc": "CPU 内存和固态硬盘。\n\n- CPU RAM：常用于 KV Cache offloading、向量数据库索引缓存。\n- SSD：持久化存储 SQLite、cache.db、会话日志、模型 checkpoint 等。\n\n当 GPU 显存不够时，会把部分 KV Cache 或模型权重卸载到 CPU RAM / SSD，但速度会显著下降。"
+    },
+    "Network": {
+      "x": 900,
+      "y": 940,
+      "group": "hardware",
+      "desc": "网络。调用外部 AI Provider 时的必经瓶颈，影响首 token 延迟和流式响应速度。\n\n本地部署（CPU/GPU）可以绕过，但模型 weights 下载、多机分布式推理、模型服务集群内部通信仍依赖网络。"
+    },
+    "光模块 / 交换机": {
+      "x": 200,
+      "y": 1020,
+      "group": "infra",
+      "desc": "光模块、交换机、路由器。负责把数据从一台机器搬到另一台机器，跨机架/跨数据中心都靠它们。"
+    },
+    "服务器 / 机架": {
+      "x": 420,
+      "y": 1020,
+      "group": "infra",
+      "desc": "服务器和机架。Dell、HPE、浪潮、Supermicro 这些整机厂的产品都住这里，GPU/CPU/内存/硬盘都装在机架上。"
+    },
+    "电力 / UPS": {
+      "x": 640,
+      "y": 1020,
+      "group": "infra",
+      "desc": "电力和 UPS。数据中心最底层的保障：市电、UPS、备用柴油发电机、PDU、散热/空调。\n\nUPS 是电力保障的一部分：市电断供时 UPS 先顶上，等柴油发电机启动。所以把它们画在一起。"
+    },
+    "电网 / 火电": {
+      "x": 860,
+      "y": 1020,
+      "group": "infra",
+      "desc": "AI 数据中心是超级耗电大户，电力是训练/推理成本里的关键一项。\n\n中美新建大规模 AI 集群的主流供电方式：\n- 美国：天然气是近期新建 AI 数据中心最热门的选择（稳定、可快速扩容），部分老厂用核电或签绿电 PPA。\n- 中国：煤电仍是主力，但西南水电、西北风电光伏也承接了不少算力中心。\n\n总体来看，化石能源（天然气 / 煤电）目前仍是 AI 数据中心最主要的底层电力来源。"
     }
   },
   "CONNECTIONS": [
@@ -395,7 +449,48 @@
     ],
     [
       "Output Head",
-      "LLM API"
+      "LLM API",
+      "dashed"
+    ],
+    [
+      "Training Data",
+      "Pre-training"
+    ],
+    [
+      "Pre-training",
+      "Fine-Tuning / SFT"
+    ],
+    [
+      "Fine-Tuning / SFT",
+      "Model Weights"
+    ],
+    [
+      "Model Weights",
+      "GPU / HBM"
+    ],
+    [
+      "Multi-Head Self-Attention",
+      "GPU / HBM"
+    ],
+    [
+      "LLM API",
+      "Network"
+    ],
+    [
+      "Vector DB",
+      "CPU RAM / SSD"
+    ],
+    [
+      "Graph DB",
+      "CPU RAM / SSD"
+    ],
+    [
+      "cache.db",
+      "CPU RAM / SSD"
+    ],
+    [
+      "SQLite Session",
+      "CPU RAM / SSD"
     ],
     [
       "LLM API",
@@ -543,6 +638,30 @@
     [
       "Turn Finalizer",
       "SQLite Session"
+    ],
+    [
+      "GPU / HBM",
+      "服务器 / 机架"
+    ],
+    [
+      "CPU RAM / SSD",
+      "服务器 / 机架"
+    ],
+    [
+      "Network",
+      "光模块 / 交换机"
+    ],
+    [
+      "光模块 / 交换机",
+      "服务器 / 机架"
+    ],
+    [
+      "电力 / UPS",
+      "服务器 / 机架"
+    ],
+    [
+      "电网 / 火电",
+      "电力 / UPS"
     ]
   ]
 }

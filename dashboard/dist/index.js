@@ -32,7 +32,9 @@
     pipeline: {fill: '#33231e', stroke: '#f4a68e'},
     memory: {fill: '#142d21', stroke: '#8fc9a3'},
     hy: {fill: '#1f2330', stroke: '#a8b8e6'},
-    storage: {fill: '#132728', stroke: '#7dd3d8'}
+    storage: {fill: '#132728', stroke: '#7dd3d8'},
+    hardware: {fill: '#2a1d18', stroke: '#e6a875'},
+    infra: {fill: '#2a2218', stroke: '#c4b28a'}
   };
 
   var SOURCE_BASE = (typeof window.__HERMES_SOURCE_BASE__ === 'string' && window.__HERMES_SOURCE_BASE__)
@@ -41,6 +43,7 @@
   if (SOURCE_BASE && !SOURCE_BASE.endsWith('/')) SOURCE_BASE += '/';
 
   function resolvePath(src) {
+    if (!src) return '';
     if (src.startsWith('/')) return src;
     // Let the backend resolve relative paths; pass src through as-is when no base is configured.
     if (!SOURCE_BASE) return src;
@@ -62,10 +65,12 @@
       {name: 'User', x: 20, y: 90, w: 170, h: 640, color: '#d4c5a9'},
       {name: 'Gateway', x: 210, y: 90, w: 190, h: 640, color: '#e6c875'},
       {name: 'Agent', x: 420, y: 90, w: 460, h: 650, color: '#f4a68e'},
-      {name: 'Model', x: 420, y: 740, w: 780, h: 80, color: '#8ab4e6'},
+      {name: 'Model', x: 20, y: 740, w: 1080, h: 160, color: '#8ab4e6'},
       {name: 'Memory', x: 900, y: 90, w: 200, h: 640, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1120, y: 90, w: 200, h: 640, color: '#a8b8e6'},
-      {name: 'Storage', x: 660, y: 830, w: 860, h: 110, color: '#7dd3d8'}
+      {name: 'Storage', x: 1340, y: 90, w: 200, h: 640, color: '#7dd3d8'},
+      {name: 'Hardware', x: 20, y: 900, w: 1080, h: 80, color: '#e6a875'},
+      {name: 'DC Infrastructure', x: 20, y: 980, w: 1080, h: 80, color: '#c4b28a'}
     ];
 
     var clusters = CLUSTERS.map(function (c, i) {
@@ -189,7 +194,7 @@
       );
     });
 
-    return h('svg', {className: 'eh-arch', viewBox: '0 0 1800 960', width: '1800', height: '960'},
+    return h('svg', {className: 'eh-arch', viewBox: '0 0 1800 1080', width: '1800', height: '1080'},
       h('defs', null,
         h('pattern', {id: 'eh-grid', width: 40, height: 40, patternUnits: 'userSpaceOnUse'},
           h('path', {d: 'M 40 0 L 0 0 0 40', fill: 'none', stroke: '#163b33', strokeWidth: 0.5, opacity: 0.4})
@@ -227,7 +232,7 @@
         !detail.showCode
           ? h('div', {className: 'eh-detail-intro'},
               h('div', {className: 'eh-detail-desc'}, (detail.desc || '暂无介绍').replace(/([。；])/g, '$1\n')),
-              h('button', {className: 'eh-detail-action', onClick: onViewSource}, '查看源码')
+              detail.src ? h('button', {className: 'eh-detail-action', onClick: onViewSource}, '查看源码') : null
             )
           : detail.loading
             ? h('div', {className: 'eh-detail-loading'}, '加载源码中...')
@@ -270,7 +275,7 @@
     var posRef = hooks.useRef({x: 0, y: 0});
 
     var SVG_W = 1800;
-    var SVG_H = 960;
+    var SVG_H = 1080;
 
     function fitToScreen() {
       if (!canvasRef.current) return;
@@ -338,8 +343,9 @@
     function onNodeClick(name, src, loc) {
       var n = arch && arch.NODES && arch.NODES[name];
       if (!n) return;
-      var path = resolvePath(src);
-      setDetail({name: name, desc: n.desc || '', src: src, path: path, loc: loc || n.loc || '', code: null, loading: false, showCode: false});
+      var safeSrc = src || '';
+      var path = safeSrc ? resolvePath(safeSrc) : '';
+      setDetail({name: name, desc: n.desc || '', src: safeSrc, path: path, loc: loc || n.loc || '', code: null, loading: false, showCode: false});
     }
 
     function onMouseDown(e) {
