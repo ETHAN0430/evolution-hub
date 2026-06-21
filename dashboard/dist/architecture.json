@@ -417,7 +417,7 @@
       "x": 1200,
       "y": 300,
       "group": "hy",
-      "desc": "同步写入层（MemoryWriter）。\n\n流程：\n1. 把对话做 embedding，存成 L1_RAW（原始记忆向量）。\n2. 交给 MemAgent 提取：\n   - L2_FACT：可验证的事实\n   - L3_SUMMARY：摘要\n   - L4_IDENTITY：用户身份/偏好\n3. Reconciler 检查新旧记忆冲突，决定新增、替换或更新。\n\n这是实时路径：每次对话后同步执行，结果写入 Vector DB。"
+      "desc": "同步写入层（System 1 Writer，源码类名 MemoryWriter）。\n\n流程：\n1. 把本轮对话做 embedding，存成 L1_RAW（原始记忆向量）。\n2. 同时用 basic profile 提取模块维护 L0_BASIC_INFO（姓名、职业等硬画像）。\n3. 交给 MemAgent 提取：\n   - L2_FACT：可验证的事实\n   - L3_SUMMARY：摘要\n   - L4_IDENTITY：用户身份/偏好\n   - L5_KNOWLEDGE：领域知识\n4. Reconciler 检查新旧记忆冲突，决定新增、替换或更新。\n\n这是实时路径：每次对话后同步执行，结果写入 Vector DB。"
     }
   },
   "CONNECTIONS": [
