@@ -44,7 +44,7 @@
     '工具执行': {file: 'agent/tool_executor.py', loc: 'execute_tool_calls_concurrent', x: 660, y: 680, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
     '上下文压缩': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 510, y: 610, group: 'pipeline', desc: '进入 LLM 前或工具结果返回后，如果上下文超过阈值，先压缩再交给 LLM。'},
     'PostHook': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 680, group: 'pipeline', desc: '通用插件 Hook 注入点（本节点是 post_llm_call）。"post" / transform / error / lifecycle 型 Hook：\n- post_llm_call\n- post_tool_call\n- post_api_request\n- api_request_error\n- transform_terminal_output\n- transform_tool_result\n- transform_llm_output\n- on_session_end\n- on_session_finalize\n- on_session_reset\n- subagent_stop\n- post_approval_response\n\npost_llm_call 在工具循环结束后触发，插件可用来持久化对话数据或同步到外部记忆系统。'},
-    '输出后处理': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 610, group: 'pipeline', desc: '工具循环结束后的输出处理：\n1. 插件 transform_llm_output Hook（可选，改写 LLM 输出文本）\n2. 文件修改校验 footer\n3. 异常结束解释\n4. 提取 reasoning\n5. 组装 result'},
+    '输出后处理': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 610, group: 'pipeline', desc: '工具循环结束后的原生 Turn 收尾处理：\n1. 文件修改校验 footer\n2. 异常结束解释\n3. 提取 reasoning\n4. 组装 result\n\n可选的 transform_llm_output Hook 已在 PostHook 节点处理。'},
     '会话持久化': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 540, group: 'pipeline', desc: '把这轮对话写回 SQLite / JSON log，清理 VM/browser 等临时资源，去掉空的脚手架消息。'},
     'Turn End': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 470, group: 'pipeline', desc: '最终收尾：统计 token/cost、返回 result 给调用方。'},
     // ── Turn support modules (branch right from spine / above the turn chain) ────
