@@ -66,9 +66,12 @@
     {term: 'Ask Mode', def: '询问模式。模型发现信息不够或需要选择时，停下来问用户。Hermes 里通常通过 approval / ask_user 工具实现：模型调用工具 → 前端阻塞等输入 → 回答写回上下文继续。'},
     {term: 'Tool Permissions', def: '工具权限。不同工具危险等级不同（只读 / 写 / 执行 / 危险）。Agent Init 按配置过滤可用工具，pre_tool_call 拦截越权，approval 处理危险操作。'},
     {term: 'Q / K / V', def: 'Attention 里的三个角色。Q（Query）是当前 token 的查询意图；K（Key）是每个 token 的索引标签，用来被匹配；V（Value）是每个 token 的实际内容，用来被加权组合。注意力权重 = softmax(Q × K^T)，输出 = 权重 × V。'},
-    {term: 'RoPE（Rotary Positional Embedding）', def: '旋转位置编码。现代大模型常用的位置编码方式，不再作为独立层，而是把位置信息融进 Self-Attention 的 Q/K 向量里做旋转。说人话：给每个 token 的查询/键向量“拧”一下角度，让模型既能知道位置，又不破坏 attention 的结构。'},
+    {term: 'RoPE（Rotary Positional Embedding）', def: '旋转位置编码。现代大模型常用的位置编码方式，不再作为独立层，而是把位置信息融进 自注意力 的 Q/K 向量里做旋转。说人话：给每个 token 的查询/键向量“拧”一下角度，让模型既能知道位置，又不破坏 attention 的结构。'},
     {term: '参数量 vs 推理成本', def: '参数量越大，每 token 推理越贵。因为每 forward 都要做更多矩阵乘法和内存读写。7B 便宜，70B 贵 10 倍左右，400B+ 更贵。上下文长度、batch size、量化、KV Cache 也会影响最终成本。'},
-    {term: 'Input / Output Token 定价', def: 'Input token 便宜是因为 prompt 可以并行处理，GPU 利用率高。Output token 贵是因为自回归生成必须串行，每生成一个 token 都要重新加载权重前向传播一次。所以 API 里 output 通常比 input 贵 2~5 倍。另外 API 定价一般还会覆盖硬件折旧、电费、运维和利润；早期毛利可能到成本的 5~10 倍，价格战激烈时可能只有 1~2 倍甚至亏本。'}
+    {term: 'Input / Output Token 定价', def: 'Input token 便宜是因为 prompt 可以并行处理，GPU 利用率高。Output token 贵是因为自回归生成必须串行，每生成一个 token 都要重新加载权重前向传播一次。所以 API 里 output 通常比 input 贵 2~5 倍。另外 API 定价一般还会覆盖硬件折旧、电费、运维和利润；早期毛利可能到成本的 5~10 倍，价格战激烈时可能只有 1~2 倍甚至亏本。'},
+    {term: 'Tensor / Vector / Matrix', def: '张量是最 general 的概念，向量是 1 维张量，矩阵是 2 维张量。标量是 0 维。深度学习里一个 token 的 embedding 是向量，一句话所有 token 拼起来是矩阵，一个 batch 的多句话就是 3 维张量 [batch, seq_len, hidden_dim]。'},
+    {term: 'Fine-tuning / 微调', def: '在预训练好的模型基础上，用你自己的小批量高质量数据继续训练。让模型“内化”你的领域知识、输出格式或说话风格。SFT、RLHF、DPO 都属于后训练（Post-Training）范畴。说人话：让通用模型变成你的专属模型。'},
+    {term: 'RAG / 检索增强生成', def: '模型回答前先去外部知识库检索相关资料，把检索结果拼进 prompt 再生成答案。知识存在数据库里，换文档就生效，模型权重不用改。说人话：开卷考试，模型边翻书边答。'}
   ];
 
   var SOURCE_BASE = (typeof window.__HERMES_SOURCE_BASE__ === 'string' && window.__HERMES_SOURCE_BASE__)
@@ -99,7 +102,7 @@
       {name: 'User', x: 20, y: 90, w: 170, h: 640, color: '#d4c5a9'},
       {name: 'Gateway', x: 210, y: 90, w: 190, h: 640, color: '#e6c875'},
       {name: 'Agent', x: 420, y: 90, w: 460, h: 650, color: '#f4a68e'},
-      {name: 'Model / Reasoning', x: 20, y: 760, w: 1280, h: 110, color: '#8ab4e6'},
+      {name: 'Model / Reasoning', x: 20, y: 760, w: 1340, h: 110, color: '#8ab4e6'},
       {name: 'Model / Training', x: 20, y: 890, w: 1100, h: 220, color: '#8ab4e6'},
       {name: 'Memory', x: 900, y: 90, w: 420, h: 640, color: '#8fc9a3'},
       {name: 'Storage', x: 1340, y: 90, w: 200, h: 640, color: '#7dd3d8'},
@@ -188,7 +191,7 @@
         y2 = b.y - 17;
         var loopCorridorY = 860;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + loopCorridorY + ' L' + x2 + ',' + loopCorridorY + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'Model Weights' && ['Embedding', 'Multi-Head Self-Attention', 'Feed-Forward Network', 'Output Head'].indexOf(c[1]) >= 0) {
+      } else if (c[0] === 'Model Weights' && ['Embedding', '自注意力', '前馈网络', 'Output Head'].indexOf(c[1]) >= 0) {
         // Model Weights -> inference layers: fan out below the node into the reasoning cluster
         x1 = a.x;
         y1 = a.y + 17;
@@ -197,13 +200,49 @@
         var weightsCorridorY = 880;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + weightsCorridorY + ' L' + x2 + ',' + weightsCorridorY + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'Student' && c[1] === 'Model Weights') {
-        // Student -> Model Weights: vertical-first to avoid crossing Post-Training line
+        // Student -> Model Weights: vertical-first to avoid crossing Post-Training / 微调
         x1 = a.x;
         y1 = a.y - 17;
         x2 = a.x > b.x ? b.x + 65 : b.x - 65;
         y2 = b.y;
         var studentCorridorY = 900;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + studentCorridorY + ' L' + x2 + ',' + studentCorridorY + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Post-Training' && c[1] === 'Model Weights') {
+        // Post-Training -> Model Weights: up, then right into Model Weights, avoiding 微调
+        x1 = a.x;
+        y1 = a.y - 17;
+        x2 = b.x - 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Post-Training' && c[1] === '微调') {
+        // Post-Training -> 微调: straight horizontal on the same row
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Model Weights' && c[1] === '模型规模') {
+        // Model Weights -> 模型规模: straight horizontal on the same row
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Vector DB' && c[1] === 'RAG') {
+        // Vector DB -> RAG: left out, then down into RAG from the right
+        x1 = a.x - 65;
+        y1 = a.y;
+        x2 = b.x + 65;
+        y2 = b.y;
+        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'RAG' && c[1] === 'LLM API') {
+        // RAG -> LLM API: up above the reasoning cluster, then left, then down into LLM API
+        x1 = a.x;
+        y1 = a.y - 17;
+        x2 = b.x;
+        y2 = b.y + 17;
+        var ragCorridorY = 750;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + ragCorridorY + ' L' + x2 + ',' + ragCorridorY + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'Turn Finalizer' && ['Hermes CLI', 'API Server', 'Messaging Gateway', 'TUI Gateway'].indexOf(c[1]) >= 0) {
         // Turn Finalizer -> gateways: exit upward, bend slightly above, go left to streaming-output x, then down
         x1 = a.x;
