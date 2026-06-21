@@ -713,6 +713,11 @@
       "记忆写入",
       "Vector DB",
       "dashed"
+    ],
+    [
+      "SQLite Session",
+      "后台复盘",
+      "dashed"
     ]
   ]
 }
