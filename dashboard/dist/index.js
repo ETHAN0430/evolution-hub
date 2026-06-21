@@ -106,7 +106,7 @@
       {name: 'Model / Training', x: 20, y: 890, w: 1100, h: 220, color: '#8ab4e6'},
       {name: 'Distillation', x: 720, y: 930, w: 320, h: 140, color: '#7aa4d6'},
       {name: 'Memory', x: 890, y: 80, w: 710, h: 700, color: '#8fc9a3'},
-      {name: 'Memory Tools', x: 900, y: 150, w: 140, h: 330, color: '#8fc9a3'},
+      {name: 'Memory Tools', x: 900, y: 150, w: 220, h: 600, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1100, y: 260, w: 350, h: 400, color: '#a8b8e6'},
       {name: 'Memory Layers', x: 1340, y: 260, w: 160, h: 320, color: '#a8b8e6'},
       {name: 'Retrieval', x: 1500, y: 500, w: 100, h: 220, color: '#7dd3d8'},
@@ -267,13 +267,12 @@
         var fanY = 380;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + fanY + ' L' + x2 + ',' + fanY + ' L' + x2 + ',' + y2;
       } else if (c[0] === '记忆检索' && c[1] === 'Embed Service') {
-        // 记忆检索 -> Embed Service: right corridor down to retrieval cluster
+        // 记忆检索 -> Embed Service: up to Embed Service height, then right into retrieval cluster
         x1 = a.x + 65;
         y1 = a.y;
         x2 = b.x - 65;
         y2 = b.y;
-        var embedCorridorX = 1100;
-        d = 'M' + x1 + ',' + y1 + ' L' + embedCorridorX + ',' + y1 + ' L' + embedCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'S1 / MemoryWriter' && c[1] === 'L1_RAW') {
         // S1 -> L1_RAW: drop down then right to avoid System 2 Writer
         x1 = a.x + 65;
@@ -301,7 +300,7 @@
         y1 = a.y;
         x2 = b.x - 65;
         y2 = b.y;
-        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'S1 / MemoryWriter' && c[1] === 'System 2 Writer') {
         // S1 -> System 2 Writer: horizontal pipeline handoff
         x1 = a.x + 65;

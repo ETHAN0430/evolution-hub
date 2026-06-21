@@ -224,16 +224,16 @@
     "记忆检索": {
       "file": "hy_memory/coding/curator/tools.py",
       "loc": "search_memory",
-      "x": 940,
-      "y": 300,
+      "x": 1020,
+      "y": 620,
       "group": "hy",
       "desc": "外部记忆后端暴露给模型的语义搜索工具（hy_memory/coding/curator/tools.py 里的 search_memory）。\n\n模型显式调用后，查询文本走 Embed Service → ANN 检索 → Vector DB，做语义召回并返回相关记忆的 metadata；如需完整内容还要再 read。"
     },
     "记忆写入": {
       "file": "hy_memory/coding/curator/tools.py",
       "loc": "create_memory",
-      "x": 940,
-      "y": 360,
+      "x": 1020,
+      "y": 680,
       "group": "hy",
       "desc": "外部记忆后端暴露给模型的写入工具（hy_memory/coding/curator/tools.py 里的 create_memory）。\n\n模型显式调用后，新记忆直接交给 S1 / MemoryWriter，进入写入流水线（L1_RAW → MemAgent → Reconciler），最终落盘到 Vector DB 或 Graph DB。"
     },
