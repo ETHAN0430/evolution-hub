@@ -65,7 +65,7 @@
       {name: 'AI Providers', x: 500, y: 740, w: 160, h: 80, color: '#8ab4e6'},
       {name: 'Memory', x: 900, y: 90, w: 200, h: 640, color: '#8fc9a3'},
       {name: 'HY Memory', x: 1120, y: 90, w: 200, h: 640, color: '#a8b8e6'},
-      {name: 'Storage', x: 620, y: 820, w: 920, h: 110, color: '#7dd3d8'}
+      {name: 'Storage', x: 660, y: 820, w: 860, h: 110, color: '#7dd3d8'}
     ];
 
     var clusters = CLUSTERS.map(function (c, i) {
@@ -189,7 +189,7 @@
       );
     });
 
-    return h('svg', {className: 'eh-arch', viewBox: '0 0 1680 960', width: '1680', height: '960'},
+    return h('svg', {className: 'eh-arch', viewBox: '0 0 1800 960', width: '1800', height: '960'},
       h('defs', null,
         h('pattern', {id: 'eh-grid', width: 40, height: 40, patternUnits: 'userSpaceOnUse'},
           h('path', {d: 'M 40 0 L 0 0 0 40', fill: 'none', stroke: '#163b33', strokeWidth: 0.5, opacity: 0.4})
@@ -269,7 +269,7 @@
     var dragStartRef = hooks.useRef({x: 0, y: 0});
     var posRef = hooks.useRef({x: 0, y: 0});
 
-    var SVG_W = 1680;
+    var SVG_W = 1800;
     var SVG_H = 960;
 
     function fitToScreen() {

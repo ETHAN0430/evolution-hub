@@ -117,7 +117,7 @@
       "x": 510,
       "y": 540,
       "group": "pipeline",
-      "desc": "通用插件 Hook 注入点（本节点是 pre_llm_call）。\"pre\" 型 Hook：\n- pre_llm_call\n- pre_tool_call\n- pre_api_request\n- pre_gateway_dispatch\n- pre_approval_request\n- on_session_start\n- subagent_start\n\npre_llm_call 返回的上下文会拼到当前用户消息里；记忆预取可以看成这类需求的专用实现，二者最终效果相同。"
+      "desc": "通用插件 Hook 注入点。\"pre\" 型 Hook：\n- pre_llm_call：调用 LLM 前注入或修改上下文\n- pre_tool_call：工具执行前拦截或修改调用\n- pre_api_request：向模型服务商发请求前\n- pre_gateway_dispatch：Gateway 收到消息后、派发给 agent 前\n- pre_approval_request：危险操作需要用户审批前\n- on_session_start：新会话创建时\n- subagent_start：子 agent 启动时\n\npre_llm_call 返回的上下文会拼到当前用户消息里；记忆预取可以看成这类需求的专用实现，二者最终效果相同。\n\n注：本节点只代表主链路上的 pre_llm_call；其它 pre 型 Hook 发生在各自对应节点处，图中未单独标出。"
     },
     "LLM API": {
       "file": "agent/conversation_loop.py",
@@ -125,7 +125,15 @@
       "x": 510,
       "y": 680,
       "group": "pipeline",
-      "desc": "真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。"
+      "desc": "真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。\n\n调用本身走流式输出：chunk 会经“流式输出”节点推给 CLI / Gateway 等消费者；没有消费者时内部把整段回答收齐后再继续。transform_llm_output 等输出改写 Hook 在完整回答收齐后、交给用户前执行。"
+    },
+    "流式输出": {
+      "file": "agent/conversation_loop.py",
+      "loc": "run_conversation",
+      "x": 320,
+      "y": 680,
+      "group": "gateway",
+      "desc": "LLM 流式输出的分发点。有实时消费者（CLI 终端、TUI 面板、Messaging Gateway SSE 等）时，chunk 一边生成一边推给用户；没有消费者时由内部缓冲区收齐后再继续。\n\n注意：transform_llm_output 等输出改写 Hook 在完整回答收齐后才执行，流式阶段无法拦截敏感/违规内容。内容安全需要靠上游 system prompt、模型服务商 safety 设置或 pre_llm_call 等更上游的手段，不能单靠流式输出节点。\n\n但这里可以作为一个实时探测点：对流过的 chunk 做异步内容安全扫描，发现异常时触发熔断、告警或切到人工审核，作为第二道防线。"
     },
     "工具执行": {
       "file": "agent/tool_executor.py",
@@ -149,7 +157,7 @@
       "x": 810,
       "y": 680,
       "group": "pipeline",
-      "desc": "通用插件 Hook 注入点（本节点是 post_llm_call）。\"post\" / transform / error / lifecycle 型 Hook：\n- post_llm_call\n- post_tool_call\n- post_api_request\n- api_request_error\n- transform_terminal_output\n- transform_tool_result\n- transform_llm_output\n- on_session_end\n- on_session_finalize\n- on_session_reset\n- subagent_stop\n- post_approval_response\n\npost_llm_call 在工具循环结束后触发，插件可用来持久化对话数据或同步到外部记忆系统。"
+      "desc": "通用插件 Hook 注入点。\"post\" / transform / error / lifecycle 型 Hook：\n- post_llm_call：LLM 返回且工具循环结束后\n- post_tool_call：单个工具执行完成后\n- post_api_request：模型 API 请求完成后\n- api_request_error：模型 API 调用出错时\n- transform_terminal_output：终端输出展示前改写\n- transform_tool_result：工具结果返回给模型前改写\n- transform_llm_output：LLM 输出返回给用户前改写\n- on_session_end：会话结束时\n- on_session_finalize：会话最终收尾时\n- on_session_reset：会话被重置时\n- subagent_stop：子 agent 停止时\n- post_approval_response：用户做出审批选择后\n\npost_llm_call 在工具循环结束后触发，插件可用来持久化对话数据或同步到外部记忆系统。\n\n注：本节点只代表主链路上的 post_llm_call；其它 post / transform / error / lifecycle 型 Hook 发生在工具执行、输出后处理、Gateway、会话生命周期等对应节点处，图中未单独标出。"
     },
     "输出后处理": {
       "file": "agent/turn_finalizer.py",
@@ -157,7 +165,7 @@
       "x": 810,
       "y": 610,
       "group": "pipeline",
-      "desc": "工具循环结束后的原生 Turn 收尾处理：\n1. 文件修改校验 footer\n2. 异常结束解释\n3. 提取 reasoning\n4. 组装 result\n\n可选的 transform_llm_output Hook 已在 PostHook 节点处理。"
+      "desc": "工具循环结束后的原生 Turn 收尾处理：\n1. 文件修改校验 footer\n2. 异常结束解释\n3. 提取 reasoning\n4. 组装 result"
     },
     "会话持久化": {
       "file": "agent/turn_finalizer.py",
@@ -182,14 +190,6 @@
       "y": 400,
       "group": "pipeline",
       "desc": "在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。"
-    },
-    "ContextCompressor": {
-      "file": "agent/context_compressor.py",
-      "loc": "ContextCompressor",
-      "x": 920,
-      "y": 470,
-      "group": "memory",
-      "desc": "具体负责“压缩对话长度”的工人。内部有自己的 OpenAI client。\n阈值 = max(模型窗口 * 50%, 64K)；超过后才触发压缩。\n先做一次规则化剪枝（工具输出截断/去冗余），再调用 auxiliary LLM 生成摘要，保留开头和最新内容，把中间部分替换为 reference-only 的摘要。"
     },
     "MemoryManager": {
       "file": "agent/memory_manager.py",
@@ -350,6 +350,31 @@
       "LLM API"
     ],
     [
+      "LLM API",
+      "流式输出",
+      "dashed"
+    ],
+    [
+      "流式输出",
+      "Hermes CLI",
+      "dashed"
+    ],
+    [
+      "流式输出",
+      "API Server",
+      "dashed"
+    ],
+    [
+      "流式输出",
+      "Messaging Gateway",
+      "dashed"
+    ],
+    [
+      "流式输出",
+      "TUI Gateway",
+      "dashed"
+    ],
+    [
       "Agent Init",
       "输入清洗"
     ],
@@ -415,12 +440,20 @@
       "MemoryProvider"
     ],
     [
+      "MemoryProvider",
+      "HY Memory"
+    ],
+    [
+      "MemoryProvider",
+      "记忆文件"
+    ],
+    [
       "记忆文件",
       "ContextEngine"
     ],
     [
       "ContextEngine",
-      "ContextCompressor"
+      "上下文压缩"
     ],
     [
       "HY Memory",
