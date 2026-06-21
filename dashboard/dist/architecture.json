@@ -141,7 +141,7 @@
       "x": 510,
       "y": 610,
       "group": "pipeline",
-      "desc": "进入 LLM 前或工具结果返回后，如果上下文超过阈值，先压缩再交给 LLM。\n不是简单截断：会先剪枝工具输出，然后调用一个 auxiliary（便宜/快速）LLM 把中间轮次 summarize 成摘要，同时保留开头和最新的对话。"
+      "desc": "进入 LLM 前或工具结果返回后，如果上下文超过阈值，先压缩再交给 LLM。\n阈值 = max(模型窗口 * 50%, 64K)。\n压缩分两步：\n1. 廉价预处理：规则化剪枝工具输出，去掉冗余细节，不调用 LLM。\n2. auxiliary LLM 摘要：用便宜/快速的模型把中间轮次 summarize 成摘要，保留开头和最新对话。"
     },
     "PostHook": {
       "file": "agent/turn_finalizer.py",
@@ -189,7 +189,7 @@
       "x": 920,
       "y": 470,
       "group": "memory",
-      "desc": "具体负责“压缩对话长度”的工人。内部有自己的 OpenAI client，会调用 auxiliary LLM 做摘要；保留开头和最新内容，把中间部分压缩成 reference-only 的摘要。"
+      "desc": "具体负责“压缩对话长度”的工人。内部有自己的 OpenAI client。\n阈值 = max(模型窗口 * 50%, 64K)；超过后才触发压缩。\n先做一次规则化剪枝（工具输出截断/去冗余），再调用 auxiliary LLM 生成摘要，保留开头和最新内容，把中间部分替换为 reference-only 的摘要。"
     },
     "MemoryManager": {
       "file": "agent/memory_manager.py",
