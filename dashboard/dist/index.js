@@ -37,8 +37,8 @@
     'Agent Init': {file: 'agent/agent_init.py', loc: 'init_agent', x: 510, y: 190, group: 'pipeline', desc: '初始化 AIAgent 的地方。只在新建会话时跑一次：\n1. 设置 platform（cli/tui/api_server/...）\n2. 构建并缓存 system prompt\n3. 组装可用工具列表（含 MCP）\n4. 初始化会话状态（session_id、source、model 等）'},
     '输入清洗': {file: 'agent/turn_context.py', loc: 'build_turn_context', x: 510, y: 260, group: 'pipeline', desc: '每轮 Turn 的入口。清洗用户输入（如去掉非法 surrogate 字符），并把用户消息追加到对话历史中。'},
     'MCP 刷新': {file: 'tools/mcp_tool.py', loc: 'refresh_agent_mcp_tools', x: 510, y: 330, group: 'pipeline', desc: '每轮开头刷新 MCP 工具列表：检查是否有新连上的 MCP server，把新工具加入当前可用工具快照。'},
-    '记忆预取': {file: 'agent/memory_manager.py', loc: 'prefetch_all', x: 510, y: 400, group: 'pipeline', desc: '用当前用户消息向 MemoryManager 发起 prefetch，把相关记忆（MEMORY.md、USER.md、HY Memory 等）提前查出来，供后续 prompt 使用。'},
-    'pre_llm_call Hook': {file: 'hermes_cli/plugins.py', loc: 'invoke_hook', x: 510, y: 470, group: 'pipeline', desc: '调用 pre_llm_call 插件Hook，把插件返回的额外上下文注入到用户消息中。'},
+    '记忆预取': {file: 'agent/memory_manager.py', loc: 'prefetch_all', x: 510, y: 400, group: 'pipeline', desc: 'MemoryManager.prefetch_all()：每次 LLM 调用前，把当前用户消息丢给所有已注册的 MemoryProvider，让它们各自 prefetch() 回相关记忆。autoRecall 不是独立功能，就是这条链路。'},
+    'pre_llm_call Hook': {file: 'hermes_cli/plugins.py', loc: 'invoke_hook', x: 510, y: 470, group: 'pipeline', desc: '调用 pre_llm_call 插件 Hook，把插件返回的额外上下文注入到用户消息中。和记忆预取是两条独立路径，最终都拼到当前用户消息里。'},
     '消息构建': {file: 'agent/system_prompt.py', loc: 'build_system_prompt', x: 510, y: 540, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
     'LLM API': {file: 'agent/conversation_loop.py', loc: 'run_conversation', x: 510, y: 680, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
     '工具执行': {file: 'agent/tool_executor.py', loc: 'execute_tool_calls_concurrent', x: 660, y: 680, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
@@ -53,12 +53,12 @@
 
     // ── Memory abstraction layer ────────────────────────────────────────────
     'MemoryManager': {file: 'agent/memory_manager.py', loc: 'MemoryManager', x: 920, y: 220, group: 'memory', desc: '记忆的调度中心。每次对话前查记忆，对话结束后把新东西存进记忆。'},
-    'MemoryProvider': {file: 'agent/memory_provider.py', loc: 'MemoryProvider', x: 920, y: 320, group: 'memory', desc: '外部记忆服务的接口。让 Hermes 可以接不同的记忆系统，比如 HY Memory。'},
+    'MemoryProvider': {file: 'agent/memory_provider.py', loc: 'MemoryProvider', x: 920, y: 320, group: 'memory', desc: '外部记忆服务的接口。所有外部记忆系统都按这个标准接口接入 Hermes：system_prompt_block()、prefetch()、sync_turn()、get_tool_schemas() 等。HY Memory 也是通过它接入的。'},
     'ContextEngine': {file: 'agent/context_engine.py', loc: 'ContextEngine', x: 920, y: 520, group: 'memory', desc: '控制对话上下文长度的引擎。决定什么时候该压缩、怎么压缩。'},
     '记忆文件': {file: 'tools/memory_tool.py', loc: 'MemoryStore', x: 920, y: 620, group: 'memory', desc: '本地保存的长期记忆。比如你的喜好、重要事实、个人资料等。'},
 
     // ── HY Memory evolution engine ──────────────────────────────────────────
-    'HY Memory': {file: 'hy_memory/client.py', loc: 'HyMemoryClient', x: 1140, y: 220, group: 'hy', desc: '一个更聪明的记忆系统。不仅能存东西，还会自动整理、提炼、进化记忆。\n注：HY 记忆内容会追加在本地 memory 块之后写入 system prompt，靠后的位置让模型更倾向采信它。'},
+    'HY Memory': {file: 'hy_memory/client.py', loc: 'HyMemoryClient', x: 1140, y: 220, group: 'hy', desc: '一个更聪明的记忆系统。作为 Hermes 的 MemoryProvider 接入，通过 prefetch() 在每次 LLM 调用前召回相关记忆；也能被模型通过记忆工具显式读写。\n注：HY 记忆内容会追加在本地 memory 块之后写入 system prompt，靠后的位置让模型更倾向采信它。'},
     'S1 Writer': {file: 'hy_memory/pipelines/writer.py', loc: 'MemoryWriter', x: 1140, y: 320, group: 'hy', desc: '第一层记忆写入。先把对话内容简单归档，准备后续加工。'},
     'MemAgent': {file: 'hy_memory/agent/mem_agent.py', loc: 'MemAgent', x: 1140, y: 420, group: 'hy', desc: '记忆提炼员。自动从对话里提取重要事实、身份信息和摘要。'},
     'Reconciler': {file: 'hy_memory/agent/reconciler.py', loc: 'MemoryReconciler', x: 1140, y: 520, group: 'hy', desc: '记忆冲突检查员。看看新信息和旧记忆有没有矛盾，决定是新增、替换还是更新。'},
