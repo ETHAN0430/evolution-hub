@@ -253,14 +253,6 @@
       "group": "storage",
       "desc": "图数据库。像知识图谱一样保存概念、主题和它们之间的关系。"
     },
-    "cache.db": {
-      "file": "hy_memory/data/cache_sqlite.py",
-      "loc": "SqliteCache",
-      "x": 1440,
-      "y": 500,
-      "group": "storage",
-      "desc": "本地小数据库。记录系统运行日志、任务队列和一些临时数据。"
-    },
     "SQLite Session": {
       "file": "hermes_state.py",
       "loc": "SessionDB",
@@ -399,7 +391,7 @@
       "x": 1020,
       "y": 180,
       "group": "memory",
-      "desc": "外部记忆后端的数据入口（如 HY Memory、Honcho、Mem0 等）。\n\n接收两类输入：\n- 自动检索：每轮 LLM 调用前，由 记忆预取 把用户消息发过来做语义召回。\n- 自动写入：每轮结束后，由 记忆同步 把本轮（用户消息，助手回复）同步进来。\n- 显式工具：模型通过 记忆检索 / 记忆写入 等工具主动查询或修改记忆。\n\n数据落地：写入 Vector DB（语义向量）、Graph DB（概念关系）、cache.db（运行缓存）。\nHermes 同一时间只激活一个外部记忆后端。"
+      "desc": "外部记忆后端的数据入口（如 HY Memory、Honcho、Mem0 等）。\n\n接收两类输入：\n- 自动检索：每轮 LLM 调用前，由 记忆预取 把用户消息发过来做语义召回。\n- 自动写入：每轮结束后，由 记忆同步 把本轮（用户消息，助手回复）同步进来。\n- 显式工具：模型通过 记忆检索 / 记忆写入 等工具主动查询或修改记忆。\n\n数据落地：写入 Vector DB（语义向量）、Graph DB（概念关系）。\nHermes 同一时间只激活一个外部记忆后端。"
     }
   },
   "CONNECTIONS": [
@@ -748,10 +740,6 @@
     [
       "外部记忆",
       "System 2 Writer"
-    ],
-    [
-      "外部记忆",
-      "cache.db"
     ]
   ]
 }

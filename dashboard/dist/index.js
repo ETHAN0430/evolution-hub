@@ -288,14 +288,6 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + rightCorridorX + ',' + y1 + ' L' + rightCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === '外部记忆' && c[1] === 'cache.db') {
-        // 外部记忆 -> cache.db: right corridor down, then right into storage cluster
-        x1 = a.x + 65;
-        y1 = a.y;
-        var storageCorridorX = 1300;
-        x2 = b.x - 65;
-        y2 = b.y;
-        d = 'M' + x1 + ',' + y1 + ' L' + storageCorridorX + ',' + y1 + ' L' + storageCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === '工具执行' && c[1] === 'memory') {
         // Tool executor -> built-in memory tool: right then up into Local Memory cluster
         x1 = a.x + 65;
