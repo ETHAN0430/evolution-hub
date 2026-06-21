@@ -319,6 +319,22 @@
         y2 = b.y;
         var prefetchCorridorX = 800;
         d = 'M' + x1 + ',' + y1 + ' L' + prefetchCorridorX + ',' + y1 + ' L' + prefetchCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'MemAgent' && ['L2_FACT', 'L3_SUMMARY', 'L4_IDENTITY'].indexOf(c[1]) >= 0) {
+        // MemAgent -> layer nodes: drop to a shared horizontal, then fan out
+        x1 = a.x;
+        y1 = a.y + 17;
+        x2 = b.x;
+        y2 = b.y - 17;
+        var fanY = 410;
+        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + fanY + ' L' + x2 + ',' + fanY + ' L' + x2 + ',' + y2;
+      } else if (c[0] === '记忆检索' && c[1] === 'Embed Service') {
+        // 记忆检索 -> Embed Service: right corridor down to storage cluster
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        var embedCorridorX = 1100;
+        d = 'M' + x1 + ',' + y1 + ' L' + embedCorridorX + ',' + y1 + ' L' + embedCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (x1 === x2 || y1 === y2) {
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else if (Math.abs(dx) > Math.abs(dy)) {
