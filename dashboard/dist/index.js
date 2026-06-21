@@ -299,20 +299,22 @@
         var prefetchEmbedCorridorX = 1100;
         d = 'M' + x1 + ',' + y1 + ' L' + prefetchEmbedCorridorX + ',' + y1 + ' L' + prefetchEmbedCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'Vector DB' && c[1] === 'System 2 Writer') {
-        // Vector DB -> System 2 Writer: read existing memories for async schema/intention induction
-        x1 = a.x;
-        y1 = a.y - 17;
-        x2 = b.x;
-        y2 = b.y - 17;
-        var s2ReadCorridorY = 260;
-        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + s2ReadCorridorY + ' L' + x2 + ',' + s2ReadCorridorY + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'Reconciler' && c[1] === 'Vector DB') {
-        // Reconciler -> Vector DB: exit right, go horizontal, enter Vector DB from the right
-        x1 = a.x + 65;
+        // Vector DB -> System 2 Writer: exit left, travel left a segment, then up, then left into System 2 Writer right
+        x1 = a.x - 65;
         y1 = a.y;
         x2 = b.x + 65;
         y2 = b.y;
-        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
+        var vdbS2CorridorX = a.x - 130;
+        var vdbS2CorridorY = 260;
+        d = 'M' + x1 + ',' + y1 + ' L' + vdbS2CorridorX + ',' + y1 + ' L' + vdbS2CorridorX + ',' + vdbS2CorridorY + ' L' + x2 + ',' + vdbS2CorridorY + ' L' + x2 + ',' + y2;
+      } else if (c[0] === 'Reconciler' && c[1] === 'Vector DB') {
+        // Reconciler -> Vector DB: exit right, go up to corridor, then left into Vector DB
+        x1 = a.x + 65;
+        y1 = a.y;
+        x2 = b.x - 65;
+        y2 = b.y;
+        var reconcilerVdbCorridorX = b.x + 80;
+        d = 'M' + x1 + ',' + y1 + ' L' + reconcilerVdbCorridorX + ',' + y1 + ' L' + reconcilerVdbCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'skill_manage' && c[1] === '记忆/技能') {
         // skill_manage -> 记忆/技能: right, then up to memory_tool's y, then right together into storage
         x1 = a.x + 65;
