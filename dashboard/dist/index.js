@@ -50,7 +50,6 @@
     // ── Turn support modules (branch right from spine / above the turn chain) ────
     '后台复盘': {file: 'agent/background_review.py', loc: 'spawn_background_review_thread', x: 810, y: 310, group: 'pipeline', desc: '在后台 fork 一个独立 agent 复盘本轮对话，发现值得记住的用户偏好或需要更新的 skill 时，直接写入记忆/技能存储，不会回流到当前主对话。'},
     'ContextCompressor': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 660, y: 590, group: 'memory', desc: '具体负责“压缩对话长度”的工人，会保留开头和最新内容，把中间部分做摘要。'},
-    'memory tool': {file: 'tools/memory_tool.py', loc: 'memory_tool', x: 810, y: 720, group: 'pipeline', desc: 'AI 用来读写记忆文件的工具。相当于一个笔记本管理器。'},
 
     // ── Memory abstraction layer ────────────────────────────────────────────
     'MemoryManager': {file: 'agent/memory_manager.py', loc: 'MemoryManager', x: 920, y: 220, group: 'memory', desc: '记忆的调度中心。每次对话前查记忆，对话结束后把新东西存进记忆。'},
@@ -93,7 +92,6 @@
     // Hermes turn pipeline (spine). The agent loop is the cycle between LLM and tools.
     ['输入清洗', 'MCP 刷新'], ['MCP 刷新', '记忆预取'], ['记忆预取', '预压缩'], ['预压缩', '插件上下文'], ['插件上下文', '消息构建'], ['消息构建', 'LLM API'],
     ['LLM API', '工具执行'],
-    ['工具执行', 'memory tool'],
     ['工具执行', 'LLM API'],
     ['工具执行', '上下文压缩', 'dashed'],
     ['上下文压缩', 'LLM API', 'dashed'],
@@ -105,7 +103,6 @@
     ['后台复盘', 'MemoryManager'],
 
     // turn engine <-> memory abstraction
-    ['memory tool', '记忆文件'],
     ['MemoryManager', 'MemoryProvider'],
     ['MemoryProvider', '记忆文件'],
     ['记忆文件', 'ContextEngine'], ['ContextEngine', 'ContextCompressor'],
