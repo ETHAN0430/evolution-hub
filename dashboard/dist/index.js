@@ -263,14 +263,6 @@
         y2 = b.y;
         var sqliteCorridorY = 120;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + sqliteCorridorY + ' L' + x2 + ',' + sqliteCorridorY + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'MemAgent' && ['L2_FACT', 'L3_SUMMARY', 'L4_IDENTITY'].indexOf(c[1]) >= 0) {
-        // MemAgent -> L2/L3/L4: shared horizontal below MemAgent, then fan out
-        x1 = a.x;
-        y1 = a.y + 17;
-        x2 = b.x;
-        y2 = b.y - 17;
-        var fanY = 500;
-        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + fanY + ' L' + x2 + ',' + fanY + ' L' + x2 + ',' + y2;
       } else if (c[0] === '记忆检索' && c[1] === 'Embedding') {
         // 记忆检索 -> Embedding: up to Embedding height, then right into retrieval cluster
         x1 = a.x + 65;

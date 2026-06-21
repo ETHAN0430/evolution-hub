@@ -208,8 +208,8 @@
     "Reconciler": {
       "file": "hy_memory/agent/reconciler.py",
       "loc": "MemoryReconciler",
-      "x": 1440,
-      "y": 540,
+      "x": 1280,
+      "y": 700,
       "group": "hy",
       "desc": "记忆冲突检查员。对比新提取的 L2/L3/L4 和已有记忆，决定新增、替换还是更新，然后写入 Vector DB。"
     },
@@ -334,20 +334,20 @@
       "desc": "原始对话 turn 的向量层。S1 / MemoryWriter 把本轮用户消息和助手回复 embedding 后存成 L1_RAW，同时保留原文 payload 在 Vector DB。"
     },
     "L2_FACT": {
-      "x": 1200,
+      "x": 1080,
       "y": 540,
       "group": "hy",
       "desc": "事实层。MemAgent 从 L1_RAW 中提炼出的可验证事实。"
     },
     "L3_SUMMARY": {
-      "x": 1280,
-      "y": 540,
+      "x": 1080,
+      "y": 620,
       "group": "hy",
       "desc": "摘要层。MemAgent 从 L1_RAW 中提炼出的会话摘要。"
     },
     "L4_IDENTITY": {
-      "x": 1360,
-      "y": 540,
+      "x": 1080,
+      "y": 700,
       "group": "hy",
       "desc": "身份/偏好层。MemAgent 从 L1_RAW 中提炼出的用户画像、偏好、沟通风格等。"
     },
