@@ -38,7 +38,7 @@
     '输入清洗': {file: 'agent/turn_context.py', loc: 'build_turn_context', x: 510, y: 260, group: 'pipeline', desc: '每轮 Turn 的入口。清洗用户输入（如去掉非法 surrogate 字符），并把用户消息追加到对话历史中。'},
     'MCP 刷新': {file: 'tools/mcp_tool.py', loc: 'refresh_agent_mcp_tools', x: 510, y: 330, group: 'pipeline', desc: '每轮开头刷新 MCP 工具列表：检查是否有新连上的 MCP server，把新工具加入当前可用工具快照。'},
     '记忆预取': {file: 'agent/memory_manager.py', loc: 'prefetch_all', x: 510, y: 400, group: 'pipeline', desc: '用当前用户消息向 MemoryManager 发起 prefetch，把相关记忆（MEMORY.md、USER.md、HY Memory 等）提前查出来，供后续 prompt 使用。'},
-    '插件上下文': {file: 'hermes_cli/plugins.py', loc: 'invoke_hook', x: 510, y: 470, group: 'pipeline', desc: '调用 pre_llm_call 插件钩子，把插件返回的额外上下文注入到用户消息中。'},
+    'pre_llm_call 钩子': {file: 'hermes_cli/plugins.py', loc: 'invoke_hook', x: 510, y: 470, group: 'pipeline', desc: '调用 pre_llm_call 插件钩子，把插件返回的额外上下文注入到用户消息中。'},
     '消息构建': {file: 'agent/system_prompt.py', loc: 'build_system_prompt', x: 510, y: 540, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
     'LLM API': {file: 'agent/conversation_loop.py', loc: 'run_conversation', x: 510, y: 680, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
     '工具执行': {file: 'agent/tool_executor.py', loc: 'execute_tool_calls_concurrent', x: 660, y: 680, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
@@ -89,7 +89,7 @@
     ['Agent Init', '输入清洗'],
 
     // Hermes turn pipeline (spine). The agent loop is the cycle between LLM and tools.
-    ['输入清洗', 'MCP 刷新'], ['MCP 刷新', '记忆预取'], ['记忆预取', '插件上下文'], ['插件上下文', '消息构建'],
+    ['输入清洗', 'MCP 刷新'], ['MCP 刷新', '记忆预取'], ['记忆预取', 'pre_llm_call 钩子'], ['pre_llm_call 钩子', '消息构建'],
     ['LLM API', '工具执行'],
     ['工具执行', '上下文压缩', 'dashed'],
     ['消息构建', '上下文压缩'],
