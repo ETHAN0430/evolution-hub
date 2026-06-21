@@ -81,11 +81,11 @@
       {name: 'User', x: 20, y: 90, w: 170, h: 640, color: '#d4c5a9'},
       {name: 'Gateway', x: 210, y: 90, w: 190, h: 640, color: '#e6c875'},
       {name: 'Agent', x: 420, y: 90, w: 460, h: 650, color: '#f4a68e'},
-      {name: 'Model / Inference', x: 20, y: 740, w: 1240, h: 80, color: '#8ab4e6'},
-      {name: 'Training', x: 20, y: 830, w: 1000, h: 180, color: '#8ab4e6'},
+      {name: 'Model / Reasoning', x: 20, y: 740, w: 1240, h: 80, color: '#8ab4e6'},
+      {name: 'Model / Training', x: 20, y: 830, w: 1000, h: 220, color: '#8ab4e6'},
       {name: 'Memory', x: 900, y: 90, w: 420, h: 640, color: '#8fc9a3'},
       {name: 'Storage', x: 1340, y: 90, w: 200, h: 640, color: '#7dd3d8'},
-      {name: 'Hardware', x: 20, y: 1020, w: 200, h: 80, color: '#e6a875'}
+
     ];
 
     var clusters = CLUSTERS.map(function (c, i) {

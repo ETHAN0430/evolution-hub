@@ -315,18 +315,6 @@
       "group": "storage",
       "desc": "本地会话数据库（SessionDB）。保存每次对话的历史记录、source、model 等元数据，方便下次继续聊。"
     },
-    "GPU / HBM": {
-      "x": 110,
-      "y": 1060,
-      "group": "hardware",
-      "desc": "AI 训练和推理的主力计算单元。\n\nGPU 里有大量并行计算核心，适合矩阵运算、attention、反向传播这些 heavy compute。\nHBM（High Bandwidth Memory）是贴在 GPU 旁边的高速显存，用来存模型权重、KV Cache 和中间激活值。"
-    },
-    "Decoder": {
-      "x": 560,
-      "y": 780,
-      "group": "provider",
-      "desc": "Decoder 块。包含 Masked Self-Attention 和 FFN，是 GPT 这类自回归模型的核心。模型逐 token 生成答案时，就是 Decoder 一遍又一遍地跑前向传播。"
-    },
     "Temperature": {
       "x": 1120,
       "y": 780,
@@ -335,43 +323,43 @@
     },
     "Pre-training": {
       "x": 150,
-      "y": 870,
+      "y": 1020,
       "group": "provider",
       "desc": "在大规模通用数据上从头训练基础模型，学习语言结构、知识和基本推理。"
     },
     "SFT / Fine-Tuning": {
       "x": 400,
-      "y": 870,
+      "y": 980,
       "group": "provider",
       "desc": "监督微调。用（问题，答案）pair 继续训练，让模型学会按指令格式回答。"
     },
     "RLHF": {
       "x": 650,
-      "y": 870,
+      "y": 940,
       "group": "provider",
       "desc": "Reinforcement Learning from Human Feedback。用人类偏好数据训练奖励模型，再用 RL 调大模型。"
     },
     "DPO": {
       "x": 900,
-      "y": 870,
+      "y": 940,
       "group": "provider",
       "desc": "Direct Preference Optimization。直接用偏好数据优化模型，省掉奖励模型和 RL。"
     },
     "Reward Model": {
       "x": 650,
-      "y": 940,
+      "y": 980,
       "group": "provider",
       "desc": "奖励模型。给 RLHF 提供“哪个回答更好”的打分信号。"
     },
     "Teacher Model": {
       "x": 250,
-      "y": 940,
+      "y": 980,
       "group": "provider",
       "desc": "能力强的教师模型，用来生成 soft target 指导学生模型。"
     },
     "Distillation": {
       "x": 500,
-      "y": 940,
+      "y": 980,
       "group": "provider",
       "desc": "知识蒸馏。让学生模型学习教师模型的输出分布，而不是直接学真实标签。"
     },
@@ -383,9 +371,15 @@
     },
     "Model Weights": {
       "x": 525,
-      "y": 1000,
+      "y": 860,
       "group": "provider",
       "desc": "训练产出的模型参数。Hermes 运行时会把这些权重加载到推理层的 Decoder / Attention / FFN / Output Head 中。"
+    },
+    "PPO": {
+      "x": 650,
+      "y": 900,
+      "group": "provider",
+      "desc": "Proximal Policy Optimization。RLHF 里用来根据奖励模型信号更新策略的 RL 算法。"
     }
   },
   "CONNECTIONS": [
@@ -607,14 +601,6 @@
       "Positional Encoding"
     ],
     [
-      "Positional Encoding",
-      "Decoder"
-    ],
-    [
-      "Decoder",
-      "Multi-Head Self-Attention"
-    ],
-    [
       "Multi-Head Self-Attention",
       "Feed-Forward Network"
     ],
@@ -643,28 +629,39 @@
       "RLHF"
     ],
     [
-      "Teacher Model",
-      "Distillation"
-    ],
-    [
-      "Distillation",
-      "Student Model"
-    ],
-    [
-      "RLHF",
-      "Model Weights"
-    ],
-    [
       "DPO",
       "Model Weights"
     ],
     [
-      "Student Model",
+      "Positional Encoding",
+      "Multi-Head Self-Attention"
+    ],
+    [
+      "RLHF",
+      "PPO"
+    ],
+    [
+      "PPO",
       "Model Weights"
     ],
     [
+      "Teacher Model",
+      "Distillation",
+      "dashed"
+    ],
+    [
+      "Distillation",
+      "Student Model",
+      "dashed"
+    ],
+    [
+      "Student Model",
       "Model Weights",
-      "Decoder"
+      "dashed"
+    ],
+    [
+      "Model Weights",
+      "Multi-Head Self-Attention"
     ]
   ]
 }
