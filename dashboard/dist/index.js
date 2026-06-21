@@ -59,7 +59,7 @@
     '记忆文件': {file: 'tools/memory_tool.py', loc: 'MemoryStore', x: 920, y: 620, group: 'memory', desc: '本地保存的长期记忆。比如你的喜好、重要事实、个人资料等。'},
 
     // ── HY Memory evolution engine ──────────────────────────────────────────
-    'HY Memory': {file: 'hy_memory/client.py', loc: 'HyMemoryClient', x: 1140, y: 220, group: 'hy', desc: '一个更聪明的记忆系统。不仅能存东西，还会自动整理、提炼、进化记忆。'},
+    'HY Memory': {file: 'hy_memory/client.py', loc: 'HyMemoryClient', x: 1140, y: 220, group: 'hy', desc: '一个更聪明的记忆系统。不仅能存东西，还会自动整理、提炼、进化记忆。\n注：HY 记忆内容会追加在本地 memory 块之后写入 system prompt，靠后的位置让模型更倾向采信它。'},
     'S1 Writer': {file: 'hy_memory/pipelines/writer.py', loc: 'MemoryWriter', x: 1140, y: 320, group: 'hy', desc: '第一层记忆写入。先把对话内容简单归档，准备后续加工。'},
     'MemAgent': {file: 'hy_memory/agent/mem_agent.py', loc: 'MemAgent', x: 1140, y: 420, group: 'hy', desc: '记忆提炼员。自动从对话里提取重要事实、身份信息和摘要。'},
     'Reconciler': {file: 'hy_memory/agent/reconciler.py', loc: 'MemoryReconciler', x: 1140, y: 520, group: 'hy', desc: '记忆冲突检查员。看看新信息和旧记忆有没有矛盾，决定是新增、替换还是更新。'},
