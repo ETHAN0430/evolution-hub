@@ -319,7 +319,7 @@
       "x": 650,
       "y": 910,
       "group": "provider",
-      "desc": "训练产出的模型参数。Hermes 运行时会把这些权重加载到推理层的 Self-Attention / FFN / Output Head / Embedding 中，让模型开始工作。\n\n来源可以是 Pre-training、Post-Training（SFT/RLHF/DPO）或 Distillation 的 Student。\n\n注意：Hermes 运行时只加载这些权重做推理，不会在线训练或修改模型权重。如果用用户案例去改进模型，那是离线后训练（Post-Training）的事，需要先清洗、标注数据，再单独跑训练流程。\n\n注意：Model Weights 只作用于神经网络的计算层——Embedding、Attention、FFN、Output Head。Tokenizer 是切词规则，不是神经网络权重；KV Cache 是运行时缓存；Sampling 是解码策略，都不属于 Model Weights。\n\n具体包括：Embedding 矩阵、Self-Attention 的 Q/K/V 和输出投影、FFN 的两层权重、Output Head 投影，以及 LayerNorm 参数。Tokenizer、KV Cache、Sampling 不属于 Model Weights。"
+      "desc": "训练产出的模型参数。Hermes 运行时会把这些权重加载到推理层的 Self-Attention / FFN / Output Head / Embedding 中，让模型开始工作。\n\n来源可以是 Pre-training、Post-Training（SFT/RLHF/DPO）或 Distillation 的 Student。\n\n注意：Hermes 运行时只加载这些权重做推理，不会在线训练或修改模型权重。如果用用户案例去改进模型，那是离线后训练（Post-Training）的事，需要先清洗、标注数据，再单独跑训练流程。\n\n注意：Model Weights 只作用于神经网络的计算层——Embedding、Attention、FFN、Output Head。Tokenizer 是切词规则，不是神经网络权重；KV Cache 是运行时缓存；Sampling 是解码策略，都不属于 Model Weights。\n\n具体包括：Embedding 矩阵、Self-Attention 的 Q/K/V 和输出投影、FFN 的两层权重、Output Head 投影，以及 LayerNorm 参数。Tokenizer、KV Cache、Sampling 不属于 Model Weights。\n\n模型规模与能力：\n- <7B：手机/边缘设备、简单对话、低延迟。\n- 7B-13B：个人/小团队，日常问答、基础代码。\n- 30B-70B：企业级，复杂推理、长上下文、多语言、代码能力明显变强。\n- 100B-200B：接近顶尖水平，数学/科学推理、复杂指令。\n- 400B+：当前第一梯队，跨领域专家级能力。\n\n但参数量不是唯一决定因素。训练数据质量、后训练方法、上下文长度、推理预算、工具使用都会影响实际表现。\n\n成本：参数量每大一级，推理成本大致按倍数涨。7B 便宜，70B 贵 10 倍左右，400B+ 更贵。output token 通常比 input 贵 2~5 倍，因为生成必须串行。"
     },
     "Distillation": {
       "x": 800,
@@ -374,12 +374,6 @@
       "y": 970,
       "group": "provider",
       "desc": "一句话：在预训练好的模型基础上，用自己的小批量高质量数据继续训练，让模型更懂你、输出更稳定。\n\n例子：把公司客服对话和售后文档整理成 prompt-response 对，训练后模型回答退换货问题时，会自动引用你们的政策术语和流程。\n\n后训练包括哪些？\n- SFT（监督微调）：用 (prompt, answer) 对训练，让模型学会对话格式和任务模式。\n- RLHF：训练奖励模型判断回答好坏，再用 PPO 等强化学习优化。\n- DPO：直接用“好回答 vs 坏回答”的偏好对训练，省去奖励模型。\n\n成本大概多少？\n- 7B-13B 模型：几百到几千美元（用 LoRA/QLoRA 还能更便宜）。\n- 30B-70B 模型：几千到几万美元。\n- 100B-400B+：几十万到上百万美元。\n数据清洗、人工标注、反复试错的成本，往往比纯算力还贵。\n\n和 RAG 怎么选？\n- 微调：让模型“内化”知识、格式、风格；适合高频、固定模式场景。\n- RAG：外挂可变的知识库；适合知识常更新、需要给出来源的场景。\n- 实际业务里两者常一起用：微调保证风格和格式，RAG 补充最新事实。"
-    },
-    "模型规模": {
-      "x": 900,
-      "y": 910,
-      "group": "provider",
-      "desc": "一句话：参数量越大，模型通常越强、越贵，但不是唯一决定因素。\n\n大致分层：\n- <7B：手机/边缘设备、简单对话、低延迟。\n- 7B-13B：个人/小团队，日常问答、基础代码。\n- 30B-70B：企业级，复杂推理、长上下文、多语言、代码能力明显变强。\n- 100B-200B：接近顶尖水平，数学/科学推理、复杂指令。\n- 400B+：当前第一梯队，跨领域专家级能力。\n\n为什么不是参数越大就越聪明？\n- 训练数据质量：好数据能让小模型超过烂大模型。\n- 后训练方法：SFT、RLHF/DPO、test-time compute 会显著改变表现。\n- 上下文长度：长上下文能处理更复杂任务。\n- 推理预算：同样的模型，多给思考 token 或做搜索验证，结果会更好。\n- 工具使用：会调用搜索、代码、计算器的模型，实际解决问题的能力远超裸模型。\n\n成本：参数量每大一级，推理成本大致按倍数涨。7B 便宜，70B 贵 10 倍左右，400B+ 更贵。output token 通常比 input 贵 2~5 倍，因为生成必须串行。"
     },
     "RAG": {
       "x": 1280,
@@ -688,11 +682,6 @@
     [
       "微调",
       "Model Weights",
-      "dashed"
-    ],
-    [
-      "Model Weights",
-      "模型规模",
       "dashed"
     ],
     [

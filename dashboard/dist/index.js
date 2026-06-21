@@ -222,13 +222,6 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'Model Weights' && c[1] === '模型规模') {
-        // Model Weights -> 模型规模: straight horizontal on the same row
-        x1 = a.x + 65;
-        y1 = a.y;
-        x2 = b.x - 65;
-        y2 = b.y;
-        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'Vector DB' && c[1] === 'RAG') {
         // Vector DB -> RAG: left out, then down into RAG from the right
         x1 = a.x - 65;
