@@ -38,13 +38,13 @@
     '输入清洗': {file: 'agent/turn_context.py', loc: 'build_turn_context', x: 510, y: 260, group: 'pipeline', desc: '每轮 Turn 的入口。清洗用户输入（如去掉非法 surrogate 字符），并把用户消息追加到对话历史中。'},
     'MCP 刷新': {file: 'tools/mcp_tool.py', loc: 'refresh_agent_mcp_tools', x: 510, y: 330, group: 'pipeline', desc: '每轮开头刷新 MCP 工具列表：检查是否有新连上的 MCP server，把新工具加入当前可用工具快照。'},
     '记忆预取': {file: 'agent/memory_manager.py', loc: 'prefetch_all', x: 510, y: 400, group: 'pipeline', desc: '用当前用户消息向 MemoryManager 发起 prefetch，把相关记忆（MEMORY.md、USER.md、HY Memory 等）提前查出来，供后续 prompt 使用。'},
-    'pre_llm_call 钩子': {file: 'hermes_cli/plugins.py', loc: 'invoke_hook', x: 510, y: 470, group: 'pipeline', desc: '调用 pre_llm_call 插件钩子，把插件返回的额外上下文注入到用户消息中。'},
+    'pre_llm_call Hook': {file: 'hermes_cli/plugins.py', loc: 'invoke_hook', x: 510, y: 470, group: 'pipeline', desc: '调用 pre_llm_call 插件Hook，把插件返回的额外上下文注入到用户消息中。'},
     '消息构建': {file: 'agent/system_prompt.py', loc: 'build_system_prompt', x: 510, y: 540, group: 'pipeline', desc: '把你的问题、之前的对话、以及查到的记忆，打包成一封发给 AI 的“信”。'},
     'LLM API': {file: 'agent/conversation_loop.py', loc: 'run_conversation', x: 510, y: 680, group: 'pipeline', desc: '真正去调用 AI 模型的地方。把准备好的“信”发出去，等 AI 回信。'},
     '工具执行': {file: 'agent/tool_executor.py', loc: 'execute_tool_calls_concurrent', x: 660, y: 680, group: 'pipeline', desc: '让 AI 可以动手做事，比如查资料、读写文件、搜索网页等。'},
     '上下文压缩': {file: 'agent/context_compressor.py', loc: 'ContextCompressor', x: 510, y: 610, group: 'pipeline', desc: '进入 LLM 前或工具结果返回后，如果上下文超过阈值，先压缩再交给 LLM。'},
-    'transform_llm_output 钩子': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 610, group: 'pipeline', desc: '插件 transform_llm_output 钩子。在工具循环结束后、返回给用户前，允许插件改写 LLM 的输出文本（第一个非空结果生效）。'},
-    'post_llm_call 钩子': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 540, group: 'pipeline', desc: '插件 post_llm_call 钩子。工具循环结束后触发，插件可用来持久化对话数据或同步到外部记忆系统。'},
+    'transform_llm_output Hook': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 610, group: 'pipeline', desc: '插件 transform_llm_output Hook。在工具循环结束后、返回给用户前，允许插件改写 LLM 的输出文本（第一个非空结果生效）。'},
+    'post_llm_call Hook': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 540, group: 'pipeline', desc: '插件 post_llm_call Hook。工具循环结束后触发，插件可用来持久化对话数据或同步到外部记忆系统。'},
     '输出后处理': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 470, group: 'pipeline', desc: '原生 Turn 收尾处理：\n1. 文件修改校验 footer\n2. 异常结束解释\n3. 提取 reasoning\n4. 组装 result'},
     '会话持久化': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 400, group: 'pipeline', desc: '把这轮对话写回 SQLite / JSON log，清理 VM/browser 等临时资源，去掉空的脚手架消息。'},
     'Turn End': {file: 'agent/turn_finalizer.py', loc: 'finalize_turn', x: 810, y: 330, group: 'pipeline', desc: '最终收尾：统计 token/cost、返回 result 给调用方。'},
@@ -91,14 +91,14 @@
     ['Agent Init', '输入清洗'],
 
     // Hermes turn pipeline (spine). The agent loop is the cycle between LLM and tools.
-    ['输入清洗', 'MCP 刷新'], ['MCP 刷新', '记忆预取'], ['记忆预取', 'pre_llm_call 钩子'], ['pre_llm_call 钩子', '消息构建'],
+    ['输入清洗', 'MCP 刷新'], ['MCP 刷新', '记忆预取'], ['记忆预取', 'pre_llm_call Hook'], ['pre_llm_call Hook', '消息构建'],
     ['LLM API', '工具执行'],
     ['工具执行', '上下文压缩', 'dashed'],
     ['消息构建', '上下文压缩'],
     ['上下文压缩', 'LLM API'],
-    ['LLM API', 'transform_llm_output 钩子'],
-    ['transform_llm_output 钩子', 'post_llm_call 钩子'],
-    ['post_llm_call 钩子', '输出后处理'],
+    ['LLM API', 'transform_llm_output Hook'],
+    ['transform_llm_output Hook', 'post_llm_call Hook'],
+    ['post_llm_call Hook', '输出后处理'],
     ['输出后处理', '会话持久化'],
     ['会话持久化', 'Turn End'],
     
@@ -229,7 +229,7 @@
         y2 = b.y;
         var cliCorridorX = 410;
         d = 'M' + x1 + ',' + y1 + ' L' + cliCorridorX + ',' + y1 + ' L' + cliCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'LLM API' && c[1] === 'transform_llm_output 钩子') {
+      } else if (c[0] === 'LLM API' && c[1] === 'transform_llm_output Hook') {
         // route above the tool-execution node so the line doesn't pass through it
         x1 = a.x;
         y1 = a.y - 17;
