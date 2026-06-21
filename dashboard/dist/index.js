@@ -279,7 +279,7 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'S1 / MemoryWriter' && c[1] === 'L1_RAW') {
+      } else if (c[0] === 'System 1 Writer' && c[1] === 'L1_RAW') {
         // S1 -> L1_RAW: drop down then right to avoid System 2 Writer
         x1 = a.x + 65;
         y1 = a.y;
@@ -293,14 +293,14 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y1 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === '记忆写入' && c[1] === 'S1 / MemoryWriter') {
+      } else if (c[0] === '记忆写入' && c[1] === 'System 1 Writer') {
         // 记忆写入 -> S1: explicit write tool feeds the write pipeline
         x1 = a.x + 65;
         y1 = a.y;
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'S1 / MemoryWriter' && c[1] === 'System 2 Writer') {
+      } else if (c[0] === 'System 1 Writer' && c[1] === 'System 2 Writer') {
         // S1 -> System 2 Writer: horizontal pipeline handoff
         x1 = a.x + 65;
         y1 = a.y;
