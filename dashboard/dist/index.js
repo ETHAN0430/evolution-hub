@@ -31,7 +31,7 @@
     provider: {fill: '#1a2330', stroke: '#8ab4e6'},
     pipeline: {fill: '#33231e', stroke: '#f4a68e'},
     memory: {fill: '#142d21', stroke: '#8fc9a3'},
-    hy: {fill: '#1f2330', stroke: '#a8b8e6'},
+    hy: {fill: '#142d21', stroke: '#8fc9a3'},
     storage: {fill: '#132728', stroke: '#7dd3d8'},
     hardware: {fill: '#2a1d18', stroke: '#e6a875'},
     infra: {fill: '#2a2218', stroke: '#c4b28a'}
@@ -107,8 +107,8 @@
       {name: 'Distillation', x: 1060, y: 930, w: 320, h: 140, color: '#7aa4d6'},
       {name: 'Memory', x: 890, y: 80, w: 710, h: 700, color: '#8fc9a3'},
       {name: 'Memory Tools', x: 900, y: 150, w: 220, h: 600, color: '#8fc9a3'},
-      {name: 'HY Memory', x: 1100, y: 260, w: 350, h: 400, color: '#a8b8e6'},
-      {name: 'Memory Layers', x: 1340, y: 260, w: 160, h: 320, color: '#a8b8e6'},
+      {name: 'HY Memory', x: 1100, y: 260, w: 350, h: 400, color: '#8fc9a3'},
+      {name: 'Memory Layers', x: 1340, y: 260, w: 160, h: 320, color: '#8fc9a3'},
       {name: 'Retrieval', x: 1500, y: 500, w: 100, h: 220, color: '#7dd3d8'},
       {name: 'Storage', x: 1600, y: 90, w: 200, h: 640, color: '#7dd3d8'},
 
