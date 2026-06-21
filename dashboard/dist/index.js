@@ -106,7 +106,7 @@
       {name: 'Model / Training', x: 20, y: 890, w: 1100, h: 220, color: '#8ab4e6'},
       {name: 'Distillation', x: 720, y: 930, w: 320, h: 140, color: '#7aa4d6'},
       {name: 'Memory', x: 900, y: 90, w: 420, h: 640, color: '#8fc9a3'},
-      {name: 'HY Memory', x: 920, y: 300, w: 340, h: 320, color: '#a8b8e6'},
+      {name: 'HY Memory', x: 920, y: 300, w: 340, h: 340, color: '#a8b8e6'},
       {name: 'Storage', x: 1340, y: 90, w: 200, h: 640, color: '#7dd3d8'},
 
     ];
@@ -254,7 +254,7 @@
         x2 = b.x + 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'MemoryProvider' && ['S1 Writer', '记忆写入', '记忆文件'].indexOf(c[1]) >= 0) {
+      } else if (c[0] === 'MemoryProvider' && ['S1 / MemoryWriter', '记忆写入', '记忆文件'].indexOf(c[1]) >= 0) {
         // MemoryProvider -> left-side memory components: left corridor to avoid MemoryManager
         x1 = a.x - 65;
         y1 = a.y;
@@ -262,7 +262,7 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + leftCorridorX + ',' + y1 + ' L' + leftCorridorX + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'MemoryProvider' && ['System 2', '记忆检索'].indexOf(c[1]) >= 0) {
+      } else if (c[0] === 'MemoryProvider' && ['System 2 Writer', '记忆检索'].indexOf(c[1]) >= 0) {
         // MemoryProvider -> right-side HY components: right corridor to avoid MemoryManager
         x1 = a.x + 65;
         y1 = a.y;
