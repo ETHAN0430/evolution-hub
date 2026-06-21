@@ -211,7 +211,7 @@
       "x": 1380,
       "y": 620,
       "group": "hy",
-      "desc": "记忆冲突检查员。对比新提取的 L2/L3/L4/L5 和已有记忆，决定新增、替换还是更新，然后写入 Vector DB。"
+      "desc": "记忆冲突检查员。对比新提取的 L2/L3/L4/L5 和已有记忆，决定新增（ADD）、替换（SUPERSEDE）还是更新（UPDATE），然后写入 Vector DB。\n\nSUPERSEDE = 旧记忆不再被召回（标记为 SHADOW），新记忆完全替代它的位置。"
     },
     "记忆检索": {
       "file": "hy_memory/coding/curator/tools.py",

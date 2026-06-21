@@ -62,7 +62,11 @@ evolution_hub/
    - `GET /api/plugins/hermes-evolution-hub/architecture.svg`（架构图 SVG）
    - `GET /api/plugins/hermes-evolution-hub/api/health`（服务健康状态）
    - `GET /api/plugins/hermes-evolution-hub/api/agent-loop`（最近的 API / 工具调用统计）
+   - `GET /api/plugins/hermes-evolution-hub/api/memory-feed`（L0~L7 记忆操作动态）
+   - `GET /api/plugins/hermes-evolution-hub/api/prefetch-feed`（最近记忆预取查询与命中）
+   - `GET /api/plugins/hermes-evolution-hub/api/self-improvement`（本地记忆/技能/工具调用自改进信号）
 5. SVG 渲染后，前端会为图中的节点绑定点击事件；点击节点时通过 `api/source?path=<absolute_path>` 读取对应源码文件。
+6. 页面下方渲染三个信息面板：L0~L7 记忆动态、记忆预取情况、Self-Improvement 嗅探。
 
 ---
 
@@ -75,6 +79,9 @@ evolution_hub/
 | `GET /api/stats` | 读取 config.yaml 中的模型配置、线程数、pipeline 总量与分布、memory 操作分布 |
 | `GET /api/evolution` | System2 / EXTRACT / DIGEST_SUMMARY 等进化步骤的最近记录（带 15 秒 TTL 缓存） |
 | `GET /api/timeline` | 最近 memory 写入、S2 队列、系统指标、近 5 分钟实时 pipeline |
+| `GET /api/memory-feed` | 最近 `memory_operations` 记录，按 L0~L7 layer 分组（带 5 秒 TTL 缓存） |
+| `GET /api/prefetch-feed` | 最近 `pipeline_logs` 中 `READ_%` 预取查询与命中统计（带 5 秒 TTL 缓存） |
+| `GET /api/self-improvement` | 嗅探 `MEMORY.md` / `USER.md` / `~/.hermes/skills` / `agent.log` 的自改进信号（带 5 秒 TTL 缓存） |
 | `GET /api/source?path=...` | 读取给定绝对路径的源码文件内容 |
 | `GET /evolution_hub_style` | 返回 `evolution_hub/evolution_hub_style.html` 模板页面 |
 | `GET /architecture.svg` | 返回 `evolution_hub/architecture.svg` 架构图 |

@@ -363,6 +363,179 @@ def api_timeline():
     }
 
 
+@router.get("/api/memory-feed")
+@cached(ttl=5)
+def api_memory_feed():
+    """Recent L0~L7 memory operations grouped by layer."""
+    layers = ["l1_raw", "l2_fact", "l3_summary", "l4_identity", "l5_knowledge", "l6_schema", "l7_intention"]
+    rows = _query_db(
+        "SELECT created_at, layer, op, content FROM memory_operations "
+        "ORDER BY created_at DESC LIMIT 20"
+    )
+    recent = []
+    for r in rows:
+        content = r[3] or ""
+        summary = content[:60] + "..." if len(content) > 60 else content
+        recent.append({
+            "time": r[0][:19] if r[0] else "",
+            "layer": (r[1] or "").lower(),
+            "op": r[2] or "",
+            "summary": summary,
+        })
+    return {"recent": recent, "layers": layers, "error": None}
+
+
+@router.get("/api/prefetch-feed")
+@cached(ttl=5)
+def api_prefetch_feed():
+    """Recent prefetch queries and hit counts from pipeline_logs."""
+    rows = _query_db(
+        "SELECT created_at, step, prompt, parsed FROM pipeline_logs "
+        "WHERE step LIKE 'READ_%' ORDER BY created_at DESC LIMIT 10"
+    )
+    recent = []
+    for r in rows:
+        parsed = {}
+        try:
+            if r[3]:
+                parsed = json.loads(r[3])
+        except Exception:
+            parsed = {}
+        query = r[2] or ""
+        if len(query) > 120:
+            query = query[:120] + "..."
+        hits = parsed.get("total_found", 0) if isinstance(parsed, dict) else 0
+        reader = parsed.get("reader", "legacy") if isinstance(parsed, dict) else "legacy"
+        recent.append({
+            "time": r[0][:19] if r[0] else "",
+            "query": query,
+            "hits": hits,
+            "reader": reader,
+        })
+
+    total_1h = _query_db(
+        "SELECT COUNT(*) FROM pipeline_logs WHERE step LIKE 'READ_%' "
+        "AND created_at > datetime('now','-1 hour')"
+    )
+    total_today = _query_db(
+        "SELECT COUNT(*) FROM pipeline_logs WHERE step LIKE 'READ_%' "
+        "AND created_at > date('now')"
+    )
+    return {
+        "recent": recent,
+        "stats": {
+            "total_1h": total_1h[0][0] if total_1h else 0,
+            "total_today": total_today[0][0] if total_today else 0,
+        },
+        "error": None,
+    }
+
+
+def _active_profile() -> str:
+    """Read active_profile from Hermes config, fallback to 'default'."""
+    try:
+        if _CONFIG_YAML.exists():
+            r = subprocess.run(
+                ["grep", "-E", "^active_profile:", str(_CONFIG_YAML)],
+                capture_output=True, text=True, timeout=3,
+            )
+            for line in r.stdout.split("\n"):
+                if "active_profile:" in line:
+                    return line.split("active_profile:", 1)[1].strip() or "default"
+    except Exception:
+        pass
+    return "default"
+
+
+@router.get("/api/self-improvement")
+@cached(ttl=5)
+def api_self_improvement():
+    """Sniff local self-improvement signals: memory files, skills, agent.log."""
+    profile = _active_profile()
+    base = Path.home() / ".hermes" / "agent_data" / profile
+
+    memory_updates = {}
+    for name in ["MEMORY.md", "USER.md"]:
+        try:
+            p = base / name
+            if p.exists():
+                memory_updates[name] = datetime.fromtimestamp(p.stat().st_mtime).isoformat()
+        except Exception:
+            pass
+
+    recent_skills = []
+    skill_dirs = [
+        Path.home() / ".hermes" / "skills",
+        base / "skills",
+    ]
+    cutoff = datetime.now().timestamp() - 5 * 24 * 3600
+    seen = set()
+    for d in skill_dirs:
+        try:
+            if not d.exists():
+                continue
+            for p in d.iterdir():
+                if not p.is_file():
+                    continue
+                key = str(p.resolve())
+                if key in seen:
+                    continue
+                seen.add(key)
+                try:
+                    st = p.stat()
+                    if st.st_mtime < cutoff and st.st_ctime < cutoff:
+                        continue
+                    first_line = ""
+                    with open(p, "r", encoding="utf-8") as f:
+                        first_line = f.readline().strip()
+                    recent_skills.append({
+                        "name": p.stem,
+                        "modified": datetime.fromtimestamp(st.st_mtime).isoformat(),
+                        "preview": (first_line[:80] + "...") if len(first_line) > 80 else first_line,
+                    })
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    recent_skills.sort(key=lambda x: x["modified"], reverse=True)
+    recent_skills = recent_skills[:10]
+
+    recent_tool_calls = []
+    try:
+        r = subprocess.run(
+            ["grep", "-iE", "memory.updated|memory.updating|skill.created|skill.updated", str(_AGENT_LOG)],
+            capture_output=True, text=True, timeout=3,
+        )
+        lines = [ln for ln in r.stdout.strip().split("\n") if ln.strip()]
+        for line in lines[-5:]:
+            ts = ""
+            m = re.match(r"^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})", line)
+            if m:
+                ts = m.group(1).replace(" ", "T")
+            low = line.lower()
+            tool = "memory" if "memory" in low else "skill"
+            if "created" in low:
+                action = "create"
+            else:
+                action = "update"
+            summary = line if len(line) <= 100 else line[:100] + "..."
+            recent_tool_calls.append({
+                "time": ts,
+                "tool": tool,
+                "action": action,
+                "summary": summary,
+            })
+    except Exception:
+        pass
+
+    return {
+        "memory_updates": memory_updates,
+        "recent_skills": recent_skills,
+        "recent_tool_calls": recent_tool_calls,
+        "error": None,
+    }
+
+
 @router.get("/api/architecture")
 async def api_architecture():
     """Serve the architecture graph data (nodes + connections) from the plugin dist directory."""

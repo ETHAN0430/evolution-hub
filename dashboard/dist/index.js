@@ -269,13 +269,6 @@
         x2 = b.x - 65;
         y2 = b.y;
         d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
-      } else if (c[0] === 'System 1 Writer' && c[1] === 'L1_RAW') {
-        // S1 -> L1_RAW: drop down then right to avoid System 2 Writer
-        x1 = a.x + 65;
-        y1 = a.y;
-        x2 = b.x - 65;
-        y2 = b.y;
-        d = 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + ' L' + x2 + ',' + y2;
       } else if (c[0] === 'ANN 检索' && c[1] === 'Vector DB') {
         // ANN 检索 -> Vector DB: right then up
         x1 = a.x + 65;
@@ -466,6 +459,158 @@
     );
   }
 
+  function formatRelativeTime(iso) {
+    if (!iso) return '';
+    var then = new Date(iso).getTime();
+    if (isNaN(then)) return iso;
+    var now = Date.now();
+    var diff = Math.floor((now - then) / 1000);
+    if (diff < 60) return '刚刚';
+    if (diff < 3600) return Math.floor(diff / 60) + '分钟前';
+    if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
+    return Math.floor(diff / 86400) + '天前';
+  }
+
+  function Collapsible(props) {
+    var title = props.title;
+    var count = props.count;
+    var children = props.children;
+    var _s = hooks.useState(true), open = _s[0], setOpen = _s[1];
+    return h('div', {className: 'eh-collapsible'},
+      h('button', {
+        className: 'eh-collapsible-header',
+        onClick: function () { setOpen(!open); },
+        'aria-expanded': open
+      },
+        h('span', {className: 'eh-collapsible-title'}, title),
+        count != null ? h('span', {className: 'eh-collapsible-count'}, count) : null,
+        h('span', {className: 'eh-collapsible-caret'}, open ? '▲' : '▼')
+      ),
+      open ? h('div', {className: 'eh-collapsible-body'}, children) : null
+    );
+  }
+
+  function MemoryFeedPanel(props) {
+    var data = props.data;
+    if (!data) return h('div', {className: 'eh-feed-loading'}, '加载中…');
+    if (data.error) return h('div', {className: 'eh-feed-error'}, '加载失败');
+    var layers = data.layers || [];
+    var recent = data.recent || [];
+    var byLayer = {};
+    layers.forEach(function (l) { byLayer[l] = []; });
+    recent.forEach(function (item) {
+      var l = item.layer || 'unknown';
+      if (!byLayer[l]) byLayer[l] = [];
+      byLayer[l].push(item);
+    });
+    var opLabel = function (op) {
+      var map = {ADD: '新增', UPDATE: '更新', DELETE: '删除', SUPERSEDE: '替代'};
+      return map[op] || op;
+    };
+    var layerLabel = function (l) {
+      return l.replace(/^l(\d)_/, 'L$1 ').replace(/_/g, ' ');
+    };
+    return h('div', {className: 'eh-feed-panel'},
+      h('div', {className: 'eh-feed-header'}, '记忆动态 (L0~L7)'),
+      layers.map(function (layer) {
+        var items = byLayer[layer] || [];
+        return h(Collapsible, {key: layer, title: layerLabel(layer), count: items.length},
+          items.length === 0
+            ? h('div', {className: 'eh-feed-empty'}, '暂无记录')
+            : h('ul', {className: 'eh-feed-list'},
+                items.map(function (item, i) {
+                  return h('li', {key: i, className: 'eh-feed-item'},
+                    h('div', {className: 'eh-feed-meta'},
+                      h('span', {className: 'eh-feed-time'}, formatRelativeTime(item.time)),
+                      h('span', {className: 'eh-feed-badge'}, opLabel(item.op))
+                    ),
+                    h('div', {className: 'eh-feed-summary'}, item.summary)
+                  );
+                })
+              )
+        );
+      })
+    );
+  }
+
+  function PrefetchFeedPanel(props) {
+    var data = props.data;
+    if (!data) return h('div', {className: 'eh-feed-loading'}, '加载中…');
+    if (data.error) return h('div', {className: 'eh-feed-error'}, '加载失败');
+    var recent = data.recent || [];
+    var stats = data.stats || {};
+    return h('div', {className: 'eh-feed-panel'},
+      h('div', {className: 'eh-feed-header'}, '记忆预取情况'),
+      h('div', {className: 'eh-feed-stats'},
+        h('span', {className: 'eh-feed-stat'}, '1小时: ', h('b', null, stats.total_1h || 0)),
+        h('span', {className: 'eh-feed-stat'}, '今日: ', h('b', null, stats.total_today || 0))
+      ),
+      recent.slice(0, 5).map(function (item, i) {
+        return h('div', {key: i, className: 'eh-prefetch-item'},
+          h('div', {className: 'eh-feed-meta'},
+            h('span', {className: 'eh-feed-time'}, formatRelativeTime(item.time)),
+            h('span', {className: 'eh-feed-badge ' + (item.hits > 0 ? 'eh-feed-badge-hit' : 'eh-feed-badge-miss')},
+              (item.hits || 0) + ' 命中')
+          ),
+          h('div', {className: 'eh-feed-query'}, item.query),
+          h('div', {className: 'eh-feed-reader'}, 'reader: ' + (item.reader || 'legacy'))
+        );
+      })
+    );
+  }
+
+  function SelfImprovementPanel(props) {
+    var data = props.data;
+    if (!data) return h('div', {className: 'eh-feed-loading'}, '加载中…');
+    if (data.error) return h('div', {className: 'eh-feed-error'}, '加载失败');
+    var memoryUpdates = data.memory_updates || {};
+    var recentSkills = data.recent_skills || [];
+    var recentToolCalls = data.recent_tool_calls || [];
+    var memNames = Object.keys(memoryUpdates);
+    return h('div', {className: 'eh-feed-panel eh-feed-panel-wide'},
+      h('div', {className: 'eh-feed-header'}, 'Self-Improvement 嗅探'),
+      h('div', {className: 'eh-si-grid'},
+        h('div', {className: 'eh-si-section'},
+          h('div', {className: 'eh-si-title'}, '本地记忆文件'),
+          memNames.length === 0
+            ? h('div', {className: 'eh-feed-empty'}, '暂无更新')
+            : memNames.map(function (name) {
+                return h('div', {key: name, className: 'eh-si-row'},
+                  h('span', null, name),
+                  h('span', {className: 'eh-feed-time'}, formatRelativeTime(memoryUpdates[name]))
+                );
+              })
+        ),
+        h('div', {className: 'eh-si-section'},
+          h('div', {className: 'eh-si-title'}, '最近技能'),
+          recentSkills.length === 0
+            ? h('div', {className: 'eh-feed-empty'}, '暂无新建/修改')
+            : recentSkills.map(function (s, i) {
+                return h('div', {key: i, className: 'eh-si-row'},
+                  h('span', null, s.name),
+                  h('span', {className: 'eh-feed-time'}, formatRelativeTime(s.modified))
+                );
+              })
+        ),
+        h('div', {className: 'eh-si-section eh-si-section-wide'},
+          h('div', {className: 'eh-si-title'}, '最近记忆/技能工具调用'),
+          recentToolCalls.length === 0
+            ? h('div', {className: 'eh-feed-empty'}, '暂无记录')
+            : recentToolCalls.map(function (t, i) {
+                return h('div', {key: i, className: 'eh-si-row'},
+                  h('span', {className: 'eh-si-row-text'},
+                    h('span', {className: 'eh-feed-badge'}, t.tool + '.' + t.action),
+                    ' ',
+                    t.summary
+                  ),
+                  h('span', {className: 'eh-feed-time'}, formatRelativeTime(t.time))
+                );
+              })
+        )
+      )
+    );
+  }
+
   function EvolutionHubPage() {
     var _a = hooks.useState(null), health = _a[0], setHealth = _a[1];
     var _b = hooks.useState(null), agentLoop = _b[0], setAgentLoop = _b[1];
@@ -475,6 +620,9 @@
     var _e = hooks.useState(1), svgScale = _e[0], setSvgScale = _e[1];
     var _f = hooks.useState(0), posX = _f[0], setPosX = _f[1];
     var _g = hooks.useState(0), posY = _g[0], setPosY = _g[1];
+    var _mem = hooks.useState(null), memoryFeed = _mem[0], setMemoryFeed = _mem[1];
+    var _pre = hooks.useState(null), prefetchFeed = _pre[0], setPrefetchFeed = _pre[1];
+    var _si = hooks.useState(null), selfImprovement = _si[0], setSelfImprovement = _si[1];
     var svgRef = hooks.useRef(null);
     var canvasRef = hooks.useRef(null);
     var dragRef = hooks.useRef(false);
@@ -505,11 +653,17 @@
       Promise.all([
         loadArchitecture().catch(function (e) { return {error: e.message || String(e)}; }),
         authFetch(BASE + '/api/health').then(function (r) { return r.json(); }).catch(function () { return null; }),
-        authFetch(BASE + '/api/agent-loop').then(function (r) { return r.json(); }).catch(function () { return null; })
+        authFetch(BASE + '/api/agent-loop').then(function (r) { return r.json(); }).catch(function () { return null; }),
+        authFetch(BASE + '/api/memory-feed').then(function (r) { return r.json(); }).catch(function () { return {recent: [], layers: [], error: 'fetch failed'}; }),
+        authFetch(BASE + '/api/prefetch-feed').then(function (r) { return r.json(); }).catch(function () { return {recent: [], stats: {}, error: 'fetch failed'}; }),
+        authFetch(BASE + '/api/self-improvement').then(function (r) { return r.json(); }).catch(function () { return {memory_updates: {}, recent_skills: [], recent_tool_calls: [], error: 'fetch failed'}; })
       ]).then(function (results) {
         setArch(results[0]);
         setHealth(results[1]);
         setAgentLoop(results[2]);
+        setMemoryFeed(results[3]);
+        setPrefetchFeed(results[4]);
+        setSelfImprovement(results[5]);
       });
       var onResize = function () { fitToScreen(); };
       window.addEventListener('resize', onResize);
@@ -633,6 +787,14 @@
       ),
       // Canvas + detail
       h('div', {ref: canvasRef, className: 'eh-canvas', onMouseDown: onMouseDown, onMouseMove: onMouseMove, onMouseUp: onMouseUp, onMouseLeave: onMouseLeave}, canvasChildren),
+      // Feeds: memory, prefetch, self-improvement
+      h('div', {className: 'eh-feeds', key: 'feeds'},
+        h('div', {className: 'eh-feeds-grid'},
+          h('div', {className: 'eh-feeds-col'}, h(MemoryFeedPanel, {data: memoryFeed})),
+          h('div', {className: 'eh-feeds-col'}, h(PrefetchFeedPanel, {data: prefetchFeed}))
+        ),
+        h('div', {className: 'eh-feeds-row'}, h(SelfImprovementPanel, {data: selfImprovement}))
+      ),
       // Glossary
       h('div', {className: 'eh-glossary' + (glossaryOpen ? ' eh-glossary-open' : ''), key: 'glossary'},
         h('button', {className: 'eh-glossary-toggle', onClick: function () { setGlossaryOpen(!glossaryOpen); }}, glossaryOpen ? '收起术语表 ▲' : '展开术语表 ▼'),
