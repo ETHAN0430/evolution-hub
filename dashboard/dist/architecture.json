@@ -211,7 +211,7 @@
       "x": 1110,
       "y": 140,
       "group": "memory",
-      "desc": "外部记忆服务的标准接口（抽象基类）。MemoryManager 只认这个接口，\n具体实现包括：HY Memory、记忆文件（memory_tool）等。\n核心方法：system_prompt_block()、prefetch()、sync_turn()、get_tool_schemas()。"
+      "desc": "外部记忆服务的标准接口（抽象基类）。MemoryManager 只认这个接口，\n具体实现包括：记忆文件（memory_tool）和 HY Memory 内部组件（S1 Writer / System 2 / 记忆工具 / cache.db）。\n核心方法：system_prompt_block()、prefetch()、sync_turn()、get_tool_schemas()。"
     },
     "记忆文件": {
       "file": "tools/memory_tool.py",
@@ -220,14 +220,6 @@
       "y": 660,
       "group": "memory",
       "desc": "本地保存的长期记忆实现（基于 memory_tool）。作为 MemoryProvider 接入 Hermes，\n支持 prefetch() 自动召回和工具显式读写。"
-    },
-    "HY Memory": {
-      "file": "hy_memory/client.py",
-      "loc": "HyMemoryClient",
-      "x": 1220,
-      "y": 660,
-      "group": "hy",
-      "desc": "一个更聪明的记忆系统，作为 MemoryProvider 的实现接入 Hermes。\n通过 prefetch() 在每次 LLM 调用前召回相关记忆，也能被模型通过记忆工具显式读写。\n注：HY 记忆内容会追加在本地 memory 块之后写入 system prompt，靠后的位置让模型更倾向采信它。"
     },
     "S1 Writer": {
       "file": "hy_memory/pipelines/writer.py",
@@ -510,23 +502,7 @@
     ],
     [
       "MemoryProvider",
-      "HY Memory"
-    ],
-    [
-      "MemoryProvider",
       "记忆文件"
-    ],
-    [
-      "HY Memory",
-      "S1 Writer"
-    ],
-    [
-      "HY Memory",
-      "记忆检索"
-    ],
-    [
-      "HY Memory",
-      "记忆写入"
     ],
     [
       "S1 Writer",
@@ -545,19 +521,11 @@
       "Vector DB"
     ],
     [
-      "HY Memory",
-      "System 2"
-    ],
-    [
       "System 2",
       "Graph DB"
     ],
     [
       "MemoryManager",
-      "cache.db"
-    ],
-    [
-      "HY Memory",
       "cache.db"
     ],
     [
@@ -708,6 +676,26 @@
       "记忆写入",
       "Vector DB",
       "dashed"
+    ],
+    [
+      "MemoryProvider",
+      "S1 Writer"
+    ],
+    [
+      "MemoryProvider",
+      "System 2"
+    ],
+    [
+      "MemoryProvider",
+      "记忆检索"
+    ],
+    [
+      "MemoryProvider",
+      "记忆写入"
+    ],
+    [
+      "MemoryProvider",
+      "cache.db"
     ]
   ]
 }
