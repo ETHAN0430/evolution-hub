@@ -55,7 +55,6 @@
     // ── Memory abstraction layer ────────────────────────────────────────────
     'MemoryManager': {file: 'agent/memory_manager.py', loc: 'MemoryManager', x: 920, y: 220, group: 'memory', desc: '记忆的调度中心。每次对话前查记忆，对话结束后把新东西存进记忆。'},
     'MemoryProvider': {file: 'agent/memory_provider.py', loc: 'MemoryProvider', x: 920, y: 320, group: 'memory', desc: '外部记忆服务的接口。让 Hermes 可以接不同的记忆系统，比如 HY Memory。'},
-    'MemoryStore': {file: 'tools/memory_tool.py', loc: 'MemoryStore', x: 920, y: 420, group: 'memory', desc: '本地记忆的仓库。负责保管 MEMORY.md、USER.md 这些文件。'},
     'ContextEngine': {file: 'agent/context_engine.py', loc: 'ContextEngine', x: 920, y: 520, group: 'memory', desc: '控制对话上下文长度的引擎。决定什么时候该压缩、怎么压缩。'},
     '记忆文件': {file: 'tools/memory_tool.py', loc: 'MemoryStore', x: 920, y: 620, group: 'memory', desc: '本地保存的长期记忆。比如你的喜好、重要事实、个人资料等。'},
 
@@ -104,11 +103,10 @@
     ['后台复盘', 'MemoryManager'],
 
     // turn engine <-> memory abstraction
-    ['memory tool', 'MemoryStore'],
+    ['memory tool', '记忆文件'],
     ['MemoryManager', 'MemoryProvider'],
-    ['MemoryProvider', 'MemoryStore'],
-    ['MemoryStore', 'ContextEngine'], ['ContextEngine', 'ContextCompressor'],
-    ['记忆文件', 'MemoryStore'],
+    ['MemoryProvider', '记忆文件'],
+    ['记忆文件', 'ContextEngine'], ['ContextEngine', 'ContextCompressor'],
 
     // Hermes <-> HY Memory (prefetch / sync_turn)
     ['MemoryProvider', 'HY Memory'],
