@@ -414,7 +414,7 @@ def api_memory_feed():
     # L1_raw: S1_L1_UPSERT in pipeline_logs
     rows = _query_db(
         "SELECT created_at, parsed FROM pipeline_logs "
-        "WHERE step='S1_L1_UPSERT' ORDER BY created_at DESC LIMIT 10"
+        "WHERE step='S1_L1_UPSERT' ORDER BY created_at DESC LIMIT 5"
     )
     for r in rows:
         recent.append({
@@ -427,7 +427,7 @@ def api_memory_feed():
     # L2_fact: memory_operations
     rows = _query_db(
         "SELECT created_at, op, content FROM memory_operations "
-        "WHERE layer='l2_fact' ORDER BY created_at DESC LIMIT 10"
+        "WHERE layer='l2_fact' ORDER BY created_at DESC LIMIT 5"
     )
     for r in rows:
         content = r[2] or ""
@@ -442,7 +442,7 @@ def api_memory_feed():
     # L3_summary: SUMMARY / DIGEST_SUMMARY in pipeline_logs
     rows = _query_db(
         "SELECT created_at, parsed FROM pipeline_logs "
-        "WHERE step IN ('SUMMARY','DIGEST_SUMMARY') ORDER BY created_at DESC LIMIT 10"
+        "WHERE step IN ('SUMMARY','DIGEST_SUMMARY') ORDER BY created_at DESC LIMIT 5"
     )
     for r in rows:
         parsed = {}
@@ -464,7 +464,7 @@ def api_memory_feed():
     # L4_identity: memory_operations
     rows = _query_db(
         "SELECT created_at, op, content FROM memory_operations "
-        "WHERE layer='l4_identity' ORDER BY created_at DESC LIMIT 10"
+        "WHERE layer='l4_identity' ORDER BY created_at DESC LIMIT 5"
     )
     for r in rows:
         content = r[2] or ""
@@ -479,7 +479,7 @@ def api_memory_feed():
     # L5_knowledge: RECONCILE in pipeline_logs
     rows = _query_db(
         "SELECT created_at, parsed FROM pipeline_logs "
-        "WHERE step='RECONCILE' ORDER BY created_at DESC LIMIT 10"
+        "WHERE step='RECONCILE' ORDER BY created_at DESC LIMIT 5"
     )
     for r in rows:
         parsed = {}
@@ -510,29 +510,23 @@ def api_memory_feed():
                 parsed = json.loads(r[1])
         except Exception:
             parsed = {}
-        schema_summary = _extract_summary(parsed, ["schema", "concept", "concepts", "name", "title"])
-        intention_summary = _extract_summary(parsed, ["intention", "intentions", "goal", "goals"])
-        if schema_summary:
-            if len(schema_summary) > 60:
-                schema_summary = schema_summary[:60] + "..."
-            recent.append({
-                "time": _format_iso_time(r[0]),
-                "layer": "l6_schema",
-                "op": "SYSTEM2",
-                "summary": schema_summary,
-            })
-        if intention_summary:
-            if len(intention_summary) > 60:
-                intention_summary = intention_summary[:60] + "..."
-            recent.append({
-                "time": _format_iso_time(r[0]),
-                "layer": "l7_intention",
-                "op": "SYSTEM2",
-                "summary": intention_summary,
-            })
+        tokens = parsed.get("total_tokens", 0)
+        success = "完成" if parsed.get("success") else "失败"
+        elapsed = parsed.get("elapsed_ms", 0)
+        recent.append({
+            "time": _format_iso_time(r[0]),
+            "layer": "l6_schema",
+            "op": "SYSTEM2",
+            "summary": f"System 2 {success} · {tokens} tokens · {elapsed:.0f}ms",
+        })
+        recent.append({
+            "time": _format_iso_time(r[0]),
+            "layer": "l7_intention",
+            "op": "SYSTEM2",
+            "summary": f"System 2 {success} · {tokens} tokens · {elapsed:.0f}ms",
+        })
 
     recent.sort(key=lambda x: x["time"], reverse=True)
-    recent = recent[:20]
     return {"recent": recent, "layers": layers, "error": None}
 
 
