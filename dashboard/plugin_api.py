@@ -401,7 +401,7 @@ def _format_iso_time(ts: Any) -> str:
     if not ts:
         return ""
     s = str(ts)[:19]
-    return s.replace(" ", "T")
+    return s.replace(" ", "T") + "Z"
 
 
 @router.get("/api/memory-feed")
@@ -597,7 +597,7 @@ def _active_profile() -> str:
 def api_self_improvement():
     """Sniff local self-improvement signals: memory files, skills, agent.log."""
     profile = _active_profile()
-    base = Path.home() / ".hermes" / "agent_data" / profile
+    base = Path.home() / ".hermes" / "memories"
 
     memory_updates = {}
     for name in ["MEMORY.md", "USER.md"]:
@@ -620,7 +620,7 @@ def api_self_improvement():
             if not d.exists():
                 continue
             for p in d.iterdir():
-                if not p.is_file():
+                if p.name.startswith("."):
                     continue
                 key = str(p.resolve())
                 if key in seen:
@@ -648,7 +648,7 @@ def api_self_improvement():
     recent_tool_calls = []
     try:
         r = subprocess.run(
-            ["grep", "-iE", "memory.updated|memory.updating|skill.created|skill.updated", str(_AGENT_LOG)],
+            ["grep", "-iE", "memory.updated|memory.updating|skill.created|skill.updated|memory_add completed|memory returned error", str(_AGENT_LOG)],
             capture_output=True, text=True, timeout=3,
         )
         lines = [ln for ln in r.stdout.strip().split("\n") if ln.strip()]
