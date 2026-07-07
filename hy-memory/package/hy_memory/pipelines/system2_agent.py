@@ -877,8 +877,11 @@ def _build_single_call_system_prompt(lang: str) -> str:
    ```{"op": "add_evidence", "node_id": "existing_schema_node_id", "evidence_list": ["new_fact_id_1"]}```
 
 3. **add_edge** — 建立两个 Schema 之间的关系
+   ✅ 正确格式（必须包含 `edge_type`）：
    ```{"op": "add_edge", "source_id": "schema_id_1", "target_id": "schema_id_2", "edge_type": "CORRECTED", "reason": "新版本修正了旧版本中..."}```
-   **`edge_type` 是必填字段。** 可用边类型：
+   ❌ 错误格式（会被丢弃）：
+   ```{"op": "add_edge", "source_id": "schema_id_1", "target_id": "schema_id_2", "reason": "..."}```
+   **`edge_type` 是必填字段，缺失会被系统丢弃。** 可用边类型：
    - `RELATED_TO` — 通用主题关系（最弱，仅在找不到更具体关系时使用）
    - `CORRECTED` — 新 Schema 修正/补充了旧 Schema
    - `SHAPED_BY` — 框架被行为特质或个人经历塑造
@@ -891,7 +894,8 @@ def _build_single_call_system_prompt(lang: str) -> str:
 3. 代码块外不要有任何其他文字。
 4. evidence_list 中的 id 必须来自材料中提供的 fact node_id。
 5. add_evidence 的 node_id 必须来自已有 Graph 节点的 id。
-6. **add_edge 必须包含 `edge_type` 字段。缺失 `edge_type` 的 add_edge 操作会被自动丢弃。**"""
+6. **add_edge 必须包含 `edge_type` 字段。缺失 `edge_type` 的 add_edge 操作会被自动丢弃。**
+7. **输出前自查：检查每条 add_edge 操作是否都有 `edge_type` 字段。如果有遗漏，立即补上最合适的边类型。**"""
     else:
         output_instructions = """
 
@@ -908,8 +912,11 @@ Available operations:
    ```{"op": "add_evidence", "node_id": "existing_schema_node_id", "evidence_list": ["new_fact_id_1"]}```
 
 3. **add_edge** — Create a relationship between two Schemas
+   ✅ Correct format (`edge_type` REQUIRED):
    ```{"op": "add_edge", "source_id": "schema_id_1", "target_id": "schema_id_2", "edge_type": "CORRECTED", "reason": "Newer version refines the older one..."}```
-   **`edge_type` is REQUIRED.** Available types:
+   ❌ Wrong format (will be DISCARDED):
+   ```{"op": "add_edge", "source_id": "schema_id_1", "target_id": "schema_id_2", "reason": "..."}```
+   **`edge_type` is REQUIRED. add_edge without `edge_type` will be DISCARDED.** Available types:
    - `RELATED_TO` — Generic (weakest; use only when no stronger relationship applies)
    - `CORRECTED` — Newer Schema refines/supersedes an older one
    - `SHAPED_BY` — A framework is shaped by behavioral traits or life experience
@@ -921,8 +928,8 @@ Available operations:
 2. If data is insufficient for reliable conclusions, output `[]`.
 3. NO text outside the code block.
 4. evidence_list IDs must come from the fact node_ids provided in the materials.
-5. **add_edge MUST include `edge_type`. Operations without `edge_type` will be automatically discarded.**"""
-5. add_evidence node_id must come from existing Graph node IDs."""
+5. **add_edge MUST include `edge_type`. Operations without `edge_type` will be automatically discarded.**
+6. **Self-verify before output: Check every add_edge operation for `edge_type`. If any is missing, add the most appropriate edge type.**"""
 
     # Remove the old "All Graph operations MUST go through tools" principle
     base = base.replace("- 所有 Graph 操作必须通过 tools 执行\n", "")
