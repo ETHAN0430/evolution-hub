@@ -44,3 +44,10 @@ unzip /tmp/hy_memory-<version>.whl -d /tmp/hy_src
 diff -ruN /tmp/hy_src/hy_memory package/hy_memory
 # 手动合并变更
 ```
+## 第四次改动 (2026-07-07~08)
+
+- **手动修正Kuzu边类型**: 4条 RELATED_TO → SHAPED_BY/BUILDS_ON
+  - 分析优先 → SHAPED_BY → OCD式谨慎
+  - AI基建 → BUILDS_ON → AI功能边界
+  - 反传统雇佣 → SHAPED_BY → OCD式谨慎
+  - 分析优先 → SHAPED_BY → 第一性原理驱动
