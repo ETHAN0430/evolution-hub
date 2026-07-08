@@ -429,6 +429,19 @@ class HyMemoryProvider(_HermesMemoryProvider):
                 when = cls._fmt_time(mem.get("memory_at"))
                 entry = f"- [{idx + 1}] {when + '  ' if when else ''}{content}"
 
+            relations = mem.get("cognitive_relations") or []
+            if relations:
+                relation_lines = []
+                for relation in relations[:6]:
+                    direction = "->" if relation.get("direction") == "outgoing" else "<-"
+                    reason = (relation.get("reason") or "").strip()
+                    related = (relation.get("content") or "").strip()
+                    detail = f"; {reason}" if reason else ""
+                    relation_lines.append(
+                        f"  [{relation.get('edge_type', 'RELATED_TO')} {direction}] {related}{detail}"
+                    )
+                entry += "\n" + "\n".join(relation_lines)
+
             # 单条过长时截断，避免极端长 memory 吃光整块
             if len(entry) > 800:
                 entry = entry[:800].rstrip() + "..."

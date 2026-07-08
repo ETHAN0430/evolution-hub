@@ -608,7 +608,9 @@ class LegacyReadPipeline(ReadPipeline):
 
                     # 演化链合成 + 去重（抽到公共 helper）
                     _t_evo = datetime.now()
-                    deduped_results = await expand_evolution_chains(vector_store, merged_results)
+                    deduped_results = await expand_evolution_chains(
+                        vector_store, merged_results, self._graph_store,
+                    )
                     _evo_ms = (datetime.now() - _t_evo).total_seconds() * 1000
                     _evolved_cnt = sum(1 for r in deduped_results if r.get("is_evolved"))
                     await trace_log.log_evolution(
@@ -701,6 +703,8 @@ class LegacyReadPipeline(ReadPipeline):
                             mem_entry["schema_type"] = _st
                         if is_evolved:
                             mem_entry["evolution_chain"] = result_item.get("evolution_chain", [])
+                        if result_item.get("cognitive_relations"):
+                            mem_entry["cognitive_relations"] = result_item["cognitive_relations"]
 
                         response.memories.append(mem_entry)
                         top_scores.append(round(score, 4))

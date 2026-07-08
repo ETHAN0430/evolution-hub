@@ -1071,6 +1071,34 @@ class HyMemoryClient:
     # System 2 Digest API
     # ================================================================
 
+    def normalize_legacy_cognitive_edges(
+        self,
+        user_id: str,
+        agent_id: str = "default_agent",
+        dry_run: bool = True,
+    ) -> Dict[str, Any]:
+        """审计或修复历史双向 CORRECTED 边；默认只生成计划。"""
+        return self._loop_thread.run(
+            self.async_normalize_legacy_cognitive_edges(user_id, agent_id, dry_run)
+        )
+
+    @_ensure_internal_loop
+    async def async_normalize_legacy_cognitive_edges(
+        self,
+        user_id: str,
+        agent_id: str = "default_agent",
+        dry_run: bool = True,
+    ) -> Dict[str, Any]:
+        if self._graph_store is None:
+            return {"success": False, "error": "GraphStore is not enabled."}
+        from .models.memory import MemoryNode
+        isolation_key = MemoryNode.build_isolation_key(user_id, agent_id or "default_agent")
+        result = await self._graph_store.normalize_legacy_cognitive_edges(
+            isolation_key=isolation_key,
+            dry_run=dry_run,
+        )
+        return {"success": True, **result}
+
     def digest(
         self,
         user_id: str,
@@ -1900,6 +1928,8 @@ class HyMemoryClient:
                 item["schema_type"] = mem["schema_type"]
             if mem.get("evolution_chain"):
                 item["evolution_chain"] = mem["evolution_chain"]
+            if mem.get("cognitive_relations"):
+                item["cognitive_relations"] = mem["cognitive_relations"]
             _all_mems.append(item)
 
         # search 链路去重：仅对 L2_FACT + L4_IDENTITY（重复重灾区）判重删库。
@@ -2957,7 +2987,8 @@ class HyMemoryClient:
                         logger.debug(f"[clone] DERIVED_FROM edge failed: {e}")
 
             # Step 4: 复制 Memory→Memory 关系边
-            edge_types = ["RELATED_TO", "CROSS_ABSTRACTS_TO"]
+            from .data.graph_relations import MEMORY_EDGE_TYPES
+            edge_types = [*MEMORY_EDGE_TYPES, "CROSS_ABSTRACTS_TO"]
 
             for i, old_nid in enumerate(graph_old_ids):
                 try:

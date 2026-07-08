@@ -487,13 +487,14 @@ class Neo4jGraphStore(GraphStoreBase):
         edge_type: str,
         properties: Optional[Dict[str, Any]] = None,
     ) -> bool:
-        """添加 Memory→Memory 关系边 (RELATED_TO)，自动建双向边"""
+        """添加 Memory→Memory 关系边；RELATED_TO 双向，认知关系保持方向。"""
+        from .graph_relations import MEMORY_EDGE_TYPES, RELATED_TO
         props = properties or {}
         now = datetime.now().isoformat()
 
         edge_type_upper = edge_type.upper()
-        if edge_type_upper != "RELATED_TO":
-            logger.debug(f"Unsupported edge type: {edge_type}, only RELATED_TO is supported via add_edge")
+        if edge_type_upper not in MEMORY_EDGE_TYPES:
+            logger.debug(f"Unsupported edge type: {edge_type}")
             return False
 
         params = {
@@ -504,16 +505,18 @@ class Neo4jGraphStore(GraphStoreBase):
         }
 
         try:
-            # 正向 A→B + 反向 B→A，一条 Cypher 搞定
+            reverse_clause = "" if edge_type_upper != RELATED_TO else f"""
+                CREATE (b)-[:{edge_type_upper} {{
+                    relation_type: $rtype, weight: $w, created_at: $now
+                }}]->(a)
+            """
             await self._run_write(
-                """
-                MATCH (a:Memory {node_id: $src}), (b:Memory {node_id: $tgt})
-                CREATE (a)-[:RELATED_TO {
+                f"""
+                MATCH (a:Memory {{node_id: $src}}), (b:Memory {{node_id: $tgt}})
+                CREATE (a)-[:{edge_type_upper} {{
                     relation_type: $rtype, weight: $w, created_at: $now
-                }]->(b)
-                CREATE (b)-[:RELATED_TO {
-                    relation_type: $rtype, weight: $w, created_at: $now
-                }]->(a)
+                }}]->(b)
+                {reverse_clause}
                 """,
                 params,
             )
@@ -521,6 +524,53 @@ class Neo4jGraphStore(GraphStoreBase):
         except Exception as e:
             logger.warning(f"add_edge failed ({source_id})-[{edge_type}]->({target_id}): {e}")
             return False
+
+    async def normalize_legacy_cognitive_edges(
+        self,
+        isolation_key: str,
+        dry_run: bool = True,
+    ) -> Dict[str, Any]:
+        """Remove generated reverse CORRECTED edges when node chronology is decisive."""
+        rows = await self._run(
+            """
+            MATCH (a:Memory)-[:CORRECTED]->(b:Memory),
+                  (b)-[:CORRECTED]->(a)
+            WHERE a.isolation_key = $ik AND b.isolation_key = $ik
+              AND a.node_id < b.node_id
+            RETURN a.node_id AS a_id, a.memory_at AS a_time,
+                   b.node_id AS b_id, b.memory_at AS b_time
+            """,
+            {"ik": isolation_key},
+        )
+        corrected = []
+        ambiguous = []
+        seen_pairs = set()
+        for row in rows:
+            a_id, a_time = row["a_id"], row.get("a_time")
+            b_id, b_time = row["b_id"], row.get("b_time")
+            pair = (a_id, b_id)
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            if not a_time or not b_time or a_time == b_time:
+                ambiguous.append({"edge_type": "CORRECTED", "nodes": [a_id, b_id]})
+                continue
+            newer, older = (a_id, b_id) if a_time > b_time else (b_id, a_id)
+            corrected.append({"keep": [newer, older], "remove": [older, newer]})
+
+        applied = 0
+        if not dry_run:
+            for item in corrected:
+                await self._run_write(
+                    """
+                    MATCH (older:Memory {node_id: $older})-[r:CORRECTED]->
+                          (newer:Memory {node_id: $newer})
+                    DELETE r
+                    """,
+                    {"older": item["remove"][0], "newer": item["remove"][1]},
+                )
+                applied += 1
+        return {"dry_run": dry_run, "corrected": corrected, "ambiguous": ambiguous, "applied": applied}
 
     async def add_topic_tag(
         self,
@@ -778,7 +828,8 @@ class Neo4jGraphStore(GraphStoreBase):
                     WHERE b.status = 'active'
                     RETURN b.node_id AS node_id, b.content AS content,
                            b.layer AS layer, b.confidence AS confidence,
-                           type(r) AS edge_type
+                           type(r) AS edge_type, r.relation_type AS reason,
+                           r.weight AS weight
                     LIMIT $lim
                     """,
                     {"aid": anchor_id, "lim": max_nodes},
@@ -793,6 +844,9 @@ class Neo4jGraphStore(GraphStoreBase):
                             "layer": row["layer"],
                             "confidence": row["confidence"],
                             "edge_type": row["edge_type"],
+                            "reason": row.get("reason"),
+                            "weight": row.get("weight"),
+                            "direction": "outgoing",
                             "from_anchor": anchor_id,
                             "source": "graph_expand",
                         })
@@ -804,7 +858,8 @@ class Neo4jGraphStore(GraphStoreBase):
                     WHERE b.status = 'active'
                     RETURN b.node_id AS node_id, b.content AS content,
                            b.layer AS layer, b.confidence AS confidence,
-                           type(r) AS edge_type
+                           type(r) AS edge_type, r.relation_type AS reason,
+                           r.weight AS weight
                     LIMIT $lim
                     """,
                     {"aid": anchor_id, "lim": max_nodes},
@@ -819,6 +874,9 @@ class Neo4jGraphStore(GraphStoreBase):
                             "layer": row["layer"],
                             "confidence": row["confidence"],
                             "edge_type": row["edge_type"],
+                            "reason": row.get("reason"),
+                            "weight": row.get("weight"),
+                            "direction": "incoming",
                             "from_anchor": anchor_id,
                             "source": "graph_expand",
                         })

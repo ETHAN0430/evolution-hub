@@ -4,6 +4,13 @@ Hermes Dashboard plugin — architecture diagram + HY Memory evolution visualiza
 
 适用于 Hermes Agent Dashboard 的插件 tab，展示架构图、HY Memory 进化引擎状态与系统健康度。
 
+## Architecture audits
+
+- [Codex 与 Hermes Agent 执行层对比](docs/agent-execution-layer-comparison.md)
+- [Evolution Hub 架构图审计](docs/evolution-architecture-audit.md)
+- [Graphiti 与 HY Memory 源码对比](docs/graphiti-vs-hy-memory.md)
+- [HY Memory 认知演化闭环](docs/hy-cognitive-evolution-implementation.md)
+
 ## Structure
 
 ```

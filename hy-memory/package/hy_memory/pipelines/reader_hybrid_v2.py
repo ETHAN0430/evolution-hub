@@ -542,7 +542,9 @@ class HybridV2ReadPipeline(ReadPipeline):
             _t_evo = datetime.now()
             expandable = vdb_scored + list(profile_hits)
             if expandable:
-                expanded = await expand_evolution_chains(vector_store, expandable)
+                expanded = await expand_evolution_chains(
+                    vector_store, expandable, self._graph_store,
+                )
             else:
                 expanded = []
             _evo_ms = (datetime.now() - _t_evo).total_seconds() * 1000
@@ -577,6 +579,10 @@ class HybridV2ReadPipeline(ReadPipeline):
             # profile_limit 语义：0 → 返回 0 条；<0 → 不限制；>0 → 截断（L0 置顶优先保留）。
             l0_results = [it for it in expanded if _layer_of(it) in _profile_layer_vals]
             l0_results.sort(key=lambda x: x.get("score", 0), reverse=True)
+            if fused_l6:
+                fused_l6 = await expand_evolution_chains(
+                    vector_store, fused_l6, self._graph_store,
+                )
             profile_results = l0_results + fused_l6
             if profile_limit == 0:
                 profile_results = []
@@ -640,6 +646,8 @@ class HybridV2ReadPipeline(ReadPipeline):
                 }
                 if is_evolved:
                     mem_entry["evolution_chain"] = item.get("evolution_chain", [])
+                if item.get("cognitive_relations"):
+                    mem_entry["cognitive_relations"] = item["cognitive_relations"]
 
                 response.memories.append(mem_entry)
 
@@ -772,4 +780,3 @@ class HybridV2ReadPipeline(ReadPipeline):
             "user_ids": search_user_ids,
             "agent_ids": search_agent_ids,
         }
-

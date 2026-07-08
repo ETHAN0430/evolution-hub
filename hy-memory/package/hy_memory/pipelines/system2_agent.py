@@ -10,7 +10,7 @@ System 2 Agent — 统一认知加工引擎
     ③ Graph 正向搜索: 按 cluster 主题 query Graph
     ④ Graph 反向查找: VDB node_id → find_referencing_memories
 
-  Phase 2 (Agent LLM，仅当 clusters_found > 0):
+  Phase 2 (Agent LLM，当形成 cluster，或散事实命中已有 Schema 时):
     输入: 聚类结果为主；unprocessed_facts = 未进任一 cluster 的 fresh facts（加菜，有上限）
     无聚类时不触发 Agent（减轻冷启动/散事实场景的 LLM 负担）
 
@@ -96,12 +96,12 @@ def s2_agent_skip_reason(materials: Dict[str, Any]) -> Optional[str]:
     返回跳过 S2 Agent 的原因；None 表示应运行 Agent。
 
     - no_facts: 聚类池为空（全已被 schema 引用或 VDB 无 fact）
-    - no_clusters: DBSCAN 未形成任何 cluster（散事实，不触发 Agent）
+    - no_clusters: DBSCAN 未形成 cluster，且散事实没有命中已有 Schema
     """
     stats = materials.get("stats") or {}
     if stats.get("total_facts_pool", 0) == 0:
         return "no_facts"
-    if stats.get("clusters_found", 0) == 0:
+    if stats.get("clusters_found", 0) == 0 and not materials.get("graph_forward"):
         return "no_clusters"
     return None
 
@@ -174,6 +174,10 @@ L6 Schema 有两种类型：
    - `CORRECTED` — 新 Schema 修正/补充了旧 Schema
    - `SHAPED_BY` — 框架被行为特质或个人经历塑造
    - `BUILDS_ON` — 一个框架建立在另一个之上（如因果链）
+   - `SUPPORTED_BY` — 观点或框架受到证据支持
+   - `CONTRADICTED_BY` — 观点被证据或新认识反驳
+   - `LED_TO` — 经历、证据或推导导致新观点/决策
+   - `RESULTED_IN` — 观点或决策产生了可观察结果
 
 ## 原则
 
@@ -262,6 +266,10 @@ For each group of facts (clustered or unclustered):
    - `CORRECTED` — A newer Schema refines/supersedes an older one on the same concept
    - `SHAPED_BY` — A framework was shaped by a behavioral trait or personal experience
    - `BUILDS_ON` — One framework builds upon another (e.g., causal chain links)
+   - `SUPPORTED_BY` — A belief or framework is supported by evidence
+   - `CONTRADICTED_BY` — A belief is contradicted by evidence or a newer insight
+   - `LED_TO` — An experience, evidence item, or inference led to a belief/decision
+   - `RESULTED_IN` — A belief or decision produced an observable outcome
 
 ## Principles
 
@@ -357,13 +365,13 @@ async def prepare_materials(
     # ② 两阶段聚类
     import numpy as np
     clusters = []
+    embeddings = []
+    valid_facts = []
     try:
         from sklearn.cluster import DBSCAN
         from sklearn.metrics.pairwise import cosine_distances
 
         # Collect embeddings from clustering_pool (not all_facts)
-        embeddings = []
-        valid_facts = []
         for fact in clustering_pool:
             emb = fact.embedding
             if isinstance(emb, dict):
@@ -483,19 +491,24 @@ async def prepare_materials(
     except Exception as e:
         logger.warning(f"[S2-preprocess] clustering failed: {e}")
 
-    # ③ Graph 正向搜索: 用 cluster centroid 向量召回相关 Schema
-    #    不再全列所有 Graph 节点 — 只召回与当前 clusters 语义相关的
+    # ③ Graph 正向搜索：优先使用 cluster centroid；无 cluster 时逐条查询 fresh fact，
+    #    让单条但关键的修正也有机会进入认知演化，而不必等待凑满 DBSCAN min_samples。
     graph_forward = []
     seen_node_ids = set()
     try:
-        if clusters and graph_store:
-            for c in clusters:
-                centroid_emb = c.get("centroid_embedding")
-                if not centroid_emb:
+        if graph_store:
+            search_embeddings = [
+                c.get("centroid_embedding") for c in clusters if c.get("centroid_embedding")
+            ]
+            if not search_embeddings:
+                search_embeddings = [
+                    list(emb) for emb in embeddings[:_S2_MAX_UNCLUSTERED_FACTS]
+                ]
+            for query_embedding in search_embeddings:
+                if not query_embedding:
                     continue
-                # 搜索 L6_SCHEMA
                 hits = await graph_store.vector_search(
-                    query_embedding=centroid_emb,
+                    query_embedding=query_embedding,
                     isolation_key=isolation_key,
                     layers=["l6_schema"],
                     limit=_GRAPH_SEARCH_TOPK_PER_CLUSTER,
@@ -560,7 +573,7 @@ async def prepare_materials(
             clustered_node_ids.add(f["node_id"])
 
     unprocessed: List[Dict[str, Any]] = []
-    if clusters:
+    if clusters or graph_forward:
         unprocessed = [
             {"node_id": f.node_id, "content": f.content, "layer": f.layer.value}
             for f in valid_facts
@@ -578,10 +591,10 @@ async def prepare_materials(
             f"[S2-preprocess] clusters={len(clusters)} clustered_facts={len(clustered_node_ids)} "
             f"unclustered_supplement={len(unprocessed)}"
         )
-    else:
+    elif not graph_forward:
         logger.info(
             f"[S2-preprocess] no clusters → skip S2 agent "
-            f"(fresh_pool={len(valid_facts)}, will not send unprocessed_facts to LLM)"
+            f"(fresh_pool={len(valid_facts)}, no related Schema found)"
         )
 
     return {
@@ -689,9 +702,20 @@ async def run_system2_agent(
 
     # Execute operations via tool_executor
     all_tool_calls = []
+    created_refs: Dict[str, str] = {}
+
+    def resolve_node_id(value: str) -> str:
+        """Resolve a same-response create_schema reference such as $belief_v2."""
+        raw = value or ""
+        ref = raw[1:] if raw.startswith("$") else raw
+        return created_refs.get(ref, raw)
+
     for op in operations:
         op_type = op.get("op", "")
         try:
+            if op_type == "add_edge" and (not op.get("edge_type") or not op.get("reason")):
+                logger.warning("[S2-agent] Dropping add_edge without edge_type/reason: %s", op)
+                continue
             if op_type == "create_schema":
                 result = await tool_executor.execute("create_graph_node", {
                     "layer": "l6_schema",
@@ -699,22 +723,35 @@ async def run_system2_agent(
                     "evidence_list": op.get("evidence_list", []),
                     "tags": op.get("tags", []),
                     "confidence": op.get("confidence", 0.8),
+                    "cognitive_type": op.get("cognitive_type"),
                 })
                 all_tool_calls.append({"tool": "create_graph_node", "args": op, "result": result})
+                ref = (op.get("ref") or "").lstrip("$")
+                if ref and result.get("node_id"):
+                    created_refs[ref] = result["node_id"]
 
             elif op_type == "add_evidence":
+                node_id = resolve_node_id(op.get("node_id", ""))
                 result = await tool_executor.execute("add_evidence", {
-                    "node_id": op.get("node_id", ""),
+                    "node_id": node_id,
                     "evidence_list": op.get("evidence_list", []),
                 })
                 all_tool_calls.append({"tool": "add_evidence", "args": op, "result": result})
 
             elif op_type == "add_edge":
+                source_id = resolve_node_id(op.get("source_id", ""))
+                target_id = resolve_node_id(op.get("target_id", ""))
+                if source_id.startswith("$") or target_id.startswith("$"):
+                    raise ValueError(
+                        f"Unresolved schema reference: {source_id} -> {target_id}"
+                    )
                 result = await tool_executor.execute("add_edge", {
-                    "source_id": op.get("source_id", ""),
-                    "target_id": op.get("target_id", ""),
+                    "source_id": source_id,
+                    "target_id": target_id,
                     "reason": op.get("reason", ""),
                     "edge_type": op.get("edge_type", "RELATED_TO"),
+                    "confidence": op.get("confidence", 0.8),
+                    "evidence_list": op.get("evidence_list", []),
                 })
                 all_tool_calls.append({"tool": "add_edge", "args": op, "result": result})
 
@@ -871,14 +908,15 @@ def _build_single_call_system_prompt(lang: str) -> str:
 可用操作：
 
 1. **create_schema** — 创建新的 L6 Schema
-   ```{"op": "create_schema", "content": "当[场景]时，用户[模式]——反映了[洞察]。", "evidence_list": ["fact_node_id_1", "fact_node_id_2"], "tags": ["tag1"]}```
+   ```{"op": "create_schema", "ref": "belief_v2", "content": "当[场景]时，用户[模式]——反映了[洞察]。", "cognitive_type": "belief", "evidence_list": ["fact_node_id_1", "fact_node_id_2"], "tags": ["tag1"]}```
+   `ref` 是本次输出内的临时名称。后续操作使用 `$belief_v2` 引用创建后才产生的真实节点 ID。
 
 2. **add_evidence** — 给已有 Schema 追加证据（不修改内容）
    ```{"op": "add_evidence", "node_id": "existing_schema_node_id", "evidence_list": ["new_fact_id_1"]}```
 
 3. **add_edge** — 建立两个 Schema 之间的关系
    ✅ 正确格式（必须包含 `edge_type`）：
-   ```{"op": "add_edge", "source_id": "schema_id_1", "target_id": "schema_id_2", "edge_type": "CORRECTED", "reason": "新版本修正了旧版本中..."}```
+   ```{"op": "add_edge", "source_id": "$belief_v2", "target_id": "existing_schema_id", "edge_type": "CORRECTED", "reason": "新版本修正了旧版本中...", "confidence": 0.9, "evidence_list": ["fact_node_id_1"]}```
    ❌ 错误格式（会被丢弃）：
    ```{"op": "add_edge", "source_id": "schema_id_1", "target_id": "schema_id_2", "reason": "..."}```
    **`edge_type` 是必填字段，缺失会被系统丢弃。** 可用边类型：
@@ -886,6 +924,10 @@ def _build_single_call_system_prompt(lang: str) -> str:
    - `CORRECTED` — 新 Schema 修正/补充了旧 Schema
    - `SHAPED_BY` — 框架被行为特质或个人经历塑造
    - `BUILDS_ON` — 一个框架建立在另一个之上（如因果链）
+   - `SUPPORTED_BY` — 观点/框架受到证据支持
+   - `CONTRADICTED_BY` — 新证据反驳旧观点
+   - `LED_TO` — 经历、证据或推导导致观点/决策
+   - `RESULTED_IN` — 观点或决策产生结果
 
 ## 输出约定
 
@@ -906,14 +948,15 @@ Do NOT call tools. Output a JSON array of operations directly, wrapped in a ```j
 Available operations:
 
 1. **create_schema** — Create a new L6 Schema
-   ```{"op": "create_schema", "content": "When [circumstance], the user [pattern] — reflecting [insight].", "evidence_list": ["fact_node_id_1", "fact_node_id_2"], "tags": ["tag1"]}```
+   ```{"op": "create_schema", "ref": "belief_v2", "content": "When [circumstance], the user [pattern] — reflecting [insight].", "cognitive_type": "belief", "evidence_list": ["fact_node_id_1", "fact_node_id_2"], "tags": ["tag1"]}```
+   `ref` is a temporary name scoped to this response. Later operations use `$belief_v2` to reference the real node ID created at execution time.
 
 2. **add_evidence** — Add evidence to an existing Schema (content stays immutable)
    ```{"op": "add_evidence", "node_id": "existing_schema_node_id", "evidence_list": ["new_fact_id_1"]}```
 
 3. **add_edge** — Create a relationship between two Schemas
    ✅ Correct format (`edge_type` REQUIRED):
-   ```{"op": "add_edge", "source_id": "schema_id_1", "target_id": "schema_id_2", "edge_type": "CORRECTED", "reason": "Newer version refines the older one..."}```
+   ```{"op": "add_edge", "source_id": "$belief_v2", "target_id": "existing_schema_id", "edge_type": "CORRECTED", "reason": "Newer version refines the older one...", "confidence": 0.9, "evidence_list": ["fact_node_id_1"]}```
    ❌ Wrong format (will be DISCARDED):
    ```{"op": "add_edge", "source_id": "schema_id_1", "target_id": "schema_id_2", "reason": "..."}```
    **`edge_type` is REQUIRED. add_edge without `edge_type` will be DISCARDED.** Available types:
@@ -921,6 +964,10 @@ Available operations:
    - `CORRECTED` — Newer Schema refines/supersedes an older one
    - `SHAPED_BY` — A framework is shaped by behavioral traits or life experience
    - `BUILDS_ON` — One framework builds upon another (e.g., causal chains)
+   - `SUPPORTED_BY` — A belief/framework is supported by evidence
+   - `CONTRADICTED_BY` — New evidence contradicts an older belief
+   - `LED_TO` — Experience, evidence, or inference led to a belief/decision
+   - `RESULTED_IN` — A belief or decision produced an outcome
 
 ## Output Contract
 
@@ -1085,17 +1132,24 @@ def _build_materials_message(materials: Dict[str, Any], lang: str = "zh") -> str
                 parts.append(f"  - [{f['layer']}] {f['content']}  (id={f['node_id']})")
                 clustered_ids.add(f['node_id'])
             parts.append("")
-    # 无聚类时不应进入 Agent；此处不输出「未聚类」大块（避免误导读成主输入）
-    # Unclustered facts — 仅在有聚类时作为加菜
+    # 未聚类事实：有 cluster 时作为补充；无 cluster 但命中旧 Schema 时作为演化输入。
     all_facts = materials.get("unprocessed_facts", [])
     unclustered = [f for f in all_facts if f["node_id"] not in clustered_ids]
-    if clusters and unclustered:
-        header = "### 未聚类事实（补充，次要）\n" if is_zh else "### Unclustered Facts (supplemental)\n"
-        hint = (
-            "以下事实未进入上述任一聚类，可在完成聚类主题加工后酌情审视；优先级低于聚类结果。\n"
-            if is_zh
-            else "Facts below were not grouped into any cluster above. Review after cluster themes; lower priority than cluster results.\n"
-        )
+    if unclustered:
+        if clusters:
+            header = "### 未聚类事实（补充，次要）\n" if is_zh else "### Unclustered Facts (supplemental)\n"
+            hint = (
+                "以下事实未进入上述任一聚类，可在完成聚类主题加工后酌情审视；优先级低于聚类结果。\n"
+                if is_zh
+                else "Facts below were not grouped into any cluster above. Review after cluster themes; lower priority than cluster results.\n"
+            )
+        else:
+            header = "### 散事实演化候选\n" if is_zh else "### Scattered Evolution Candidates\n"
+            hint = (
+                "以下事实虽未形成聚类，但命中了已有 Schema。请优先判断它们是支持、反驳、修正还是导致了新决策。\n"
+                if is_zh
+                else "These facts did not form a cluster but matched existing Schemas. Determine whether they support, contradict, correct, or lead to a decision.\n"
+            )
         parts.append(header)
         parts.append(hint)
         for f in unclustered:

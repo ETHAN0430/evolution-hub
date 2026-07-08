@@ -48,7 +48,40 @@ def _node_to_chain_item(node: MemoryNode) -> Dict[str, Any]:
         "gmt_created": int(node.gmt_created.timestamp()) if node.gmt_created else None,
         "speculate": getattr(node, "speculate", None),
         "layer": node.layer.value if node.layer else "",
+        "cognitive_type": (node.custom or {}).get("cognitive_type"),
     }
+
+
+async def _attach_cognitive_relations(graph_store, items: List[Dict[str, Any]]) -> None:
+    """Best-effort enrich results with directional cognitive cause/effect branches."""
+    if graph_store is None or not hasattr(graph_store, "get_cognitive_relations"):
+        return
+
+    anchors_by_item: List[tuple[Dict[str, Any], List[str]]] = []
+    all_anchor_ids: List[str] = []
+    for item in items:
+        anchor_ids = list(item.get("chain_node_ids") or [])
+        if not anchor_ids and item.get("node_id"):
+            anchor_ids = [item["node_id"]]
+        if anchor_ids:
+            anchors_by_item.append((item, anchor_ids))
+            all_anchor_ids.extend(anchor_ids)
+    if not all_anchor_ids:
+        return
+
+    try:
+        relations = await graph_store.get_cognitive_relations(
+            list(dict.fromkeys(all_anchor_ids)), max_nodes=max(30, len(items) * 6),
+        )
+    except Exception as exc:
+        logger.debug("[evolution] cognitive relation expansion failed: %s", exc)
+        return
+
+    for item, anchor_ids in anchors_by_item:
+        anchor_set = set(anchor_ids)
+        related = [r for r in relations if r.get("from_anchor") in anchor_set]
+        if related:
+            item["cognitive_relations"] = related
 
 
 async def _trace_full_chain(
@@ -160,6 +193,7 @@ async def _expand_one_chain(vector_store, head_item: Dict[str, Any]) -> Dict[str
 async def expand_evolution_chains(
     vector_store,
     hits: List[Dict[str, Any]],
+    graph_store=None,
 ) -> List[Dict[str, Any]]:
     """
     并发扩展一批 hits 中有演化链的节点，并去重。
@@ -182,7 +216,9 @@ async def expand_evolution_chains(
             needs.append(item)
 
     if not needs:
-        return list(hits)
+        result = list(hits)
+        await _attach_cognitive_relations(graph_store, result)
+        return result
 
     expanded = await asyncio.gather(
         *[_expand_one_chain(vector_store, item) for item in needs],
@@ -245,4 +281,5 @@ async def expand_evolution_chains(
             seen_node_ids.add(nid)
             result.append(item)
 
+    await _attach_cognitive_relations(graph_store, result)
     return result

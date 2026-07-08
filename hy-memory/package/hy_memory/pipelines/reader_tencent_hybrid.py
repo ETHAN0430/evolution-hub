@@ -79,6 +79,7 @@ class TencentHybridReadPipeline(ReadPipeline):
         self.config = config
         self._embed_service = embed_service
         self._external_vector_store = vector_store
+        self._graph_store = graph_store
         self._cache = cache
         self._vector_store: Optional[VectorStoreBase] = None
         self._vector_store_initialized = False
@@ -314,7 +315,9 @@ class TencentHybridReadPipeline(ReadPipeline):
             # Stage 6: 演化链回溯（profile L0 链等），同时屏蔽 raw（evolution.py 内已过滤）
             _t = datetime.now()
             expandable = [m for m in merged if m.get("node") is not None]
-            expanded = await expand_evolution_chains(vector_store, expandable) if expandable else merged
+            expanded = await expand_evolution_chains(
+                vector_store, expandable, self._graph_store,
+            ) if expandable else merged
             _evo_ms = (datetime.now() - _t).total_seconds() * 1000
             await trace_log.log_evolution(
                 input_size=len(expandable),
@@ -358,6 +361,8 @@ class TencentHybridReadPipeline(ReadPipeline):
                 }
                 if item.get("is_evolved"):
                     mem_entry["evolution_chain"] = item.get("evolution_chain", [])
+                if item.get("cognitive_relations"):
+                    mem_entry["cognitive_relations"] = item["cognitive_relations"]
                 response.memories.append(mem_entry)
 
             response.total_found = len(response.memories)

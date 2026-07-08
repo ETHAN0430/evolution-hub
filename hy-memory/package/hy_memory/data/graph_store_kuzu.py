@@ -21,6 +21,7 @@ import json
 from ..models.memory import MemoryNode, MemoryLayer, MemoryStatus
 from ..config import MemoryConfig
 from .graph_store_base import GraphStoreBase
+from .graph_relations import MEMORY_EDGE_TYPES, RELATED_TO
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,34 @@ CREATE REL TABLE SHAPED_BY(
 )""",
     "BUILDS_ON": """
 CREATE REL TABLE BUILDS_ON(
+    FROM Memory TO Memory,
+    relation_type STRING,
+    weight DOUBLE,
+    created_at TIMESTAMP
+)""",
+    "SUPPORTED_BY": """
+CREATE REL TABLE SUPPORTED_BY(
+    FROM Memory TO Memory,
+    relation_type STRING,
+    weight DOUBLE,
+    created_at TIMESTAMP
+)""",
+    "CONTRADICTED_BY": """
+CREATE REL TABLE CONTRADICTED_BY(
+    FROM Memory TO Memory,
+    relation_type STRING,
+    weight DOUBLE,
+    created_at TIMESTAMP
+)""",
+    "LED_TO": """
+CREATE REL TABLE LED_TO(
+    FROM Memory TO Memory,
+    relation_type STRING,
+    weight DOUBLE,
+    created_at TIMESTAMP
+)""",
+    "RESULTED_IN": """
+CREATE REL TABLE RESULTED_IN(
     FROM Memory TO Memory,
     relation_type STRING,
     weight DOUBLE,
@@ -753,16 +782,15 @@ class KuzuGraphStore(GraphStoreBase):
         edge_type: str,
         properties: Optional[Dict[str, Any]] = None,
     ) -> bool:
-        """添加 Memory→Memory 关系边 (RELATED_TO/CORRECTED/SHAPED_BY/BUILDS_ON)，自动建双向边"""
+        """添加 Memory→Memory 关系边；RELATED_TO 双向，认知关系保持方向。"""
         if not self._available:
             return False
         props = properties or {}
         now = datetime.now()
 
         edge_type_upper = edge_type.upper()
-        ALLOWED_EDGE_TYPES = {"RELATED_TO", "CORRECTED", "SHAPED_BY", "BUILDS_ON"}
-        if edge_type_upper not in ALLOWED_EDGE_TYPES:
-            logger.warning(f"Unsupported edge type: {edge_type}, supported types: {ALLOWED_EDGE_TYPES}")
+        if edge_type_upper not in MEMORY_EDGE_TYPES:
+            logger.warning(f"Unsupported edge type: {edge_type}, supported types: {MEMORY_EDGE_TYPES}")
             return False
 
         params = {
@@ -783,16 +811,16 @@ class KuzuGraphStore(GraphStoreBase):
                 """,
                 params,
             )
-            # 反向 B→A
-            self._execute(
-                f"""
-                MATCH (a:Memory {{node_id: $tgt}}), (b:Memory {{node_id: $src}})
-                CREATE (a)-[:{edge_type_upper} {{
-                    relation_type: $rtype, weight: $w, created_at: $now
-                }}]->(b);
-                """,
-                params,
-            )
+            if edge_type_upper == RELATED_TO:
+                self._execute(
+                    f"""
+                    MATCH (a:Memory {{node_id: $tgt}}), (b:Memory {{node_id: $src}})
+                    CREATE (a)-[:{edge_type_upper} {{
+                        relation_type: $rtype, weight: $w, created_at: $now
+                    }}]->(b);
+                    """,
+                    params,
+                )
             return True
         except Exception as e:
             logger.warning(f"add_edge failed ({source_id})-[{edge_type}]->({target_id}): {e}")
@@ -975,6 +1003,7 @@ class KuzuGraphStore(GraphStoreBase):
                             "layer": row[2],
                             "confidence": row[3],
                             "edge_type": row[4],
+                            "direction": "outgoing",
                             "from_anchor": anchor_id,
                             "source": "graph_expand",
                         })
@@ -1001,6 +1030,7 @@ class KuzuGraphStore(GraphStoreBase):
                             "layer": row[2],
                             "confidence": row[3],
                             "edge_type": row[4],
+                            "direction": "incoming",
                             "from_anchor": anchor_id,
                             "source": "graph_expand",
                         })
@@ -1012,6 +1042,107 @@ class KuzuGraphStore(GraphStoreBase):
                 break
 
         return expanded[:max_nodes]
+
+    async def get_cognitive_relations(
+        self,
+        node_ids: List[str],
+        max_nodes: int = 30,
+    ) -> List[Dict[str, Any]]:
+        """返回一跳认知关系，保留方向、理由与置信度。"""
+        if not self._available or not node_ids:
+            return []
+        from .graph_relations import COGNITIVE_EDGE_TYPES
+
+        relations: List[Dict[str, Any]] = []
+        for anchor_id in node_ids:
+            for edge_type in sorted(COGNITIVE_EDGE_TYPES):
+                for direction, query in (
+                    ("outgoing", f"""
+                        MATCH (a:Memory {{node_id: $aid}})-[r:{edge_type}]->(b:Memory)
+                        WHERE b.status = 'active'
+                        RETURN b.node_id, b.content, b.layer, b.confidence,
+                               r.relation_type, r.weight
+                        LIMIT {int(max_nodes)};
+                    """),
+                    ("incoming", f"""
+                        MATCH (b:Memory)-[r:{edge_type}]->(a:Memory {{node_id: $aid}})
+                        WHERE b.status = 'active'
+                        RETURN b.node_id, b.content, b.layer, b.confidence,
+                               r.relation_type, r.weight
+                        LIMIT {int(max_nodes)};
+                    """),
+                ):
+                    try:
+                        result = self._execute(query, {"aid": anchor_id})
+                        while result is not None and result.has_next():
+                            row = result.get_next()
+                            relations.append({
+                                "node_id": row[0],
+                                "content": row[1],
+                                "layer": row[2],
+                                "confidence": row[3],
+                                "edge_type": edge_type,
+                                "reason": row[4],
+                                "weight": row[5],
+                                "direction": direction,
+                                "from_anchor": anchor_id,
+                            })
+                            if len(relations) >= max_nodes:
+                                return relations
+                    except Exception as exc:
+                        logger.debug(
+                            "get_cognitive_relations %s %s %s: %s",
+                            anchor_id, edge_type, direction, exc,
+                        )
+        return relations
+
+    async def normalize_legacy_cognitive_edges(
+        self,
+        isolation_key: str,
+        dry_run: bool = True,
+    ) -> Dict[str, Any]:
+        """Remove generated reverse CORRECTED edges when node chronology is decisive."""
+        if not self._available:
+            return {"dry_run": dry_run, "corrected": [], "ambiguous": [], "applied": 0}
+        result = self._execute(
+            """
+            MATCH (a:Memory)-[:CORRECTED]->(b:Memory),
+                  (b)-[:CORRECTED]->(a)
+            WHERE a.isolation_key = $ik AND b.isolation_key = $ik
+              AND a.node_id < b.node_id
+            RETURN a.node_id, a.memory_at, b.node_id, b.memory_at;
+            """,
+            {"ik": isolation_key},
+        )
+        corrected = []
+        ambiguous = []
+        seen_pairs = set()
+        while result is not None and result.has_next():
+            row = result.get_next()
+            a_id, a_time, b_id, b_time = row[0], row[1], row[2], row[3]
+            pair = (a_id, b_id)
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            if not a_time or not b_time or a_time == b_time:
+                ambiguous.append({"edge_type": "CORRECTED", "nodes": [a_id, b_id]})
+                continue
+            newer, older = (a_id, b_id) if a_time > b_time else (b_id, a_id)
+            corrected.append({"keep": [newer, older], "remove": [older, newer]})
+
+        applied = 0
+        if not dry_run:
+            for item in corrected:
+                self._execute(
+                    """
+                    MATCH (older:Memory {node_id: $older})-[r:CORRECTED]->
+                          (newer:Memory {node_id: $newer})
+                    DELETE r;
+                    """,
+                    {"older": item["remove"][0], "newer": item["remove"][1]},
+                )
+                applied += 1
+        return {"dry_run": dry_run, "corrected": corrected, "ambiguous": ambiguous, "applied": applied}
 
     async def expand_with_tags(
         self,
@@ -1331,11 +1462,12 @@ class KuzuGraphStore(GraphStoreBase):
         edge_types: Optional[List[str]] = None,
         max_hops: int = 1,
     ) -> List[Dict[str, Any]]:
-        """从节点出发，沿 CORRECTED/SHAPED_BY/BUILDS_ON 边遍历，返回关联节点"""
+        """从节点出发，沿认知关系边遍历，返回关联节点。"""
         if not self._available or not node_ids:
             return []
         if edge_types is None:
-            edge_types = ["CORRECTED", "SHAPED_BY", "BUILDS_ON"]
+            from .graph_relations import COGNITIVE_EDGE_TYPES
+            edge_types = sorted(COGNITIVE_EDGE_TYPES)
         edge_pattern = "|".join(edge_types)
 
         seen = set()

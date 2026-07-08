@@ -56,11 +56,13 @@ class HybridTagReadPipeline(ReadPipeline):
         config: MemoryConfig,
         embed_service: Optional[EmbedService] = None,
         vector_store: Optional[VectorStoreBase] = None,
+        graph_store: Any = None,
         cache: Any = None,
     ):
         self.config = config
         self._embed_service = embed_service
         self._external_vector_store = vector_store
+        self._graph_store = graph_store
         self._cache = cache
         self._vector_store: Optional[VectorStoreBase] = None
         self._vector_store_initialized = False
@@ -341,7 +343,9 @@ class HybridTagReadPipeline(ReadPipeline):
             )
 
             _t_evo = datetime.now()
-            final_results = await expand_evolution_chains(vector_store, truncated)
+            final_results = await expand_evolution_chains(
+                vector_store, truncated, self._graph_store,
+            )
             _evo_ms = (datetime.now() - _t_evo).total_seconds() * 1000
             await trace_log.log_evolution(
                 input_size=len(truncated),
@@ -371,7 +375,7 @@ class HybridTagReadPipeline(ReadPipeline):
                 source_raw_memory_id = getattr(node, "source_raw_memory_id", None) if node else None
                 tags = list(node.tags) if (node and getattr(node, "tags", None)) else []
 
-                response.memories.append({
+                mem_entry = {
                     "memory_id": node_id,
                     "content": content,
                     "layer": item.get("layer") or (node.layer.value if node else ""),
@@ -383,7 +387,12 @@ class HybridTagReadPipeline(ReadPipeline):
                     "tags": tags,
                     "memory_at": int(node.memory_at.timestamp()) if (node and node.memory_at) else None,
                     "gmt_created": int(node.gmt_created.timestamp()) if (node and node.gmt_created) else None,
-                })
+                }
+                if is_evolved:
+                    mem_entry["evolution_chain"] = item.get("evolution_chain", [])
+                if item.get("cognitive_relations"):
+                    mem_entry["cognitive_relations"] = item["cognitive_relations"]
+                response.memories.append(mem_entry)
 
             response.total_found = len(response.memories)
             response.extra.update({

@@ -156,8 +156,32 @@ class GraphStoreBase(ABC):
         edge_type: str,
         properties: Optional[Dict[str, Any]] = None,
     ) -> bool:
-        """添加 Memory→Memory 关系边 (RELATED_TO)"""
+        """添加 Memory→Memory 关系边；除 RELATED_TO 外的认知边均有方向。"""
         ...
+
+    async def get_cognitive_relations(
+        self,
+        node_ids: List[str],
+        max_nodes: int = 30,
+    ) -> List[Dict[str, Any]]:
+        """返回节点的一跳认知关系；不支持的后端默认从图展开结果降级组装。"""
+        if not node_ids:
+            return []
+        from .graph_relations import COGNITIVE_EDGE_TYPES
+
+        expanded = await self.expand_from_anchors(node_ids, hop=1, max_nodes=max_nodes)
+        return [
+            item for item in expanded
+            if item.get("edge_type") in COGNITIVE_EDGE_TYPES
+        ]
+
+    async def normalize_legacy_cognitive_edges(
+        self,
+        isolation_key: str,
+        dry_run: bool = True,
+    ) -> Dict[str, Any]:
+        """Plan/apply safe legacy direction fixes. Backends may override."""
+        return {"dry_run": dry_run, "corrected": [], "ambiguous": [], "applied": 0}
 
     @abstractmethod
     async def add_topic_tag(

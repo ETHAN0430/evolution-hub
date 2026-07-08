@@ -84,6 +84,11 @@ hy-memory/
 |---|-------|------|------|------|
 | P9 | **概念 Schema 加分** | `reader_legacy.py` | domain=concept 标签的结果在搜索时加分 | ✅ 已上线 |
 | P10 | **reader_legacy L6 core 附加** | `reader_legacy.py` | 命中 L6 basic → 找关联 L6 core + traverse_related 展开 | ✅ 已上线 |
+| P14 | **认知因果边** | `graph_relations.py` / Graph stores | 新增 SUPPORTED_BY / CONTRADICTED_BY / LED_TO / RESULTED_IN；除 RELATED_TO 外保持方向 | ✅ 已上线 |
+| P15 | **认知角色** | `system2_tools.py` | Graph 节点 `custom.cognitive_type` 标记 belief / inference / decision 等角色 | ✅ 已上线 |
+| P16 | **演化原因支路** | `_retrieval/evolution.py` | `supersedes` 主链附加 `cognitive_relations`，贯通 reader、client 与 Hermes prompt | ✅ 已上线 |
+| P17 | **Digest 演化触发** | `system2_agent.py` | 散事实命中旧 Schema 也运行；`$ref` 连接同轮新建 Schema 与旧节点 | ✅ 已上线 |
+| P18 | **历史方向归一化** | Graph stores / `client.py` | dry-run 审计并按时间修复历史双向 CORRECTED | ✅ 已上线 |
 
 ### 2.4 服务器稳定性
 

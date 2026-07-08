@@ -25,6 +25,7 @@ from datetime import datetime
 from ..models.memory import MemoryLayer, MemoryNode, MemoryStatus, SourceType
 from ..data.vector_store_base import VectorStoreBase
 from ..data.graph_store_base import GraphStoreBase
+from ..data.graph_relations import MEMORY_EDGE_TYPES, normalize_memory_edge_type
 from ..core.embed_service import EmbedService
 
 import time
@@ -141,6 +142,11 @@ SYSTEM2_TOOL_DEFINITIONS = [
                         "description": "Tag list (prefer reusing existing tags)"
                     },
                     "confidence": {"type": "number", "description": "Confidence 0-1, default 0.8"},
+                    "cognitive_type": {
+                        "type": "string",
+                        "enum": ["experience", "evidence", "inference", "belief", "decision", "framework", "pattern", "intention"],
+                        "description": "The node's role in a cognitive evolution chain"
+                    },
                 },
                 "required": ["layer", "content", "evidence_list"]
             },
@@ -169,15 +175,25 @@ SYSTEM2_TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "add_edge",
-            "description": "Create a RELATED_TO relationship between two Graph nodes.",
+            "description": "Create a typed relationship between two Graph nodes. Cognitive relationships are directional.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "source_id": {"type": "string"},
                     "target_id": {"type": "string"},
                     "reason": {"type": "string", "description": "Reason for the relationship"},
+                    "edge_type": {
+                        "type": "string",
+                        "enum": sorted(MEMORY_EDGE_TYPES),
+                    },
+                    "confidence": {"type": "number", "description": "Relationship confidence 0-1"},
+                    "evidence_list": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "VDB memory IDs supporting this relationship"
+                    },
                 },
-                "required": ["source_id", "target_id"]
+                "required": ["source_id", "target_id", "edge_type", "reason"]
             },
         }
     },
@@ -392,6 +408,7 @@ class System2ToolExecutor:
         evidence_list = args["evidence_list"]
         tags = args.get("tags", [])
         confidence = args.get("confidence", 0.8)
+        cognitive_type = args.get("cognitive_type")
 
         layer = MemoryLayer.from_string(layer_str)
         node_id = str(uuid.uuid4())
@@ -426,7 +443,10 @@ class System2ToolExecutor:
             source_type=SourceType.INFERRED,
             tags=tags,
             memory_at=now,
-            custom={"schema_type": "basic"} if layer == MemoryLayer.L6_SCHEMA else {},
+            custom={
+                **({"schema_type": "basic"} if layer == MemoryLayer.L6_SCHEMA else {}),
+                **({"cognitive_type": cognitive_type} if cognitive_type else {}),
+            },
         )
         if content_embedding:
             node._graph_embedding = content_embedding
@@ -486,11 +506,23 @@ class System2ToolExecutor:
         source_id = args["source_id"]
         target_id = args["target_id"]
         reason = args.get("reason", "")
-        edge_type = args.get("edge_type", "RELATED_TO")
+        edge_type = normalize_memory_edge_type(args.get("edge_type", "RELATED_TO"))
+        confidence = max(0.0, min(1.0, float(args.get("confidence", 0.8))))
+        evidence_list = args.get("evidence_list", [])
 
-        if edge_type not in ("RELATED_TO", "CORRECTED", "SHAPED_BY", "BUILDS_ON"):
-            edge_type = "RELATED_TO"
-
-        props = {"relation_type": reason or "related"}
+        props = {"relation_type": reason or "related", "weight": confidence}
         success = await self.graph_store.add_edge(source_id, target_id, edge_type, props)
-        return {"success": success, "edge": f"({source_id})-[:{edge_type}]->({target_id})"}
+        evidence_added = 0
+        if success:
+            for evidence_id in evidence_list:
+                vdb_node = await self.vector_store.get_by_id(evidence_id)
+                ev_layer = vdb_node.layer.value if vdb_node else "unknown"
+                await self.graph_store.ensure_vdbref(evidence_id, ev_layer)
+                if await self.graph_store.add_derived_from(source_id, evidence_id):
+                    evidence_added += 1
+        return {
+            "success": success,
+            "edge": f"({source_id})-[:{edge_type}]->({target_id})",
+            "confidence": confidence,
+            "evidence_added": evidence_added,
+        }

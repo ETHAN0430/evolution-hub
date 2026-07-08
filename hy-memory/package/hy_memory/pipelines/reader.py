@@ -40,7 +40,9 @@ def _build_impl(
     if name == _retrieval_config.READER_HYBRID_TAG:
         try:
             from .reader_hybrid_tag import HybridTagReadPipeline
-            return HybridTagReadPipeline(config, embed_service, vector_store, cache=cache)
+            return HybridTagReadPipeline(
+                config, embed_service, vector_store, graph_store=graph_store, cache=cache,
+            )
         except ImportError as e:
             logger.warning(f"[reader-dispatch] hybrid_tag import failed: {e}; fallback to legacy")
     elif name == _retrieval_config.READER_HYBRID_V2:
@@ -118,4 +120,3 @@ class MemoryReader(ReadPipeline):
     @property
     def embed_service(self) -> EmbedService:
         return getattr(self._impl, "embed_service", None)
-
