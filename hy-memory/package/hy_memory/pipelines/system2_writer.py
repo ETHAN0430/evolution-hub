@@ -19,6 +19,8 @@ import os
 from typing import Optional, Dict, Any
 from datetime import datetime
 import logging
+import json
+import re
 
 from .base import WritePipeline, WriteRequest, WriteResponse, PipelineContext
 from .writer import MemoryWriter
@@ -32,6 +34,71 @@ import time
 logger = logging.getLogger(__name__)
 
 _SWEEPER_ENABLED = os.getenv("SWEEPER_ENABLED", "true").lower() == "true"
+
+
+def build_digest_quality_report(results: Dict[str, Any], sweeper_result: Dict[str, Any]) -> Dict[str, Any]:
+    """Summarize whether a digest produced useful graph evolution signals."""
+    agent = (results or {}).get("system2_agent", {}) or {}
+    tool_call_log = agent.get("tool_call_log", []) or []
+    report = {
+        "skipped": bool(agent.get("skipped")),
+        "skip_reason": agent.get("reason", ""),
+        "tool_calls": len(tool_call_log),
+        "tool_counts": {},
+        "schema_created": 0,
+        "schema_reused": 0,
+        "evidence_added": 0,
+        "edges_created": 0,
+        "edge_type_counts": {},
+        "related_to_ratio": 0.0,
+        "related_to_edges": 0,
+        "cognitive_edges": 0,
+        "warnings": [],
+        "sweeper": {
+            "skipped": bool((sweeper_result or {}).get("skipped")),
+            "error": (sweeper_result or {}).get("error", ""),
+        },
+    }
+
+    for call in tool_call_log:
+        tool = call.get("tool", "")
+        report["tool_counts"][tool] = report["tool_counts"].get(tool, 0) + 1
+        try:
+            result = json.loads(call.get("result") or call.get("result_preview") or "{}")
+        except Exception:
+            result = {}
+
+        if tool == "create_graph_node":
+            if result.get("created") is False:
+                report["schema_reused"] += 1
+            elif result.get("created") is True:
+                report["schema_created"] += 1
+            report["evidence_added"] += int(result.get("evidence_count") or 0)
+        elif tool == "add_evidence":
+            report["evidence_added"] += int(result.get("evidence_added") or 0)
+        elif tool == "add_edge":
+            edge_type = ""
+            edge = result.get("edge", "")
+            match = re.search(r":([A-Z_]+)\]", edge)
+            if match:
+                edge_type = match.group(1)
+            else:
+                edge_type = (call.get("args") or {}).get("edge_type", "")
+            if edge_type:
+                report["edges_created"] += 1
+                report["edge_type_counts"][edge_type] = report["edge_type_counts"].get(edge_type, 0) + 1
+
+    report["related_to_edges"] = report["edge_type_counts"].get("RELATED_TO", 0)
+    report["cognitive_edges"] = max(0, report["edges_created"] - report["related_to_edges"])
+    if report["edges_created"]:
+        report["related_to_ratio"] = round(report["related_to_edges"] / report["edges_created"], 4)
+    if report["schema_reused"]:
+        report["warnings"].append("duplicate_schema_reused")
+    if report["edges_created"] and report["related_to_ratio"] >= 0.75:
+        report["warnings"].append("high_related_to_ratio")
+    if not report["schema_created"] and not report["schema_reused"] and not report["edges_created"]:
+        report["warnings"].append("no_graph_evolution")
+    return report
 
 
 # ================================================================
@@ -655,6 +722,20 @@ class System2Writer(WritePipeline):
             llm_call=self._get_llm_call(),
             request_id=request_id,
         )
+        quality_report = build_digest_quality_report(results, sweeper_result)
+        if self._cache:
+            try:
+                await self._cache.store_pipeline_log(
+                    request_id=request_id,
+                    user_id=user_id,
+                    agent_id=agent_id,
+                    step="SYSTEM2_QUALITY_REPORT",
+                    prompt="",
+                    response=json.dumps(quality_report, ensure_ascii=False, default=str),
+                    parsed=json.dumps(quality_report, ensure_ascii=False, default=str),
+                )
+            except Exception as e:
+                logger.debug(f"[S2] store SYSTEM2_QUALITY_REPORT failed: {e}")
 
         return {
             "success": True,
@@ -662,6 +743,7 @@ class System2Writer(WritePipeline):
             "tasks_processed": 1,
             "results": results,
             "cross_domain_sweeper": sweeper_result,
+            "quality_report": quality_report,
         }
 
     # ================================================================

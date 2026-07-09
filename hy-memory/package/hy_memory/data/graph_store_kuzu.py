@@ -21,7 +21,14 @@ import json
 from ..models.memory import MemoryNode, MemoryLayer, MemoryStatus
 from ..config import MemoryConfig
 from .graph_store_base import GraphStoreBase
-from .graph_relations import MEMORY_EDGE_TYPES, RELATED_TO
+from .graph_relations import (
+    COGNITIVE_EDGE_TYPES,
+    MEMORY_EDGE_TYPES,
+    RELATED_TO,
+    cosine_similarity,
+    infer_cognitive_edge_type_from_reason,
+    plan_legacy_related_direction,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1143,6 +1150,250 @@ class KuzuGraphStore(GraphStoreBase):
                 )
                 applied += 1
         return {"dry_run": dry_run, "corrected": corrected, "ambiguous": ambiguous, "applied": applied}
+
+    async def migrate_legacy_related_edges(
+        self,
+        isolation_key: str,
+        dry_run: bool = True,
+        max_edges: int = 500,
+    ) -> Dict[str, Any]:
+        """Conservatively migrate old bidirectional RELATED_TO edges into cognitive edge types."""
+        if not self._available:
+            return {"dry_run": dry_run, "migrate": [], "ambiguous": [], "skipped": 0, "applied": 0}
+        result = self._execute(
+            f"""
+            MATCH (a:Memory)-[r:RELATED_TO]->(b:Memory),
+                  (b)-[:RELATED_TO]->(a)
+            WHERE a.isolation_key = $ik AND b.isolation_key = $ik
+              AND a.node_id < b.node_id
+            RETURN a.node_id, a.memory_at, b.node_id, b.memory_at, r.relation_type, r.weight
+            LIMIT {int(max_edges)};
+            """,
+            {"ik": isolation_key},
+        )
+        migrate = []
+        ambiguous = []
+        skipped = 0
+        while result is not None and result.has_next():
+            row = result.get_next()
+            a_id, a_time, b_id, b_time = row[0], row[1], row[2], row[3]
+            reason = row[4] or ""
+            weight = row[5] if row[5] is not None else 1.0
+            edge_type = infer_cognitive_edge_type_from_reason(reason)
+            if edge_type == RELATED_TO:
+                skipped += 1
+                continue
+            direction = plan_legacy_related_direction(edge_type, a_id, a_time, b_id, b_time)
+            item = {
+                "edge_type": edge_type,
+                "nodes": [a_id, b_id],
+                "reason": reason,
+                "weight": weight,
+            }
+            if direction.get("status") == "migrate":
+                item.update({"source": direction["source"], "target": direction["target"]})
+                migrate.append(item)
+            else:
+                item["ambiguous_reason"] = direction.get("reason", "unknown")
+                ambiguous.append(item)
+
+        applied = 0
+        if not dry_run:
+            for item in migrate:
+                self._execute(
+                    """
+                    MATCH (a:Memory {node_id: $a})-[r:RELATED_TO]->(b:Memory {node_id: $b})
+                    DELETE r;
+                    """,
+                    {"a": item["nodes"][0], "b": item["nodes"][1]},
+                )
+                self._execute(
+                    """
+                    MATCH (a:Memory {node_id: $b})-[r:RELATED_TO]->(b:Memory {node_id: $a})
+                    DELETE r;
+                    """,
+                    {"a": item["nodes"][0], "b": item["nodes"][1]},
+                )
+                if await self.add_edge(
+                    item["source"],
+                    item["target"],
+                    item["edge_type"],
+                    {"relation_type": item["reason"], "weight": item["weight"]},
+                ):
+                    applied += 1
+        return {
+            "dry_run": dry_run,
+            "migrate": migrate,
+            "ambiguous": ambiguous,
+            "skipped": skipped,
+            "applied": applied,
+        }
+
+    async def audit_duplicate_schema_nodes(
+        self,
+        isolation_key: str,
+        threshold: float = 0.95,
+        limit: int = 200,
+    ) -> Dict[str, Any]:
+        """Find high-similarity active L6 Schema nodes without mutating graph data."""
+        if not self._available:
+            return {"threshold": threshold, "pairs": [], "groups": []}
+        result = self._execute(
+            f"""
+            MATCH (m:Memory)
+            WHERE m.isolation_key = $ik AND m.status = 'active'
+              AND m.layer = 'l6_schema' AND m.embedding IS NOT NULL
+            RETURN m.node_id, m.content, m.memory_at, m.embedding
+            LIMIT {int(limit)};
+            """,
+            {"ik": isolation_key},
+        )
+        nodes = []
+        while result is not None and result.has_next():
+            row = result.get_next()
+            nodes.append({
+                "node_id": row[0],
+                "content": row[1],
+                "memory_at": row[2],
+                "embedding": row[3],
+            })
+
+        pairs = []
+        parent = {node["node_id"]: node["node_id"] for node in nodes}
+
+        def find(node_id: str) -> str:
+            while parent[node_id] != node_id:
+                parent[node_id] = parent[parent[node_id]]
+                node_id = parent[node_id]
+            return node_id
+
+        def union(left: str, right: str) -> None:
+            root_left, root_right = find(left), find(right)
+            if root_left != root_right:
+                parent[root_right] = root_left
+
+        for i, left in enumerate(nodes):
+            for right in nodes[i + 1:]:
+                score = cosine_similarity(left["embedding"], right["embedding"])
+                if score >= threshold:
+                    pairs.append({
+                        "score": score,
+                        "nodes": [
+                            {"node_id": left["node_id"], "content": left["content"], "memory_at": left["memory_at"]},
+                            {"node_id": right["node_id"], "content": right["content"], "memory_at": right["memory_at"]},
+                        ],
+                    })
+                    union(left["node_id"], right["node_id"])
+
+        grouped = {}
+        content_by_id = {node["node_id"]: node for node in nodes}
+        for node in nodes:
+            root = find(node["node_id"])
+            grouped.setdefault(root, []).append(node["node_id"])
+        groups = [
+            [
+                {
+                    "node_id": node_id,
+                    "content": content_by_id[node_id]["content"],
+                    "memory_at": content_by_id[node_id]["memory_at"],
+                }
+                for node_id in node_ids
+            ]
+            for node_ids in grouped.values()
+            if len(node_ids) > 1
+        ]
+        return {"threshold": threshold, "pairs": pairs, "groups": groups}
+
+    async def graph_health_snapshot(
+        self,
+        isolation_key: str,
+        duplicate_threshold: float = 0.95,
+        limit: int = 500,
+    ) -> Dict[str, Any]:
+        """Return read-only health metrics for active L6 Schema graph quality."""
+        if not self._available:
+            return {
+                "schema_total": 0,
+                "duplicate_groups": 0,
+                "duplicate_pairs": 0,
+                "edge_type_counts": {},
+                "memory_edge_total": 0,
+                "cognitive_edge_total": 0,
+                "related_to_edges": 0,
+                "related_to_ratio": 0.0,
+                "orphan_schema_count": 0,
+                "no_evidence_schema_count": 0,
+            }
+
+        schema_result = self._execute(
+            f"""
+            MATCH (m:Memory)
+            WHERE m.isolation_key = $ik AND m.status = 'active'
+              AND m.layer = 'l6_schema'
+            RETURN m.node_id
+            LIMIT {int(limit)};
+            """,
+            {"ik": isolation_key},
+        )
+        schema_ids = []
+        while schema_result is not None and schema_result.has_next():
+            schema_ids.append(schema_result.get_next()[0])
+        schema_set = set(schema_ids)
+
+        edge_type_counts: Dict[str, int] = {}
+        connected = set()
+        for edge_type in sorted(MEMORY_EDGE_TYPES):
+            result = self._execute(
+                f"""
+                MATCH (a:Memory)-[r:{edge_type}]->(b:Memory)
+                WHERE a.isolation_key = $ik AND b.isolation_key = $ik
+                  AND a.status = 'active' AND b.status = 'active'
+                  AND a.layer = 'l6_schema' AND b.layer = 'l6_schema'
+                RETURN a.node_id, b.node_id;
+                """,
+                {"ik": isolation_key},
+            )
+            count = 0
+            related_pairs = set()
+            while result is not None and result.has_next():
+                row = result.get_next()
+                left, right = row[0], row[1]
+                connected.add(left)
+                connected.add(right)
+                if edge_type == RELATED_TO:
+                    related_pairs.add(tuple(sorted((left, right))))
+                else:
+                    count += 1
+            edge_type_counts[edge_type] = len(related_pairs) if edge_type == RELATED_TO else count
+
+        no_evidence = 0
+        for node_id in schema_ids:
+            if not await self.get_evidence_vdbrefs(node_id):
+                no_evidence += 1
+
+        duplicate_audit = await self.audit_duplicate_schema_nodes(
+            isolation_key=isolation_key,
+            threshold=duplicate_threshold,
+            limit=limit,
+        )
+        related_to_edges = edge_type_counts.get(RELATED_TO, 0)
+        memory_edge_total = sum(edge_type_counts.values())
+        cognitive_edge_total = sum(
+            count for edge_type, count in edge_type_counts.items()
+            if edge_type in COGNITIVE_EDGE_TYPES
+        )
+        return {
+            "schema_total": len(schema_ids),
+            "duplicate_groups": len(duplicate_audit.get("groups", [])),
+            "duplicate_pairs": len(duplicate_audit.get("pairs", [])),
+            "edge_type_counts": edge_type_counts,
+            "memory_edge_total": memory_edge_total,
+            "cognitive_edge_total": cognitive_edge_total,
+            "related_to_edges": related_to_edges,
+            "related_to_ratio": round(related_to_edges / memory_edge_total, 4) if memory_edge_total else 0.0,
+            "orphan_schema_count": len(schema_set - connected),
+            "no_evidence_schema_count": no_evidence,
+        }
 
     async def expand_with_tags(
         self,

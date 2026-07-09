@@ -19,13 +19,19 @@ Write (4): — Graph 专用
 import json
 import uuid
 import logging
+import os
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 from ..models.memory import MemoryLayer, MemoryNode, MemoryStatus, SourceType
 from ..data.vector_store_base import VectorStoreBase
 from ..data.graph_store_base import GraphStoreBase
-from ..data.graph_relations import MEMORY_EDGE_TYPES, RELATED_TO, normalize_memory_edge_type
+from ..data.graph_relations import (
+    MEMORY_EDGE_TYPES,
+    RELATED_TO,
+    infer_cognitive_edge_type_from_reason,
+    normalize_memory_edge_type,
+)
 from ..core.embed_service import EmbedService
 
 import time
@@ -430,6 +436,42 @@ class System2ToolExecutor:
             logger.warning(f"create_graph_node: embed failed, node will have no embedding: {e}")
             content_embedding = None
 
+        if layer == MemoryLayer.L6_SCHEMA and content_embedding:
+            threshold = float(os.getenv("MEMORY_S2_SCHEMA_DEDUPE_THRESHOLD", "0.95"))
+            try:
+                existing = await self.graph_store.vector_search(
+                    query_embedding=content_embedding,
+                    isolation_key=self._isolation_key,
+                    layers=[MemoryLayer.L6_SCHEMA.value],
+                    limit=1,
+                    score_threshold=threshold,
+                )
+            except Exception as e:
+                logger.debug(f"create_graph_node: duplicate search failed: {e}")
+                existing = []
+            if existing:
+                duplicate = existing[0]
+                existing_id = duplicate["node_id"]
+                added = 0
+                for eid in evidence_list:
+                    vdb_node = await self.vector_store.get_by_id(eid)
+                    ev_layer = vdb_node.layer.value if vdb_node else "unknown"
+                    await self.graph_store.ensure_vdbref(eid, ev_layer)
+                    if await self.graph_store.add_derived_from(existing_id, eid):
+                        added += 1
+                    await self._increment_evidence_count(eid, vdb_node)
+                logger.info(
+                    "[S2-tools] Reused duplicate L6 Schema %s instead of creating new node (score=%.4f)",
+                    existing_id, duplicate.get("score", 0.0),
+                )
+                return {
+                    "node_id": existing_id,
+                    "created": False,
+                    "duplicate_of": existing_id,
+                    "similarity": duplicate.get("score"),
+                    "evidence_count": added,
+                }
+
         # Create the Graph Memory node
         now = datetime.now()
         node = MemoryNode(
@@ -502,51 +544,13 @@ class System2ToolExecutor:
         except Exception as e:
             logger.debug(f"[S2-tools] increment s2_evidence_count for {vdb_id} failed: {e}")
 
-    def _refine_related_to_edge_type(self, reason: str) -> str:
-        """Upgrade obvious causal/cognitive RELATED_TO edges from the model's reason text."""
-        text = (reason or "").lower()
-        keyword_map = [
-            ("CONTRADICTED_BY", (
-                "反驳", "矛盾", "冲突", "否定", "推翻", "不再成立",
-                "contradict", "contradicted", "conflict", "refute", "falsify",
-            )),
-            ("CORRECTED", (
-                "修正", "纠正", "补充", "精炼", "迭代", "新版", "旧版",
-                "correct", "corrected", "refine", "refined", "supersede", "update",
-            )),
-            ("RESULTED_IN", (
-                "产生结果", "结果是", "带来结果", "导致结果", "产出", "落地为",
-                "resulted in", "produced", "led to the outcome", "outcome",
-            )),
-            ("LED_TO", (
-                "导致", "引发", "促成", "推导出", "得出", "形成", "演化成", "带来",
-                "led to", "leads to", "caused", "resulted in", "derived", "inferred",
-            )),
-            ("SHAPED_BY", (
-                "塑造", "受影响", "被影响", "源自经历", "由经历", "生活经历",
-                "shaped by", "influenced by", "formed by", "rooted in experience",
-            )),
-            ("BUILDS_ON", (
-                "建立在", "基于", "依赖", "承接", "上层", "基础框架",
-                "builds on", "built on", "based on", "depends on", "foundation",
-            )),
-            ("SUPPORTED_BY", (
-                "支持", "支撑", "证据", "佐证", "证明", "印证",
-                "supported by", "evidence", "backed by", "validated by",
-            )),
-        ]
-        for edge_type, keywords in keyword_map:
-            if any(keyword in text for keyword in keywords):
-                return edge_type
-        return RELATED_TO
-
     async def _tool_add_edge(self, args: Dict) -> Any:
         source_id = args["source_id"]
         target_id = args["target_id"]
         reason = args.get("reason", "")
         edge_type = normalize_memory_edge_type(args.get("edge_type", "RELATED_TO"))
         if edge_type == RELATED_TO:
-            refined_edge_type = self._refine_related_to_edge_type(reason)
+            refined_edge_type = infer_cognitive_edge_type_from_reason(reason)
             if refined_edge_type != RELATED_TO:
                 logger.info(
                     "[S2-tools] Refined RELATED_TO to %s from reason: %s",

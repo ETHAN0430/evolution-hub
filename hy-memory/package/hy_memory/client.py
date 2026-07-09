@@ -1099,6 +1099,162 @@ class HyMemoryClient:
         )
         return {"success": True, **result}
 
+    def migrate_legacy_related_edges(
+        self,
+        user_id: str,
+        agent_id: str = "default_agent",
+        dry_run: bool = True,
+        max_edges: int = 500,
+    ) -> Dict[str, Any]:
+        """审计或迁移历史 RELATED_TO 边；默认只生成计划。"""
+        return self._loop_thread.run(
+            self.async_migrate_legacy_related_edges(user_id, agent_id, dry_run, max_edges)
+        )
+
+    @_ensure_internal_loop
+    async def async_migrate_legacy_related_edges(
+        self,
+        user_id: str,
+        agent_id: str = "default_agent",
+        dry_run: bool = True,
+        max_edges: int = 500,
+    ) -> Dict[str, Any]:
+        if self._graph_store is None:
+            return {"success": False, "error": "GraphStore is not enabled."}
+        from .models.memory import MemoryNode
+        isolation_key = MemoryNode.build_isolation_key(user_id, agent_id or "default_agent")
+        result = await self._graph_store.migrate_legacy_related_edges(
+            isolation_key=isolation_key,
+            dry_run=dry_run,
+            max_edges=max_edges,
+        )
+        return {"success": True, **result}
+
+    def audit_duplicate_schema_nodes(
+        self,
+        user_id: str,
+        agent_id: str = "default_agent",
+        threshold: float = 0.95,
+        limit: int = 200,
+    ) -> Dict[str, Any]:
+        """审计历史重复 L6 Schema；只读，不修改图。"""
+        return self._loop_thread.run(
+            self.async_audit_duplicate_schema_nodes(user_id, agent_id, threshold, limit)
+        )
+
+    @_ensure_internal_loop
+    async def async_audit_duplicate_schema_nodes(
+        self,
+        user_id: str,
+        agent_id: str = "default_agent",
+        threshold: float = 0.95,
+        limit: int = 200,
+    ) -> Dict[str, Any]:
+        if self._graph_store is None:
+            return {"success": False, "error": "GraphStore is not enabled."}
+        from .models.memory import MemoryNode
+        isolation_key = MemoryNode.build_isolation_key(user_id, agent_id or "default_agent")
+        result = await self._graph_store.audit_duplicate_schema_nodes(
+            isolation_key=isolation_key,
+            threshold=threshold,
+            limit=limit,
+        )
+        return {"success": True, **result}
+
+    def plan_duplicate_schema_merge(
+        self,
+        user_id: str,
+        agent_id: str = "default_agent",
+        threshold: float = 0.95,
+        limit: int = 200,
+    ) -> Dict[str, Any]:
+        """生成历史重复 Schema 合并 dry-run 计划；只读，不修改图。"""
+        return self._loop_thread.run(
+            self.async_plan_duplicate_schema_merge(user_id, agent_id, threshold, limit)
+        )
+
+    @_ensure_internal_loop
+    async def async_plan_duplicate_schema_merge(
+        self,
+        user_id: str,
+        agent_id: str = "default_agent",
+        threshold: float = 0.95,
+        limit: int = 200,
+    ) -> Dict[str, Any]:
+        audit = await self.async_audit_duplicate_schema_nodes(user_id, agent_id, threshold, limit)
+        if not audit.get("success"):
+            return audit
+
+        plans = []
+        for group in audit.get("groups", []):
+            if len(group) < 2:
+                continue
+            sorted_group = sorted(
+                group,
+                key=lambda item: (
+                    item.get("memory_at") is None,
+                    str(item.get("memory_at") or ""),
+                    item.get("node_id", ""),
+                ),
+            )
+            canonical = sorted_group[0]
+            duplicates = sorted_group[1:]
+            plans.append({
+                "canonical": canonical,
+                "duplicates": duplicates,
+                "actions": [
+                    {
+                        "op": "mark_duplicate",
+                        "source_id": duplicate["node_id"],
+                        "target_id": canonical["node_id"],
+                        "edge_type": "CORRECTED",
+                        "reason": "历史重复 Schema；建议由重复节点指向保留节点，先不硬删。",
+                    }
+                    for duplicate in duplicates
+                ],
+                "note": "dry-run only; evidence/edge migration should be reviewed before apply",
+            })
+        return {
+            "success": True,
+            "dry_run": True,
+            "threshold": audit.get("threshold", threshold),
+            "pairs": audit.get("pairs", []),
+            "groups": audit.get("groups", []),
+            "plans": plans,
+            "plan_count": len(plans),
+        }
+
+    def graph_health_snapshot(
+        self,
+        user_id: str,
+        agent_id: str = "default_agent",
+        duplicate_threshold: float = 0.95,
+        limit: int = 500,
+    ) -> Dict[str, Any]:
+        """读取当前认知图健康指标；只读，不修改图。"""
+        return self._loop_thread.run(
+            self.async_graph_health_snapshot(user_id, agent_id, duplicate_threshold, limit)
+        )
+
+    @_ensure_internal_loop
+    async def async_graph_health_snapshot(
+        self,
+        user_id: str,
+        agent_id: str = "default_agent",
+        duplicate_threshold: float = 0.95,
+        limit: int = 500,
+    ) -> Dict[str, Any]:
+        if self._graph_store is None:
+            return {"success": False, "error": "GraphStore is not enabled."}
+        from .models.memory import MemoryNode
+        isolation_key = MemoryNode.build_isolation_key(user_id, agent_id or "default_agent")
+        result = await self._graph_store.graph_health_snapshot(
+            isolation_key=isolation_key,
+            duplicate_threshold=duplicate_threshold,
+            limit=limit,
+        )
+        return {"success": True, **result}
+
     def digest(
         self,
         user_id: str,

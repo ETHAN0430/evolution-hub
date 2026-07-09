@@ -183,6 +183,44 @@ class GraphStoreBase(ABC):
         """Plan/apply safe legacy direction fixes. Backends may override."""
         return {"dry_run": dry_run, "corrected": [], "ambiguous": [], "applied": 0}
 
+    async def migrate_legacy_related_edges(
+        self,
+        isolation_key: str,
+        dry_run: bool = True,
+        max_edges: int = 500,
+    ) -> Dict[str, Any]:
+        """Plan/apply conservative RELATED_TO -> cognitive edge migration."""
+        return {"dry_run": dry_run, "migrate": [], "ambiguous": [], "skipped": 0, "applied": 0}
+
+    async def audit_duplicate_schema_nodes(
+        self,
+        isolation_key: str,
+        threshold: float = 0.95,
+        limit: int = 200,
+    ) -> Dict[str, Any]:
+        """Return high-similarity L6 schema pairs for manual/history cleanup."""
+        return {"threshold": threshold, "pairs": [], "groups": []}
+
+    async def graph_health_snapshot(
+        self,
+        isolation_key: str,
+        duplicate_threshold: float = 0.95,
+        limit: int = 500,
+    ) -> Dict[str, Any]:
+        """Return read-only health metrics for a user's cognitive graph."""
+        return {
+            "schema_total": 0,
+            "duplicate_groups": 0,
+            "duplicate_pairs": 0,
+            "edge_type_counts": {},
+            "memory_edge_total": 0,
+            "cognitive_edge_total": 0,
+            "related_to_edges": 0,
+            "related_to_ratio": 0.0,
+            "orphan_schema_count": 0,
+            "no_evidence_schema_count": 0,
+        }
+
     @abstractmethod
     async def add_topic_tag(
         self,

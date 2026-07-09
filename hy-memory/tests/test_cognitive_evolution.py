@@ -8,7 +8,9 @@ from hy_memory.data.graph_relations import (
     COGNITIVE_EDGE_TYPES,
     MEMORY_EDGE_TYPES,
     RELATED_TO,
+    infer_cognitive_edge_type_from_reason,
     normalize_memory_edge_type,
+    plan_legacy_related_direction,
 )
 from hy_memory.data.graph_store_kuzu import KuzuGraphStore
 from hy_memory.pipelines._retrieval.evolution import expand_evolution_chains
@@ -19,6 +21,7 @@ from hy_memory.pipelines.system2_agent import (
     s2_agent_skip_reason,
 )
 from hy_memory.pipelines.system2_tools import System2ToolExecutor
+from hy_memory.pipelines.system2_writer import build_digest_quality_report
 
 
 class FakeGraphStore:
@@ -73,6 +76,44 @@ class FakeKuzuResult:
         return self.rows.pop(0)
 
 
+class FakeEmbedService:
+    async def embed_queued(self, text):
+        return [1.0, 0.0, 0.0]
+
+
+class FakeVectorStore:
+    def __init__(self):
+        self.updated = []
+
+    async def get_by_id(self, node_id):
+        return SimpleNamespace(layer=SimpleNamespace(value="l2_fact"), custom={})
+
+    async def update_payload(self, node_id, updates):
+        self.updated.append((node_id, updates))
+
+
+class FakeDuplicateGraphStore:
+    def __init__(self):
+        self.derived = []
+        self.upserts = []
+
+    async def vector_search(self, **kwargs):
+        return [{"node_id": "existing-schema", "score": 0.981}]
+
+    async def ensure_vdbref(self, evidence_id, layer):
+        return True
+
+    async def add_derived_from(self, node_id, evidence_id):
+        self.derived.append((node_id, evidence_id))
+        return True
+
+    async def upsert_memory_node(self, node):
+        self.upserts.append(node)
+
+    async def add_topic_tag(self, *args, **kwargs):
+        return "tag"
+
+
 class CognitiveRelationTests(unittest.TestCase):
     def test_relation_registry_contains_causal_edges(self):
         self.assertIn("SUPPORTED_BY", COGNITIVE_EDGE_TYPES)
@@ -90,23 +131,32 @@ class CognitiveRelationTests(unittest.TestCase):
         self.assertIn("RELATED_TO` — 最后兜底", SYSTEM2_AGENT_PROMPT_ZH)
 
     def test_related_to_reason_can_be_refined(self):
-        executor = System2ToolExecutor.__new__(System2ToolExecutor)
         self.assertEqual(
-            executor._refine_related_to_edge_type("广告归因经验导致防御绕过框架形成"),
+            infer_cognitive_edge_type_from_reason("广告归因经验导致防御绕过框架形成"),
             "LED_TO",
         )
         self.assertEqual(
-            executor._refine_related_to_edge_type("新证据反驳了旧观点"),
+            infer_cognitive_edge_type_from_reason("新证据反驳了旧观点"),
             "CONTRADICTED_BY",
         )
         self.assertEqual(
-            executor._refine_related_to_edge_type("该框架受到广告归因证据支持"),
+            infer_cognitive_edge_type_from_reason("该框架受到广告归因证据支持"),
             "SUPPORTED_BY",
         )
         self.assertEqual(
-            executor._refine_related_to_edge_type("两个 Schema 主题相近"),
+            infer_cognitive_edge_type_from_reason("两个 Schema 主题相近"),
             RELATED_TO,
         )
+
+    def test_legacy_related_direction_is_conservative(self):
+        old_time = datetime.now() - timedelta(days=1)
+        new_time = datetime.now()
+        led_to = plan_legacy_related_direction("LED_TO", "old", old_time, "new", new_time)
+        corrected = plan_legacy_related_direction("CORRECTED", "old", old_time, "new", new_time)
+        supported = plan_legacy_related_direction("SUPPORTED_BY", "old", old_time, "new", new_time)
+        self.assertEqual((led_to["source"], led_to["target"]), ("old", "new"))
+        self.assertEqual((corrected["source"], corrected["target"]), ("new", "old"))
+        self.assertEqual(supported["status"], "ambiguous")
 
     def test_non_chain_hit_gets_cognitive_relations(self):
         hits = [{"node_id": "belief-1", "content": "Current belief", "score": 0.8}]
@@ -128,6 +178,25 @@ class CognitiveRelationTests(unittest.TestCase):
         calls.clear()
         self.assertTrue(asyncio.run(store.add_edge("a", "b", RELATED_TO)))
         self.assertEqual(len(calls), 2)
+
+    def test_create_schema_reuses_high_similarity_existing_schema(self):
+        executor = System2ToolExecutor(
+            vector_store=FakeVectorStore(),
+            graph_store=FakeDuplicateGraphStore(),
+            embed_service=FakeEmbedService(),
+            user_id="user",
+            agent_id="agent",
+        )
+        result = asyncio.run(executor._tool_create_graph_node({
+            "layer": "l6_schema",
+            "content": "duplicate schema",
+            "evidence_list": ["fact-1"],
+            "tags": ["test"],
+        }))
+        self.assertFalse(result["created"])
+        self.assertEqual(result["node_id"], "existing-schema")
+        self.assertEqual(executor.graph_store.derived, [("existing-schema", "fact-1")])
+        self.assertEqual(executor.graph_store.upserts, [])
 
     def test_scattered_fact_can_trigger_against_existing_schema(self):
         materials = {
@@ -197,6 +266,123 @@ class CognitiveRelationTests(unittest.TestCase):
         applied = asyncio.run(store.normalize_legacy_cognitive_edges("user", dry_run=False))
         self.assertEqual(applied["applied"], 1)
         self.assertEqual(deleted[0], {"older": "old", "newer": "new"})
+
+    def test_legacy_related_migration_is_dry_run_first(self):
+        store = KuzuGraphStore.__new__(KuzuGraphStore)
+        store._available = True
+        calls = []
+        old_time = datetime.now() - timedelta(days=1)
+        new_time = datetime.now()
+
+        def execute(query, params=None):
+            calls.append((query, params))
+            if "RETURN a.node_id" in query:
+                return FakeKuzuResult([
+                    ["old", old_time, "new", new_time, "广告归因经验导致防御绕过框架形成", 0.9],
+                    ["a", old_time, "b", new_time, "该框架受到广告归因证据支持", 0.7],
+                    ["x", old_time, "y", new_time, "两个 Schema 主题相近", 0.5],
+                ])
+            return None
+
+        store._execute = execute
+        plan = asyncio.run(store.migrate_legacy_related_edges("user", dry_run=True))
+        self.assertEqual(plan["migrate"][0]["edge_type"], "LED_TO")
+        self.assertEqual((plan["migrate"][0]["source"], plan["migrate"][0]["target"]), ("old", "new"))
+        self.assertEqual(plan["ambiguous"][0]["edge_type"], "SUPPORTED_BY")
+        self.assertEqual(plan["skipped"], 1)
+
+        async def fake_add_edge(source, target, edge_type, properties=None):
+            calls.append(("add_edge", {"source": source, "target": target, "edge_type": edge_type}))
+            return True
+
+        store.add_edge = fake_add_edge
+        applied = asyncio.run(store.migrate_legacy_related_edges("user", dry_run=False))
+        self.assertEqual(applied["applied"], 1)
+
+    def test_duplicate_schema_audit_groups_high_similarity_pairs(self):
+        store = KuzuGraphStore.__new__(KuzuGraphStore)
+        store._available = True
+        now = datetime.now()
+
+        def execute(query, params=None):
+            if "RETURN m.node_id" in query:
+                return FakeKuzuResult([
+                    ["schema-a", "A", now, [1.0, 0.0]],
+                    ["schema-b", "B", now, [0.99, 0.01]],
+                    ["schema-c", "C", now, [0.0, 1.0]],
+                ])
+            return None
+
+        store._execute = execute
+        audit = asyncio.run(store.audit_duplicate_schema_nodes("user", threshold=0.95))
+        self.assertEqual(len(audit["pairs"]), 1)
+        self.assertEqual({n["node_id"] for n in audit["groups"][0]}, {"schema-a", "schema-b"})
+
+    def test_graph_health_snapshot_counts_edges_and_orphans(self):
+        store = KuzuGraphStore.__new__(KuzuGraphStore)
+        store._available = True
+
+        def execute(query, params=None):
+            if "RETURN m.node_id" in query and "m.embedding" not in query:
+                return FakeKuzuResult([["schema-a"], ["schema-b"], ["schema-c"]])
+            if "[r:RELATED_TO]" in query:
+                return FakeKuzuResult([["schema-a", "schema-b"], ["schema-b", "schema-a"]])
+            if "[r:LED_TO]" in query:
+                return FakeKuzuResult([["schema-b", "schema-c"]])
+            return FakeKuzuResult([])
+
+        async def fake_evidence(node_id):
+            return [] if node_id == "schema-c" else [{"node_id": f"fact-{node_id}", "layer": "l2_fact"}]
+
+        async def fake_audit(**kwargs):
+            return {"pairs": [{"nodes": []}], "groups": [[{"node_id": "schema-a"}, {"node_id": "schema-b"}]]}
+
+        store._execute = execute
+        store.get_evidence_vdbrefs = fake_evidence
+        store.audit_duplicate_schema_nodes = fake_audit
+
+        health = asyncio.run(store.graph_health_snapshot("user"))
+        self.assertEqual(health["schema_total"], 3)
+        self.assertEqual(health["edge_type_counts"]["RELATED_TO"], 1)
+        self.assertEqual(health["edge_type_counts"]["LED_TO"], 1)
+        self.assertEqual(health["memory_edge_total"], 2)
+        self.assertEqual(health["cognitive_edge_total"], 1)
+        self.assertEqual(health["orphan_schema_count"], 0)
+        self.assertEqual(health["no_evidence_schema_count"], 1)
+        self.assertEqual(health["duplicate_groups"], 1)
+
+    def test_digest_quality_report_counts_reuse_and_edge_types(self):
+        results = {
+            "system2_agent": {
+                "tool_call_log": [
+                    {
+                        "tool": "create_graph_node",
+                        "result": '{"node_id":"schema-1","created":true,"evidence_count":2}',
+                    },
+                    {
+                        "tool": "create_graph_node",
+                        "result": '{"node_id":"schema-1","created":false,"duplicate_of":"schema-1","evidence_count":1}',
+                    },
+                    {
+                        "tool": "add_edge",
+                        "args": {"edge_type": "RELATED_TO"},
+                        "result": '{"success":true,"edge":"(a)-[:LED_TO]->(b)"}',
+                    },
+                    {
+                        "tool": "add_edge",
+                        "args": {"edge_type": "RELATED_TO"},
+                        "result": '{"success":true,"edge":"(a)-[:RELATED_TO]->(b)"}',
+                    },
+                ]
+            }
+        }
+        report = build_digest_quality_report(results, {"skipped": True})
+        self.assertEqual(report["schema_created"], 1)
+        self.assertEqual(report["schema_reused"], 1)
+        self.assertEqual(report["evidence_added"], 3)
+        self.assertEqual(report["edge_type_counts"]["LED_TO"], 1)
+        self.assertEqual(report["related_to_ratio"], 0.5)
+        self.assertIn("duplicate_schema_reused", report["warnings"])
 
 
 if __name__ == "__main__":
