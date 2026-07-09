@@ -559,6 +559,87 @@
     );
   }
 
+  function MetricTile(props) {
+    return h('div', {className: 'eh-metric-tile'},
+      h('div', {className: 'eh-metric-label'}, props.label),
+      h('div', {className: 'eh-metric-value'}, props.value == null ? '—' : props.value),
+      props.hint ? h('div', {className: 'eh-metric-hint'}, props.hint) : null
+    );
+  }
+
+  function CognitiveQualityPanel(props) {
+    var data = props.data;
+    if (!data) return h('div', {className: 'eh-feed-loading'}, '加载中…');
+    if (data.error) return h('div', {className: 'eh-feed-error'}, '加载失败');
+    var latest = data.latest || {};
+    var edgeCounts = latest.edge_type_counts || {};
+    var warnings = latest.warnings || [];
+    var reports = data.reports || [];
+    return h('div', {className: 'eh-feed-panel'},
+      h('div', {className: 'eh-feed-header'}, 'Digest 质量报告'),
+      h('div', {className: 'eh-metric-grid'},
+        h(MetricTile, {label: '新 Schema', value: latest.schema_created || 0}),
+        h(MetricTile, {label: '复用 Schema', value: latest.schema_reused || 0}),
+        h(MetricTile, {label: '新增证据', value: latest.evidence_added || 0}),
+        h(MetricTile, {label: '新增边', value: latest.edges_created || 0}),
+        h(MetricTile, {label: 'RELATED_TO', value: Math.round((latest.related_to_ratio || 0) * 100) + '%'}),
+        h(MetricTile, {label: '警告', value: warnings.length})
+      ),
+      h('div', {className: 'eh-edge-strip'},
+        Object.keys(edgeCounts).length === 0
+          ? h('span', {className: 'eh-feed-empty'}, '暂无边类型记录')
+          : Object.keys(edgeCounts).sort().map(function (k) {
+              return h('span', {key: k, className: 'eh-edge-chip'}, k + ' ' + edgeCounts[k]);
+            })
+      ),
+      warnings.length
+        ? h('div', {className: 'eh-warning-row'}, warnings.join(' · '))
+        : h('div', {className: 'eh-ok-row'}, '本轮未发现质量告警'),
+      reports.slice(0, 3).map(function (item, i) {
+        var d = item.detail || {};
+        return h('div', {key: i, className: 'eh-mini-report'},
+          h('span', {className: 'eh-feed-time'}, formatRelativeTime(item.time)),
+          h('span', null, 'Schema ' + (d.schema_created || 0) + ' / Evidence ' + (d.evidence_added || 0) + ' / Edge ' + (d.edges_created || 0))
+        );
+      })
+    );
+  }
+
+  function CognitiveHealthPanel(props) {
+    var data = props.data;
+    if (!data) return h('div', {className: 'eh-feed-loading'}, '加载中…');
+    if (data.error) return h('div', {className: 'eh-feed-error'}, '加载失败');
+    var health = data.health || {};
+    var graphOps = health.graph_ops || {};
+    var edgeCounts = health.edge_type_counts || {};
+    var recentOps = data.recent_ops || [];
+    return h('div', {className: 'eh-feed-panel'},
+      h('div', {className: 'eh-feed-header'}, '认知图健康'),
+      h('div', {className: 'eh-metric-grid'},
+        h(MetricTile, {label: 'Schema 写入', value: health.schema_creates || 0}),
+        h(MetricTile, {label: '图边总数', value: health.memory_edge_total || 0}),
+        h(MetricTile, {label: '认知边', value: health.cognitive_edge_total || 0}),
+        h(MetricTile, {label: '弱相关占比', value: Math.round((health.related_to_ratio || 0) * 100) + '%'}),
+        h(MetricTile, {label: 'GRAPH_CREATE', value: graphOps.GRAPH_CREATE || 0}),
+        h(MetricTile, {label: 'GRAPH_ADD_EDGE', value: graphOps.GRAPH_ADD_EDGE || 0})
+      ),
+      h('div', {className: 'eh-edge-strip'},
+        Object.keys(edgeCounts).length === 0
+          ? h('span', {className: 'eh-feed-empty'}, '暂无历史边记录')
+          : Object.keys(edgeCounts).sort().map(function (k) {
+              return h('span', {key: k, className: 'eh-edge-chip'}, k + ' ' + edgeCounts[k]);
+            })
+      ),
+      recentOps.slice(0, 4).map(function (op, i) {
+        return h('div', {key: i, className: 'eh-mini-report'},
+          h('span', {className: 'eh-feed-time'}, formatRelativeTime(op.time)),
+          h('span', {className: 'eh-feed-badge'}, op.op || 'GRAPH_OP'),
+          op.edge_type ? h('span', {className: 'eh-edge-chip'}, op.edge_type) : null
+        );
+      })
+    );
+  }
+
   function SelfImprovementPanel(props) {
     var data = props.data;
     if (!data) return h('div', {className: 'eh-feed-loading'}, '加载中…');
@@ -623,6 +704,7 @@
     var _mem = hooks.useState(null), memoryFeed = _mem[0], setMemoryFeed = _mem[1];
     var _pre = hooks.useState(null), prefetchFeed = _pre[0], setPrefetchFeed = _pre[1];
     var _si = hooks.useState(null), selfImprovement = _si[0], setSelfImprovement = _si[1];
+    var _cq = hooks.useState(null), cognitiveQuality = _cq[0], setCognitiveQuality = _cq[1];
     var _tab = hooks.useState(0), activeTab = _tab[0], setActiveTab = _tab[1];
     var svgRef = hooks.useRef(null);
     var canvasRef = hooks.useRef(null);
@@ -657,7 +739,8 @@
         authFetch(BASE + '/api/agent-loop').then(function (r) { return r.json(); }).catch(function () { return null; }),
         authFetch(BASE + '/api/memory-feed').then(function (r) { return r.json(); }).catch(function () { return {recent: [], layers: [], error: 'fetch failed'}; }),
         authFetch(BASE + '/api/prefetch-feed').then(function (r) { return r.json(); }).catch(function () { return {recent: [], stats: {}, error: 'fetch failed'}; }),
-        authFetch(BASE + '/api/self-improvement').then(function (r) { return r.json(); }).catch(function () { return {memory_updates: {}, recent_skills: [], recent_tool_calls: [], error: 'fetch failed'}; })
+        authFetch(BASE + '/api/self-improvement').then(function (r) { return r.json(); }).catch(function () { return {memory_updates: {}, recent_skills: [], recent_tool_calls: [], error: 'fetch failed'}; }),
+        authFetch(BASE + '/api/cognitive-quality').then(function (r) { return r.json(); }).catch(function () { return {latest: {}, reports: [], health: {}, recent_ops: [], error: 'fetch failed'}; })
       ]).then(function (results) {
         setArch(results[0]);
         setHealth(results[1]);
@@ -665,6 +748,7 @@
         setMemoryFeed(results[3]);
         setPrefetchFeed(results[4]);
         setSelfImprovement(results[5]);
+        setCognitiveQuality(results[6]);
       });
       var onResize = function () { fitToScreen(); };
       window.addEventListener('resize', onResize);
@@ -780,8 +864,14 @@
       tabChildren.push(
         h('div', {className: 'eh-feeds', key: 'feeds'},
           h('div', {className: 'eh-feeds-grid'},
-            h('div', {className: 'eh-feeds-col'}, h(MemoryFeedPanel, {data: memoryFeed})),
-            h('div', {className: 'eh-feeds-col'}, h(PrefetchFeedPanel, {data: prefetchFeed}))
+            h('div', {className: 'eh-feeds-col'}, h(CognitiveQualityPanel, {data: cognitiveQuality})),
+            h('div', {className: 'eh-feeds-col'}, h(CognitiveHealthPanel, {data: cognitiveQuality}))
+          ),
+          h('div', {className: 'eh-feeds-row'},
+            h('div', {className: 'eh-feeds-grid'},
+              h('div', {className: 'eh-feeds-col'}, h(MemoryFeedPanel, {data: memoryFeed})),
+              h('div', {className: 'eh-feeds-col'}, h(PrefetchFeedPanel, {data: prefetchFeed}))
+            )
           ),
           h('div', {className: 'eh-feeds-row'}, h(SelfImprovementPanel, {data: selfImprovement}))
         ),

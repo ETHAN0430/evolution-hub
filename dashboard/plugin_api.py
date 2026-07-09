@@ -404,6 +404,17 @@ def _format_iso_time(ts: Any) -> str:
     return s.replace(" ", "T") + "Z"
 
 
+def _safe_json_loads(value: Any) -> Any:
+    if not value:
+        return {}
+    if isinstance(value, (dict, list)):
+        return value
+    try:
+        return json.loads(value)
+    except Exception:
+        return {}
+
+
 @router.get("/api/memory-feed")
 @cached(ttl=5)
 def api_memory_feed():
@@ -572,6 +583,78 @@ def api_prefetch_feed():
             "total_1h": total_1h[0][0] if total_1h else 0,
             "total_today": total_today[0][0] if total_today else 0,
         },
+        "error": None,
+    }
+
+
+@router.get("/api/cognitive-quality")
+@cached(ttl=5)
+def api_cognitive_quality():
+    """Latest HY Memory cognitive quality reports and graph health counters."""
+    rows = _query_db(
+        "SELECT created_at, parsed, response FROM pipeline_logs "
+        "WHERE step='SYSTEM2_QUALITY_REPORT' ORDER BY created_at DESC LIMIT 8"
+    )
+    reports = []
+    for r in rows:
+        detail = _safe_json_loads(r[1]) or _safe_json_loads(r[2]) or {}
+        reports.append({
+            "time": _format_iso_time(r[0]),
+            "detail": detail,
+        })
+    latest = reports[0]["detail"] if reports else {}
+
+    rows = _query_db(
+        "SELECT op, COUNT(*) FROM memory_operations "
+        "WHERE layer='graph' GROUP BY op"
+    )
+    graph_ops = {r[0]: r[1] for r in rows}
+
+    rows = _query_db(
+        "SELECT content FROM memory_operations "
+        "WHERE op='GRAPH_ADD_EDGE' AND layer='graph' ORDER BY created_at DESC LIMIT 1000"
+    )
+    edge_type_counts: Dict[str, int] = {}
+    for r in rows:
+        payload = _safe_json_loads(r[0])
+        edge_type = payload.get("edge_type") if isinstance(payload, dict) else ""
+        if not edge_type:
+            m = re.search(r'"edge_type"\s*:\s*"([^"]+)"', str(r[0] or ""))
+            edge_type = m.group(1) if m else ""
+        if edge_type:
+            edge_type_counts[edge_type] = edge_type_counts.get(edge_type, 0) + 1
+
+    total_edges = sum(edge_type_counts.values())
+    related_to_edges = edge_type_counts.get("RELATED_TO", 0)
+    cognitive_edges = max(0, total_edges - related_to_edges)
+
+    rows = _query_db(
+        "SELECT created_at, op, content FROM memory_operations "
+        "WHERE layer='graph' ORDER BY created_at DESC LIMIT 10"
+    )
+    recent_ops = []
+    for r in rows:
+        payload = _safe_json_loads(r[2])
+        recent_ops.append({
+            "time": _format_iso_time(r[0]),
+            "op": r[1],
+            "edge_type": payload.get("edge_type", "") if isinstance(payload, dict) else "",
+            "summary": str(r[2] or "")[:120],
+        })
+
+    return {
+        "latest": latest,
+        "reports": reports,
+        "health": {
+            "graph_ops": graph_ops,
+            "schema_creates": graph_ops.get("GRAPH_CREATE", 0),
+            "edge_type_counts": edge_type_counts,
+            "memory_edge_total": total_edges,
+            "cognitive_edge_total": cognitive_edges,
+            "related_to_edges": related_to_edges,
+            "related_to_ratio": round(related_to_edges / total_edges, 4) if total_edges else 0.0,
+        },
+        "recent_ops": recent_ops,
         "error": None,
     }
 
