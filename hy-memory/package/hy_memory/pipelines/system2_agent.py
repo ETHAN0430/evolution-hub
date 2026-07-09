@@ -169,15 +169,17 @@ L6 Schema 有两种类型：
    - Type 1（行为模式）的关键词：用户倾向于、当...时用户会、习惯性行为和偏好
 2. **搜索已有 Schema**：如果已有 Schema 覆盖了该模式/框架，调用 `add_evidence`——不要重建。
 3. **创建新 Schema**：仅当没有已有 Schema 覆盖时。使用对应的 Type 1 或 Type 2 格式。
-4. **建立关系**：如果两个 Schema 主题相关，使用 `add_edge`。可用边类型：
-   - `RELATED_TO` — 通用主题关系
-   - `CORRECTED` — 新 Schema 修正/补充了旧 Schema
-   - `SHAPED_BY` — 框架被行为特质或个人经历塑造
-   - `BUILDS_ON` — 一个框架建立在另一个之上（如因果链）
-   - `SUPPORTED_BY` — 观点或框架受到证据支持
-   - `CONTRADICTED_BY` — 观点被证据或新认识反驳
-   - `LED_TO` — 经历、证据或推导导致新观点/决策
-   - `RESULTED_IN` — 观点或决策产生了可观察结果
+4. **建立关系**：只有当两个 Schema 之间存在可解释关系时才使用 `add_edge`；不要因为主题相似就连边。先按下面判定树选择最强关系：
+   - `LED_TO` — A 的经历、证据或推导导致 B 的观点/决策。例：广告归因经验 → 防御绕过框架。
+   - `RESULTED_IN` — A 的观点或决策产生 B 的可观察结果。例：跳槽策略 → 简历/RPG化表达。
+   - `CONTRADICTED_BY` — A 被 B 的证据或新认识反驳。方向：旧观点 → 新反例/新认识。
+   - `SUPPORTED_BY` — A 被 B 的证据、案例或推导支持。方向：观点/框架 → 支撑它的证据型 Schema。
+   - `CORRECTED` — A 是 B 的新版本、修正或补充。方向：新 Schema → 旧 Schema。
+   - `SHAPED_BY` — A 这个框架被 B 的行为特质或个人经历塑造。方向：框架 → 塑造来源。
+   - `BUILDS_ON` — A 建立在 B 的概念基础上。方向：新/上层框架 → 基础框架。
+   - `RELATED_TO` — 最后兜底；仅当没有因果、证据、修正、塑造、继承或结果关系时使用。
+
+   如果 `reason` 中能写出“导致/推导出/修正/反驳/支持/产生结果”，不要使用 `RELATED_TO`。
 
 ## 原则
 
@@ -261,15 +263,17 @@ For each group of facts (clustered or unclustered):
    - Key indicators for Type 1 (Behavioral Pattern): "the user tends to...", "when doing X, the user...", habitual actions and preferences.
 2. **Search existing Schemas**: If an existing Schema already captures this pattern/framework, call `add_evidence` — do NOT recreate.
 3. **Create new Schema**: Only if no existing Schema covers this. Use the Type 1 or Type 2 format as appropriate.
-4. **Build relationships**: If two Schemas are thematically related, use `add_edge`. Available edge types:
-   - `RELATED_TO` — Generic thematic relationship
-   - `CORRECTED` — A newer Schema refines/supersedes an older one on the same concept
-   - `SHAPED_BY` — A framework was shaped by a behavioral trait or personal experience
-   - `BUILDS_ON` — One framework builds upon another (e.g., causal chain links)
-   - `SUPPORTED_BY` — A belief or framework is supported by evidence
-   - `CONTRADICTED_BY` — A belief is contradicted by evidence or a newer insight
-   - `LED_TO` — An experience, evidence item, or inference led to a belief/decision
-   - `RESULTED_IN` — A belief or decision produced an observable outcome
+4. **Build relationships**: Use `add_edge` only when two Schemas have an explainable relationship; do not connect nodes merely because their topics are similar. Pick the strongest relationship using this decision order:
+   - `LED_TO` — A's experience, evidence, or inference led to B's belief/decision. Example: ad attribution work → defense-bypass framework.
+   - `RESULTED_IN` — A's belief or decision produced B as an observable outcome. Example: job-search strategy → RPG-style resume framing.
+   - `CONTRADICTED_BY` — A is contradicted by B's evidence or newer insight. Direction: older belief → newer counter-evidence/insight.
+   - `SUPPORTED_BY` — A is supported by B's evidence, example, or derivation. Direction: belief/framework → supporting evidence-like Schema.
+   - `CORRECTED` — A is a newer refinement/correction of B. Direction: newer Schema → older Schema.
+   - `SHAPED_BY` — A framework was shaped by B's behavioral trait or life experience. Direction: framework → shaping source.
+   - `BUILDS_ON` — A builds on B as a conceptual foundation. Direction: newer/higher-level framework → foundation.
+   - `RELATED_TO` — Last resort; use only when no causal, evidential, corrective, shaping, dependency, or result relation applies.
+
+   If the `reason` can honestly say "led to", "derived from", "corrected", "contradicted", "supported by", or "resulted in", do not use `RELATED_TO`.
 
 ## Principles
 

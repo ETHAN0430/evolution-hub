@@ -13,10 +13,12 @@ from hy_memory.data.graph_relations import (
 from hy_memory.data.graph_store_kuzu import KuzuGraphStore
 from hy_memory.pipelines._retrieval.evolution import expand_evolution_chains
 from hy_memory.pipelines.system2_agent import (
+    SYSTEM2_AGENT_PROMPT_ZH,
     _build_materials_message,
     run_system2_agent,
     s2_agent_skip_reason,
 )
+from hy_memory.pipelines.system2_tools import System2ToolExecutor
 
 
 class FakeGraphStore:
@@ -82,6 +84,29 @@ class CognitiveRelationTests(unittest.TestCase):
     def test_relation_normalization_is_safe(self):
         self.assertEqual(normalize_memory_edge_type("led_to"), "LED_TO")
         self.assertEqual(normalize_memory_edge_type("unknown"), RELATED_TO)
+
+    def test_prompt_makes_related_to_last_resort(self):
+        self.assertIn("不要因为主题相似就连边", SYSTEM2_AGENT_PROMPT_ZH)
+        self.assertIn("RELATED_TO` — 最后兜底", SYSTEM2_AGENT_PROMPT_ZH)
+
+    def test_related_to_reason_can_be_refined(self):
+        executor = System2ToolExecutor.__new__(System2ToolExecutor)
+        self.assertEqual(
+            executor._refine_related_to_edge_type("广告归因经验导致防御绕过框架形成"),
+            "LED_TO",
+        )
+        self.assertEqual(
+            executor._refine_related_to_edge_type("新证据反驳了旧观点"),
+            "CONTRADICTED_BY",
+        )
+        self.assertEqual(
+            executor._refine_related_to_edge_type("该框架受到广告归因证据支持"),
+            "SUPPORTED_BY",
+        )
+        self.assertEqual(
+            executor._refine_related_to_edge_type("两个 Schema 主题相近"),
+            RELATED_TO,
+        )
 
     def test_non_chain_hit_gets_cognitive_relations(self):
         hits = [{"node_id": "belief-1", "content": "Current belief", "score": 0.8}]

@@ -25,7 +25,7 @@ from datetime import datetime
 from ..models.memory import MemoryLayer, MemoryNode, MemoryStatus, SourceType
 from ..data.vector_store_base import VectorStoreBase
 from ..data.graph_store_base import GraphStoreBase
-from ..data.graph_relations import MEMORY_EDGE_TYPES, normalize_memory_edge_type
+from ..data.graph_relations import MEMORY_EDGE_TYPES, RELATED_TO, normalize_memory_edge_type
 from ..core.embed_service import EmbedService
 
 import time
@@ -502,11 +502,57 @@ class System2ToolExecutor:
         except Exception as e:
             logger.debug(f"[S2-tools] increment s2_evidence_count for {vdb_id} failed: {e}")
 
+    def _refine_related_to_edge_type(self, reason: str) -> str:
+        """Upgrade obvious causal/cognitive RELATED_TO edges from the model's reason text."""
+        text = (reason or "").lower()
+        keyword_map = [
+            ("CONTRADICTED_BY", (
+                "反驳", "矛盾", "冲突", "否定", "推翻", "不再成立",
+                "contradict", "contradicted", "conflict", "refute", "falsify",
+            )),
+            ("CORRECTED", (
+                "修正", "纠正", "补充", "精炼", "迭代", "新版", "旧版",
+                "correct", "corrected", "refine", "refined", "supersede", "update",
+            )),
+            ("RESULTED_IN", (
+                "产生结果", "结果是", "带来结果", "导致结果", "产出", "落地为",
+                "resulted in", "produced", "led to the outcome", "outcome",
+            )),
+            ("LED_TO", (
+                "导致", "引发", "促成", "推导出", "得出", "形成", "演化成", "带来",
+                "led to", "leads to", "caused", "resulted in", "derived", "inferred",
+            )),
+            ("SHAPED_BY", (
+                "塑造", "受影响", "被影响", "源自经历", "由经历", "生活经历",
+                "shaped by", "influenced by", "formed by", "rooted in experience",
+            )),
+            ("BUILDS_ON", (
+                "建立在", "基于", "依赖", "承接", "上层", "基础框架",
+                "builds on", "built on", "based on", "depends on", "foundation",
+            )),
+            ("SUPPORTED_BY", (
+                "支持", "支撑", "证据", "佐证", "证明", "印证",
+                "supported by", "evidence", "backed by", "validated by",
+            )),
+        ]
+        for edge_type, keywords in keyword_map:
+            if any(keyword in text for keyword in keywords):
+                return edge_type
+        return RELATED_TO
+
     async def _tool_add_edge(self, args: Dict) -> Any:
         source_id = args["source_id"]
         target_id = args["target_id"]
         reason = args.get("reason", "")
         edge_type = normalize_memory_edge_type(args.get("edge_type", "RELATED_TO"))
+        if edge_type == RELATED_TO:
+            refined_edge_type = self._refine_related_to_edge_type(reason)
+            if refined_edge_type != RELATED_TO:
+                logger.info(
+                    "[S2-tools] Refined RELATED_TO to %s from reason: %s",
+                    refined_edge_type, reason,
+                )
+                edge_type = refined_edge_type
         confidence = max(0.0, min(1.0, float(args.get("confidence", 0.8))))
         evidence_list = args.get("evidence_list", [])
 
