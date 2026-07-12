@@ -576,14 +576,36 @@ def _topic_detail(topic_id: str) -> dict[str, Any]:
         for row in rows:
             nodes.append({"id": row["id"], "kind": kind, "label": str(row["label"])[:92], "status": row["status"] if "status" in row.keys() else ""})
     node_ids = {node["id"] for node in nodes}
+    # Suggested topics are often Evidence-only.  Follow explicit ledger links
+    # one hop so Focus shows the related judgement/decision as context rather
+    # than presenting a disconnected pile of source material.
+    if by_type.get("evidence"):
+        marks = ",".join("?" for _ in by_type["evidence"])
+        linked_claims = _query_readonly(
+            f"SELECT c.id, c.statement AS label, c.status, ce.evidence_id FROM claims c "
+            f"JOIN claim_evidence ce ON ce.claim_id=c.id WHERE ce.evidence_id IN ({marks})", tuple(by_type["evidence"])
+        )
+        for row in linked_claims:
+            if row["id"] not in node_ids:
+                nodes.append({"id": row["id"], "kind": "claim", "label": str(row["label"])[:92], "status": row["status"], "membership": "context"})
+                node_ids.add(row["id"])
+            edges.append({"from": row["evidence_id"], "to": row["id"], "label": "依据", "membership": "context"})
+            by_type.setdefault("claim", set()).add(row["id"])
     if by_type.get("claim"):
         marks = ",".join("?" for _ in by_type["claim"])
         for row in _query_readonly(f"SELECT evidence_id, claim_id FROM claim_evidence WHERE claim_id IN ({marks})", tuple(by_type["claim"])):
             if row["evidence_id"] in node_ids:
                 edges.append({"from": row["evidence_id"], "to": row["claim_id"], "label": "依据"})
-        for row in _query_readonly(f"SELECT decision_id, claim_id FROM decision_claims WHERE claim_id IN ({marks})", tuple(by_type["claim"])):
+        decision_links = _query_readonly(f"SELECT decision_id, claim_id FROM decision_claims WHERE claim_id IN ({marks})", tuple(by_type["claim"]))
+        decision_ids = {row["decision_id"] for row in decision_links if row["decision_id"] not in node_ids}
+        if decision_ids:
+            decision_marks = ",".join("?" for _ in decision_ids)
+            for detail in _query_readonly(f"SELECT id, question AS label, status FROM decisions WHERE id IN ({decision_marks})", tuple(decision_ids)):
+                nodes.append({"id": detail["id"], "kind": "decision", "label": str(detail["label"])[:92], "status": detail["status"], "membership": "context"})
+                node_ids.add(detail["id"])
+        for row in decision_links:
             if row["decision_id"] in node_ids:
-                edges.append({"from": row["claim_id"], "to": row["decision_id"], "label": "支撑"})
+                edges.append({"from": row["claim_id"], "to": row["decision_id"], "label": "支撑", "membership": "context"})
     if by_type.get("decision"):
         marks = ",".join("?" for _ in by_type["decision"])
         for row in _query_readonly(f"SELECT id, decision_id FROM intents WHERE decision_id IN ({marks})", tuple(by_type["decision"])):
