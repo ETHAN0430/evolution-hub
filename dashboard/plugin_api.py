@@ -382,20 +382,16 @@ def api_memory_feed():
 @cached(ttl=5)
 def api_prefetch_feed():
     try:
-        r = subprocess.run(
-            ["grep", "-E", "memory_search|prefetch|autoRecall", str(_AGENT_LOG)],
-            capture_output=True, text=True, timeout=3,
-        )
-    except Exception:
-        return {"recent": [], "stats": {"total_1h": 0, "total_today": 0}}
-    lines = r.stdout.strip().split("\n")
-    recent = []
-    for line in lines[-15:]:
-        hits = 1 if "memory_search" in line or "autoRecall" in line else 0
-        m = re.search(r"hits[=:](\d+)", line)
-        if m: hits = int(m.group(1))
-        recent.append({"time": _now_iso(), "hits": hits, "query": line[-100:], "reader": "cognitive-os"})
-    return {"recent": recent, "stats": {"total_1h": len(lines), "total_today": len(lines)}}
+        rows = [dict(row) for row in _query_readonly(
+            "SELECT occurred_at AS time, mode, query_preview AS query, hit_count AS hits, latency_ms, status, error "
+            "FROM recall_events ORDER BY occurred_at DESC LIMIT 30"
+        )]
+        stats = {"auto_recall": sum(1 for row in rows if row["mode"] == "auto_recall"),
+                 "memory_search": sum(1 for row in rows if row["mode"] == "memory_search"),
+                 "errors": sum(1 for row in rows if row["status"] != "success")}
+        return {"recent": rows, "stats": stats, "source": "Cognitive OS recall_events"}
+    except Exception as error:
+        return {"recent": [], "stats": {}, "source": "Cognitive OS recall_events", "error": f"{type(error).__name__}: {error}"}
 
 
 @router.get("/api/self-improvement")

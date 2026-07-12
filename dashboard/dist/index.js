@@ -540,12 +540,14 @@
     var recent = data.recent || [];
     var stats = data.stats || {};
     return h('div', {className: 'eh-feed-panel'},
+      h('div', {className: 'eh-graph-caption'}, '召回观测：自动召回是系统在每轮前主动取回；memory_search 是模型显式发起的查询。这里记录真实查询、命中和耗时。'),
       h('div', {className: 'eh-feed-header'}, '记忆预取情况'),
       h('div', {className: 'eh-feed-stats'},
         h('span', {className: 'eh-feed-stat'}, '1小时: ', h('b', null, stats.total_1h || 0)),
         h('span', {className: 'eh-feed-stat'}, '今日: ', h('b', null, stats.total_today || 0))
       ),
-      recent.slice(0, 5).map(function (item, i) {
+      h('div', {className: 'eh-feed-stats'}, '自动召回 ' + (stats.auto_recall || 0) + ' · memory_search ' + (stats.memory_search || 0) + ' · 失败 ' + (stats.errors || 0)),
+      recent.slice(0, 12).map(function (item, i) {
         return h('div', {key: i, className: 'eh-prefetch-item'},
           h('div', {className: 'eh-feed-meta'},
             h('span', {className: 'eh-feed-time'}, formatRelativeTime(item.time)),
@@ -1246,6 +1248,7 @@
           h(OverallStatusPanel, {health: health, review: review, map: relationshipMap}),
           h(GraphHubPanel, {key: 'star-map', globalData: relationshipMap, detailData: detailMap, topicData: topicMap, onReview: function () { setActiveTab(2); }, onObjectSelect: setSelectedObject}),
           h(TimelinePanel, {key: 'event-timeline', events: topicMap && topicMap.recent_events}),
+          h(PrefetchFeedPanel, {key: 'recall-observability', data: prefetchFeed}),
           h(Collapsible, {title: '展开运行细节', defaultOpen: false},
             h('div', {className: 'eh-feeds-grid'},
               h('div', {className: 'eh-feeds-col'},
@@ -1256,9 +1259,8 @@
             ),
             h('div', {className: 'eh-feeds-grid'},
               h('div', {className: 'eh-feeds-col'}, h(MemoryFeedPanel, {data: memoryFeed})),
-              h('div', {className: 'eh-feeds-col'}, h(PrefetchFeedPanel, {data: prefetchFeed}))
+              h('div', {className: 'eh-feeds-col'}, h(SelfImprovementPanel, {data: selfImprovement}))
             ),
-            h(SelfImprovementPanel, {data: selfImprovement})
           )
         ),
         h('div', {className: 'eh-glossary' + (glossaryOpen ? ' eh-glossary-open' : ''), key: 'glossary'},
