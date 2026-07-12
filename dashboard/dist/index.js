@@ -770,9 +770,10 @@
     if (props.topicData) {
       var topics = props.topicData.topics || [];
       var semanticNodes = topics.map(function (topic, index) {
-        var angle = (Math.PI * 2 * index / Math.max(topics.length, 1)) - Math.PI / 2;
+        var angle = index * 2.399963229728653;
+        var radius = 0.12 + 0.34 * Math.sqrt((index + 0.5) / Math.max(topics.length, 1));
         var kind = String(topic.id).indexOf('decision:') === 0 ? 'decision_topic' : topic.status === 'suggested' ? 'suggested_topic' : 'topic';
-        return {id: topic.id, kind: kind, label: topic.label, count: topic.member_count, status: topic.attention ? 'attention' : topic.status, detail: topic.detail, summary: topic.summary, position: [0.5 + Math.cos(angle) * 0.30, 0.5 + Math.sin(angle) * 0.28]};
+        return {id: topic.id, kind: kind, label: topic.label, count: topic.member_count, status: topic.attention ? 'attention' : topic.status, detail: topic.detail, summary: topic.summary, position: [0.5 + Math.cos(angle) * radius, 0.5 + Math.sin(angle) * radius * 0.82]};
       });
       var inbox = props.topicData.unclassified || {};
       var inboxCount = (inbox.active || 0) + (inbox.unreviewed || 0);
@@ -783,6 +784,15 @@
       else selectedData = {nodes: semanticNodes, edges: []};
     }
     return h('div', {className: 'eh-graph-hub'},
+      props.topicData ? h('div', {className: 'eh-topic-legend'},
+        h('div', {className: 'eh-topic-definition'}, h('b', null, '主题候选是什么？'), ' 它只是把相近记忆放进同一个浏览抽屉；不等于事实、主张或因果关系。'),
+        h('div', {className: 'eh-topic-legend-items'},
+          h('span', {className: 'eh-legend-item eh-legend-decision'}, '● 决策闭环：有显式 Decision 链'),
+          h('span', {className: 'eh-legend-item eh-legend-suggested'}, '◌ 待确认分组：算法建议，需你确认'),
+          h('span', {className: 'eh-legend-item eh-legend-active'}, '● 已确认主题：人工确认'),
+          h('span', {className: 'eh-legend-item eh-legend-inbox'}, '□ 待归类：不硬凑主题')
+        )
+      ) : null,
       h('div', {className: 'eh-graph-lenses'},
         [['global', '全局'], ['focus', '焦点'], ['conflict', '冲突']].map(function (item) {
           return h('button', {key: item[0], className: 'eh-graph-lens' + (lens === item[0] ? ' eh-graph-lens-active' : ''), onClick: function () { setLens(item[0]); }}, item[1]);
@@ -845,7 +855,7 @@
       h('div', {className: 'eh-feed-header'}, '认知星图'),
       h('div', {className: 'eh-relation-caption'}, '每颗星代表一类已保存内容；星的大小代表数量，线只代表明确记录的关系。点击星团查看分类。'),
       h('div', {className: 'eh-star-wrap'}, h('canvas', {ref: canvasRef, className: 'eh-star-canvas', 'aria-label': '认知分类关系星图'}),
-        h('div', {className: 'eh-star-labels'}, nodes.map(function(node,index){var p=node.position||layout[node.kind]||[.5+((index%3)-1)*.26,.5+(Math.floor(index/3)-.5)*.34];return h('button',{key:node.id,className:'eh-star-label',style:{left:(p[0]*100)+'%',top:(p[1]*100)+'%'},onClick:function(){setSelected(node);if(props.onSelect)props.onSelect(node);}},node.label + (node.count != null ? ' ' + node.count : ''));}))
+        h('div', {className: 'eh-star-labels'}, nodes.map(function(node,index){var p=node.position||layout[node.kind]||[.5+((index%3)-1)*.26,.5+(Math.floor(index/3)-.5)*.34];return h('button',{key:node.id,title:node.label,className:'eh-star-label eh-star-label-'+node.kind,style:{left:(p[0]*100)+'%',top:(p[1]*100)+'%'},onClick:function(){setSelected(node);if(props.onSelect)props.onSelect(node);}},h('span',{className:'eh-star-label-text'},node.label),node.count != null ? h('span',{className:'eh-star-count'},node.count) : null);}))
       ),
       h('div', {className: 'eh-relation-summary'}, edges.map(function(edge,i){return h('span',{key:i,className:'eh-edge-chip'},edge.label); })),
       selected ? h('div', {className: 'eh-relation-selected'},
