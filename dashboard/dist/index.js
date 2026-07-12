@@ -718,6 +718,20 @@
     );
   }
 
+  function GlossaryPanel(props) {
+    return h('div', {className: 'eh-glossary' + (props.open ? ' eh-glossary-open' : '')},
+      h('button', {className: 'eh-glossary-toggle', onClick: props.onToggle}, props.open ? '收起术语表 ▲' : '展开术语表 ▼'),
+      h('div', {className: 'eh-glossary-content'},
+        h('div', {className: 'eh-glossary-grid'}, GLOSSARY.map(function (item, idx) {
+          return h('div', {className: 'eh-glossary-item', key: idx},
+            h('div', {className: 'eh-glossary-term'}, item.term),
+            h('div', {className: 'eh-glossary-def'}, item.def)
+          );
+        }))
+      )
+    );
+  }
+
   function OverallStatusPanel(props) {
     var health = props.health || {};
     var review = props.review || {};
@@ -1147,7 +1161,7 @@
     }, []);
 
     hooks.useEffect(function () {
-      if (activeTab === 0) fitToScreen();
+      if (activeTab === 2) fitToScreen();
     }, [activeTab]);
 
     function loadSource(name, src, path, loc) {
@@ -1247,16 +1261,17 @@
 
     var TABS = ['架构图', '运行态', '决策工作台'];
     var tabChildren = [];
-    TABS = ['架构图', '当前状态', '审查台'];
-    if (activeTab === 0) {
+    TABS = ['当前状态', '审查台', '架构图'];
+    if (activeTab === 2) {
       tabChildren.push(
         h('div', {ref: canvasRef, key: 'canvas', className: 'eh-canvas', onMouseDown: onMouseDown, onMouseMove: onMouseMove, onMouseUp: onMouseUp, onMouseLeave: onMouseLeave}, canvasChildren)
       );
-    } else if (activeTab === 1) {
+      tabChildren.push(h(GlossaryPanel, {key: 'glossary', open: glossaryOpen, onToggle: function () { setGlossaryOpen(!glossaryOpen); }}));
+    } else if (activeTab === 0) {
       tabChildren.push(
         h('div', {className: 'eh-feeds', key: 'feeds'},
           h(OverallStatusPanel, {health: health, review: review, map: relationshipMap}),
-          h(GraphHubPanel, {key: 'star-map', globalData: relationshipMap, detailData: detailMap, topicData: topicMap, onReview: function () { setActiveTab(2); }, onObjectSelect: setSelectedObject}),
+          h(GraphHubPanel, {key: 'star-map', globalData: relationshipMap, detailData: detailMap, topicData: topicMap, onReview: function () { setActiveTab(1); }, onObjectSelect: setSelectedObject}),
           h(TimelinePanel, {key: 'event-timeline', events: topicMap && topicMap.recent_events}),
           h(PrefetchFeedPanel, {key: 'recall-observability', data: prefetchFeed}),
           h(Collapsible, {title: '展开运行细节', defaultOpen: false},
@@ -1271,19 +1286,6 @@
               h('div', {className: 'eh-feeds-col'}, h(MemoryFeedPanel, {data: memoryFeed})),
               h('div', {className: 'eh-feeds-col'}, h(SelfImprovementPanel, {data: selfImprovement}))
             ),
-          )
-        ),
-        h('div', {className: 'eh-glossary' + (glossaryOpen ? ' eh-glossary-open' : ''), key: 'glossary'},
-          h('button', {className: 'eh-glossary-toggle', onClick: function () { setGlossaryOpen(!glossaryOpen); }}, glossaryOpen ? '收起术语表 ▲' : '展开术语表 ▼'),
-          h('div', {className: 'eh-glossary-content'},
-            h('div', {className: 'eh-glossary-grid'},
-              GLOSSARY.map(function (item, idx) {
-                return h('div', {className: 'eh-glossary-item', key: idx},
-                  h('div', {className: 'eh-glossary-term'}, item.term),
-                  h('div', {className: 'eh-glossary-def'}, item.def)
-                );
-              })
-            )
           )
         )
       );
