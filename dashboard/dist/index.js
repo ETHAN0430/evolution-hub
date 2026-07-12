@@ -721,12 +721,15 @@
     var review = props.review || {};
     var map = props.map || {};
     var server = health.server || {};
+    var ledger = health.ledger || {};
     var summary = review.summary || {};
     var attention = (summary.contradictions || 0) + (summary.overdue_decisions || 0) + (summary.pending_issues || 0) + (summary.pending_proposals || 0);
     var state = server.vdb === 'ok' ? '正常' : '需要检查';
+    state = ledger.status === 'ready' ? '正常' : '需要检查';
     return h('div', {className: 'eh-overall-status'},
       h('div', {className: 'eh-feed-header'}, '整体状态'),
       h('div', {className: 'eh-metric-grid'},
+        h(MetricTile, {label: 'Ledger 对象', value: ledger.object_count || 0, hint: 'Cognitive OS 的 canonical 对象数'}),
         h(MetricTile, {label: '认知系统', value: state, hint: '账本与检索是否可用'}),
         h(MetricTile, {label: '关系网络', value: (map.edges || []).length, hint: '当前显式关系数'}),
         h(MetricTile, {label: '待关注', value: attention, hint: '复盘、矛盾与待审事项'})
@@ -746,6 +749,7 @@
 
   function GraphHubPanel(props) {
     var _lens = hooks.useState('global'), lens = _lens[0], setLens = _lens[1];
+    var _topic = hooks.useState(null), selectedTopicId = _topic[0], setSelectedTopicId = _topic[1];
     var selectedData = lens === 'global' ? props.globalData : props.detailData;
     if (lens === 'conflict' && selectedData && selectedData.nodes) {
       var keep = {};
@@ -765,10 +769,14 @@
       var topics = props.topicData.topics || [];
       var semanticNodes = topics.map(function (topic, index) {
         var angle = (Math.PI * 2 * index / Math.max(topics.length, 1)) - Math.PI / 2;
-        return {id: topic.id, kind: 'topic', label: topic.label, count: topic.member_count, status: topic.attention ? 'attention' : topic.status, detail: topic.detail, summary: topic.summary, position: [0.5 + Math.cos(angle) * 0.30, 0.5 + Math.sin(angle) * 0.28]};
+        var kind = String(topic.id).indexOf('decision:') === 0 ? 'decision_topic' : topic.status === 'suggested' ? 'suggested_topic' : 'topic';
+        return {id: topic.id, kind: kind, label: topic.label, count: topic.member_count, status: topic.attention ? 'attention' : topic.status, detail: topic.detail, summary: topic.summary, position: [0.5 + Math.cos(angle) * 0.30, 0.5 + Math.sin(angle) * 0.28]};
       });
-      if (props.topicData.unclassified) semanticNodes.push({id: 'unclassified', kind: 'inbox', label: '待归类的自动记录', count: props.topicData.unclassified, status: 'unreviewed', summary: '自动写入已保留；这些记录尚未与具体主题建立明确关系。'});
-      if (lens === 'focus') selectedData = topics.length ? topics[0].detail : {nodes: [], edges: []};
+      var inbox = props.topicData.unclassified || {};
+      var inboxCount = (inbox.active || 0) + (inbox.unreviewed || 0);
+      if (inboxCount) semanticNodes.push({id: 'unclassified', kind: 'inbox', label: '待归类 / 待确认', count: inboxCount, status: 'unreviewed', summary: '这些记录没有被硬凑成主题；争议和撤回记录不进入这个数字。'});
+      var selectedTopic = topics.filter(function (topic) { return topic.id === selectedTopicId; })[0] || topics[0];
+      if (lens === 'focus') selectedData = selectedTopic ? selectedTopic.detail : {nodes: [], edges: []};
       else if (lens === 'conflict') selectedData = {nodes: semanticNodes.filter(function (node) { return node.status === 'attention'; }), edges: []};
       else selectedData = {nodes: semanticNodes, edges: []};
     }
@@ -779,8 +787,9 @@
         })
       ),
       h('div', {className: 'eh-graph-caption'}, caption),
-      props.topicData ? h('div', {className: 'eh-graph-caption'}, lens === 'global' ? '按实际主题聚簇；点进一个主题才看其中的事实、判断、行动和反馈。' : lens === 'focus' ? '这是一个主题内部的因果与时间关系。' : '这里只显示现实反馈正在挑战的主题。') : null,
-      h(StarMapPanel, {data: selectedData, lens: lens, onReview: props.onReview})
+      props.topicData ? h('div', {className: 'eh-graph-caption'}, lens === 'global' ? '主题总览：位置仅用于浏览，不代表因果、时间或语义距离；虚线星为待确认建议。' : lens === 'focus' ? '这是所选主题的显式关系与上下文。' : '这里只显示已有 Decision 反馈冲突的主题，不推断语义主题冲突。') : null,
+      h(StarMapPanel, {data: selectedData, lens: lens, onReview: props.onReview, onSelect: function (node) { if (node && (node.kind === 'topic' || node.kind === 'suggested_topic' || node.kind === 'decision_topic')) { setSelectedTopicId(node.id); setLens('focus'); } else if (props.onObjectSelect) { props.onObjectSelect(node); } }}),
+      lens === 'focus' && selectedTopic && String(selectedTopic.id).indexOf('decision:') === 0 ? h(RelationshipMapPanel, {data: props.detailData}) : null
     );
   }
 
@@ -824,9 +833,9 @@
       gl.useProgram(lineProgram); gl.uniform4f(gl.getUniformLocation(lineProgram, 'c'), 0.36, 0.53, 0.47, 0.72);
       var lineBuffer=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,lineBuffer); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(edgeData),gl.STATIC_DRAW); var lineAttr=gl.getAttribLocation(lineProgram,'p'); gl.enableVertexAttribArray(lineAttr); gl.vertexAttribPointer(lineAttr,2,gl.FLOAT,false,0,0); gl.drawArrays(gl.LINES,0,edgeData.length/2);
       var nodeData=[];
-      nodes.forEach(function (node) { var p=clip(positions[node.id]), c=node.kind === 'topic' ? [0.94,0.68,0.38,1] : node.kind === 'inbox' ? [0.47,0.56,0.67,1] : color[node.kind]||[0.4,0.8,0.9,1], size=24+Math.min(34,Math.log((node.count||0)+1)*5); nodeData=nodeData.concat(p,size,c); });
+      nodes.forEach(function (node) { var p=clip(positions[node.id]), c=node.kind === 'decision_topic' ? [0.96,0.65,0.56,1] : node.kind === 'suggested_topic' ? [0.48,0.70,0.68,0.72] : node.kind === 'topic' ? [0.94,0.68,0.38,1] : node.kind === 'inbox' ? [0.47,0.56,0.67,1] : color[node.kind]||[0.4,0.8,0.9,1], size=24+Math.min(34,Math.log((node.count||0)+1)*5); nodeData=nodeData.concat(p,size,c); });
       gl.useProgram(pointProgram); var buffer=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buffer); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(nodeData),gl.STATIC_DRAW); var stride=7*4, pa=gl.getAttribLocation(pointProgram,'p'), sa=gl.getAttribLocation(pointProgram,'s'), ca=gl.getAttribLocation(pointProgram,'c'); gl.enableVertexAttribArray(pa);gl.vertexAttribPointer(pa,2,gl.FLOAT,false,stride,0);gl.enableVertexAttribArray(sa);gl.vertexAttribPointer(sa,1,gl.FLOAT,false,stride,8);gl.enableVertexAttribArray(ca);gl.vertexAttribPointer(ca,4,gl.FLOAT,false,stride,12);gl.drawArrays(gl.POINTS,0,nodes.length);
-      canvas.onclick = function (event) { var r=canvas.getBoundingClientRect(), x=(event.clientX-r.left)/r.width, y=(event.clientY-r.top)/r.height, nearest=null, distance=Infinity; nodes.forEach(function(node){var q=positions[node.id], d=Math.pow(q[0]-x,2)+Math.pow(q[1]-y,2);if(d<distance){distance=d;nearest=node;}}); if(nearest && distance<0.015) setSelected(nearest); };
+      canvas.onclick = function (event) { var r=canvas.getBoundingClientRect(), x=(event.clientX-r.left)/r.width, y=(event.clientY-r.top)/r.height, nearest=null, distance=Infinity; nodes.forEach(function(node){var q=positions[node.id], d=Math.pow(q[0]-x,2)+Math.pow(q[1]-y,2);if(d<distance){distance=d;nearest=node;}}); if(nearest && distance<0.015) { setSelected(nearest); if (props.onSelect) props.onSelect(nearest); } };
       return function () { canvas.onclick=null; gl.deleteProgram(pointProgram); gl.deleteProgram(lineProgram); };
     }, [data]);
     var isConflict = props.lens === 'conflict';
@@ -834,7 +843,7 @@
       h('div', {className: 'eh-feed-header'}, '认知星图'),
       h('div', {className: 'eh-relation-caption'}, '每颗星代表一类已保存内容；星的大小代表数量，线只代表明确记录的关系。点击星团查看分类。'),
       h('div', {className: 'eh-star-wrap'}, h('canvas', {ref: canvasRef, className: 'eh-star-canvas', 'aria-label': '认知分类关系星图'}),
-        h('div', {className: 'eh-star-labels'}, nodes.map(function(node,index){var p=node.position||layout[node.kind]||[.5+((index%3)-1)*.26,.5+(Math.floor(index/3)-.5)*.34];return h('button',{key:node.id,className:'eh-star-label',style:{left:(p[0]*100)+'%',top:(p[1]*100)+'%'},onClick:function(){setSelected(node)}},node.label + (node.count != null ? ' ' + node.count : ''));}))
+        h('div', {className: 'eh-star-labels'}, nodes.map(function(node,index){var p=node.position||layout[node.kind]||[.5+((index%3)-1)*.26,.5+(Math.floor(index/3)-.5)*.34];return h('button',{key:node.id,className:'eh-star-label',style:{left:(p[0]*100)+'%',top:(p[1]*100)+'%'},onClick:function(){setSelected(node);if(props.onSelect)props.onSelect(node);}},node.label + (node.count != null ? ' ' + node.count : ''));}))
       ),
       h('div', {className: 'eh-relation-summary'}, edges.map(function(edge,i){return h('span',{key:i,className:'eh-edge-chip'},edge.label); })),
       selected ? h('div', {className: 'eh-relation-selected'},
@@ -914,23 +923,18 @@
   function CorrectionDesk(props) {
     var _reason = hooks.useState(''), reason = _reason[0], setReason = _reason[1];
     var _notice = hooks.useState(''), notice = _notice[0], setNotice = _notice[1];
-    var items = [];
-    (props.topicMap && props.topicMap.topics || []).forEach(function (topic) {
-      (topic.detail && topic.detail.nodes || []).forEach(function (node) {
-        if (node.kind === 'claim' || node.kind === 'evidence') items.push(node);
-      });
-    });
+    var items = props.selectedObject && (props.selectedObject.kind === 'claim' || props.selectedObject.kind === 'evidence') ? [props.selectedObject] : [];
     function correct(node, action) {
       if (!reason.trim()) { setNotice('先写一句为什么要这样改；这会保留在时间链里。'); return; }
       authFetch(BASE + '/api/corrections', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({object_type: node.kind, object_id: node.id, action: action, reason: reason})})
         .then(function (r) { return r.json().then(function (data) { if (!r.ok) throw new Error(data.detail || '保存失败'); return data; }); })
-        .then(function () { setNotice('已保存：旧内容仍可追溯，普通检索会遵从这个修订。'); setReason(''); })
+        .then(function () { setNotice('已保存，正在刷新关系图与审查状态…'); setReason(''); window.setTimeout(function () { window.location.reload(); }, 450); })
         .catch(function (error) { setNotice(error.message || '保存失败'); });
     }
     return h('div', {className: 'eh-action-primary'},
       h('div', {className: 'eh-action-eyebrow'}, '发现问题时，直接在这里修'),
-      h('div', {className: 'eh-action-next'}, '选中一条判断或来源，说明原因后标为错误、过期或已核实。不会删除原记录，也不会让它继续作为普通检索结果误导模型。'),
-      h('textarea', {className: 'eh-correction-reason', value: reason, placeholder: '修订原因，例如：这条消息后来被官方公告否定', onChange: function (e) { setReason(e.target.value); }}),
+      h('div', {className: 'eh-action-next'}, items.length ? '正在修订你刚才选中的对象。说明原因后标为错误、过期或已核实；旧记录会保留。' : '先在主题详情中点选一条判断或来源，再在这里修订；不会删除旧记录。'),
+      items.length ? h('textarea', {className: 'eh-correction-reason', value: reason, placeholder: '修订原因，例如：这条消息后来被官方公告否定', onChange: function (e) { setReason(e.target.value); }}) : null,
       h('div', {className: 'eh-correction-list'}, items.slice(0, 8).map(function (node) { return h('div', {key: node.id, className: 'eh-review-card'},
         h('div', {className: 'eh-review-card-text'}, node.label),
         h('div', {className: 'eh-review-actions'},
@@ -968,7 +972,7 @@
             h('div', {className: 'eh-action-detail'}, '证据、反证条件和决策复盘目前没有直接阻塞项。')
           ),
       choice ? h('div', {className: 'eh-action-reason'}, '它被标记为“结果与原判断冲突”。先确认这条结果对应的条件是否仍然成立，再决定是否改写主张或模型。') : null,
-      h(CorrectionDesk, {topicMap: props.topicMap}),
+      h(CorrectionDesk, {topicMap: props.topicMap, selectedObject: props.selectedObject}),
       h('div', {className: 'eh-action-later'},
         h('span', null, '稍后处理：待审提案 ' + (s.pending_proposals || 0) + ' · 健康检查 ' + (s.pending_issues || 0) + ' · 过期行动 ' + (s.expired_intents || 0))
       ),
@@ -1070,6 +1074,7 @@
     var _rv = hooks.useState(null), review = _rv[0], setReview = _rv[1];
     var _rm = hooks.useState(null), relationshipMap = _rm[0], setRelationshipMap = _rm[1];
     var _tm = hooks.useState(null), topicMap = _tm[0], setTopicMap = _tm[1];
+    var _so = hooks.useState(null), selectedObject = _so[0], setSelectedObject = _so[1];
     var _dm = hooks.useState(null), detailMap = _dm[0], setDetailMap = _dm[1];
     var _tab = hooks.useState(0), activeTab = _tab[0], setActiveTab = _tab[1];
     var svgRef = hooks.useRef(null);
@@ -1239,11 +1244,14 @@
       tabChildren.push(
         h('div', {className: 'eh-feeds', key: 'feeds'},
           h(OverallStatusPanel, {health: health, review: review, map: relationshipMap}),
-          h(GraphHubPanel, {key: 'star-map', globalData: relationshipMap, detailData: detailMap, topicData: topicMap, onReview: function () { setActiveTab(2); }}),
+          h(GraphHubPanel, {key: 'star-map', globalData: relationshipMap, detailData: detailMap, topicData: topicMap, onReview: function () { setActiveTab(2); }, onObjectSelect: setSelectedObject}),
           h(TimelinePanel, {key: 'event-timeline', events: topicMap && topicMap.recent_events}),
           h(Collapsible, {title: '展开运行细节', defaultOpen: false},
             h('div', {className: 'eh-feeds-grid'},
-              h('div', {className: 'eh-feeds-col'}, h(CognitiveQualityPanel, {data: cognitiveQuality})),
+              h('div', {className: 'eh-feeds-col'},
+                h('div', {className: 'eh-graph-caption'}, 'Legacy / HY 诊断：仅用于旧系统排障，不参与 Cognitive OS Ledger 健康判断。'),
+                h(CognitiveQualityPanel, {data: cognitiveQuality})
+              ),
               h('div', {className: 'eh-feeds-col'}, h(CognitiveHealthPanel, {data: cognitiveQuality}))
             ),
             h('div', {className: 'eh-feeds-grid'},
@@ -1268,7 +1276,7 @@
         )
       );
     } else {
-      tabChildren.push(h(ActionReviewPanel, {key: 'review', data: review, topicMap: topicMap}));
+      tabChildren.push(h(ActionReviewPanel, {key: 'review', data: review, topicMap: topicMap, selectedObject: selectedObject}));
     }
 
     return h('div', {className: 'eh-page'},

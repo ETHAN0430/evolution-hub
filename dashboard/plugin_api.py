@@ -235,17 +235,15 @@ def api_health():
     data: Dict[str, Any] = {}
     db_ok = _COGNITIVE_OS_DB.exists()
     if db_ok:
-        data["server"] = {
-            "vdb": "ok" if _table_exists("claims") else "empty",
-            "embed": "ok",
-            "llm": "ok",
-            "vdb_points": sum(
+        object_count = sum(
                 _row_count(t) for t in ["evidence", "claims", "models", "decisions", "intents", "outcomes"]
                 if _table_exists(t)
-            ),
-        }
+            )
+        data["ledger"] = {"status": "ready" if _table_exists("claims") else "empty", "object_count": object_count}
+        data["server"] = {"vdb": "ok" if _table_exists("claims") else "empty", "vdb_points": object_count}
     else:
-        data["server"] = {"vdb": "down", "embed": "down", "llm": "down", "vdb_points": 0}
+        data["ledger"] = {"status": "down", "object_count": 0}
+        data["server"] = {"vdb": "down", "vdb_points": 0}
 
     meta_1h: dict[str, int] = {}
     for table, label in [
@@ -552,14 +550,14 @@ def api_decision_workspace():
 
 
 def _topic_detail(topic_id: str) -> dict[str, Any]:
-    members = _query_db("SELECT object_type, object_id FROM topic_members WHERE topic_id=?", (topic_id,))
+    members = _query_readonly("SELECT object_type, object_id FROM topic_members WHERE topic_id=?", (topic_id,))
     by_type: dict[str, set[str]] = {}
     for member in members:
         by_type.setdefault(member["object_type"], set()).add(member["object_id"])
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, str]] = []
     labels = {
-        "evidence": ("evidence", "content", "evidence_state"), "claim": ("claims", "statement", "status"),
+        "evidence": ("evidence", "content", "status"), "claim": ("claims", "statement", "status"),
         "model": ("models", "proposition", "status"), "decision": ("decisions", "question", "status"),
         "intent": ("intents", "action", "status"), "outcome": ("outcomes", "observation", "implication"),
     }
@@ -568,27 +566,30 @@ def _topic_detail(topic_id: str) -> dict[str, Any]:
             continue
         table, field, state_field = labels[kind]
         marks = ",".join("?" for _ in ids)
-        try:
-            rows = _query_db(f"SELECT id, {field} AS label, {state_field} AS status FROM {table} WHERE id IN ({marks})", tuple(ids))
-        except Exception:
-            rows = _query_db(f"SELECT id, {field} AS label FROM {table} WHERE id IN ({marks})", tuple(ids))
+        if kind == "evidence":
+            rows = _query_readonly(
+                f"SELECT e.id, e.content AS label, COALESCE(es.status, 'active') AS status "
+                f"FROM evidence e LEFT JOIN evidence_state es ON es.evidence_id=e.id WHERE e.id IN ({marks})", tuple(ids)
+            )
+        else:
+            rows = _query_readonly(f"SELECT id, {field} AS label, {state_field} AS status FROM {table} WHERE id IN ({marks})", tuple(ids))
         for row in rows:
             nodes.append({"id": row["id"], "kind": kind, "label": str(row["label"])[:92], "status": row["status"] if "status" in row.keys() else ""})
     node_ids = {node["id"] for node in nodes}
     if by_type.get("claim"):
         marks = ",".join("?" for _ in by_type["claim"])
-        for row in _query_db(f"SELECT evidence_id, claim_id FROM claim_evidence WHERE claim_id IN ({marks})", tuple(by_type["claim"])):
+        for row in _query_readonly(f"SELECT evidence_id, claim_id FROM claim_evidence WHERE claim_id IN ({marks})", tuple(by_type["claim"])):
             if row["evidence_id"] in node_ids:
                 edges.append({"from": row["evidence_id"], "to": row["claim_id"], "label": "依据"})
-        for row in _query_db(f"SELECT decision_id, claim_id FROM decision_claims WHERE claim_id IN ({marks})", tuple(by_type["claim"])):
+        for row in _query_readonly(f"SELECT decision_id, claim_id FROM decision_claims WHERE claim_id IN ({marks})", tuple(by_type["claim"])):
             if row["decision_id"] in node_ids:
                 edges.append({"from": row["claim_id"], "to": row["decision_id"], "label": "支撑"})
     if by_type.get("decision"):
         marks = ",".join("?" for _ in by_type["decision"])
-        for row in _query_db(f"SELECT id, decision_id FROM intents WHERE decision_id IN ({marks})", tuple(by_type["decision"])):
+        for row in _query_readonly(f"SELECT id, decision_id FROM intents WHERE decision_id IN ({marks})", tuple(by_type["decision"])):
             if row["id"] in node_ids:
                 edges.append({"from": row["decision_id"], "to": row["id"], "label": "行动"})
-        for row in _query_db(f"SELECT id, decision_id FROM outcomes WHERE decision_id IN ({marks})", tuple(by_type["decision"])):
+        for row in _query_readonly(f"SELECT id, decision_id FROM outcomes WHERE decision_id IN ({marks})", tuple(by_type["decision"])):
             if row["id"] in node_ids:
                 edges.append({"from": row["decision_id"], "to": row["id"], "label": "反馈"})
     return {"nodes": nodes, "edges": edges}
@@ -599,25 +600,26 @@ def _topic_detail(topic_id: str) -> dict[str, Any]:
 def api_topic_map():
     """Semantic overview: a topic is the primary visual unit, ledger types are detail."""
     try:
-        ledger = _ledger()
-        ledger.close()
         topics = []
-        for row in _query_db(
-            "SELECT t.id, t.label, t.summary, t.status, COUNT(tm.object_id) AS member_count "
+        for row in _query_readonly(
+            "SELECT t.id, t.label, t.summary, t.status, t.created_by, t.created_at, COUNT(tm.object_id) AS member_count "
             "FROM topics t LEFT JOIN topic_members tm ON tm.topic_id=t.id GROUP BY t.id ORDER BY member_count DESC, t.created_at DESC"
         ):
             detail = _topic_detail(row["id"])
             contradiction = sum(1 for node in detail["nodes"] if node["kind"] == "outcome" and node["status"] == "contradicts")
             topics.append({**dict(row), "attention": contradiction, "detail": detail})
-        unclassified = _query_db(
-            "SELECT COUNT(*) AS count FROM evidence WHERE id NOT IN (SELECT object_id FROM topic_members WHERE object_type='evidence')"
+        unclassified = _query_readonly(
+            "SELECT COALESCE(es.status, 'active') AS status, COUNT(*) AS count FROM evidence e "
+            "LEFT JOIN evidence_state es ON es.evidence_id=e.id "
+            "WHERE e.id NOT IN (SELECT object_id FROM topic_members WHERE object_type='evidence') GROUP BY COALESCE(es.status, 'active')"
         )
-        recent_events = [dict(row) for row in _query_db(
+        recent_events = [dict(row) for row in _query_readonly(
             "SELECT occurred_at, event_type, object_type, object_id, reason FROM cognitive_events ORDER BY occurred_at DESC LIMIT 8"
         )]
-        return {"source": "Cognitive OS", "topics": topics, "unclassified": int(unclassified[0]["count"] if unclassified else 0), "recent_events": recent_events}
+        inbox = {row["status"]: int(row["count"]) for row in unclassified}
+        return {"source": "Cognitive OS", "topics": topics, "unclassified": inbox, "recent_events": recent_events}
     except Exception as error:
-        return {"source": "Cognitive OS", "topics": [], "unclassified": 0, "recent_events": [], "error": f"{type(error).__name__}: {error}"}
+        return {"source": "Cognitive OS", "topics": [], "unclassified": {}, "recent_events": [], "error": f"{type(error).__name__}: {error}"}
 
 
 @router.post("/api/corrections")
