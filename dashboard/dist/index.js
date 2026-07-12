@@ -473,6 +473,21 @@
     return Math.floor(diff / 86400) + '天前';
   }
 
+  // Ledger timestamps are stored in UTC. Render a single, explicit timezone
+  // so the dashboard never follows a browser or host-machine setting.
+  function formatShanghaiTime(iso) {
+    if (!iso) return 'time not recorded';
+    var date = new Date(iso);
+    if (isNaN(date.getTime())) return 'invalid time';
+    var parts = new Intl.DateTimeFormat('zh-CN', {
+      timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(date);
+    var value = {};
+    parts.forEach(function (part) { value[part.type] = part.value; });
+    return value.year + '-' + value.month + '-' + value.day + ' ' + value.hour + ':' + value.minute + ' (UTC+8)';
+  }
+
   function Collapsible(props) {
     var title = props.title;
     var count = props.count;
@@ -547,7 +562,7 @@
       recent.slice(0, 12).map(function (item, i) {
         return h('div', {key: i, className: 'eh-prefetch-item'},
           h('div', {className: 'eh-feed-meta'},
-            h('span', {className: 'eh-feed-time'}, formatRelativeTime(item.time)),
+            h('span', {className: 'eh-feed-time'}, formatShanghaiTime(item.time)),
             h('span', {className: 'eh-feed-badge ' + (item.hits > 0 ? 'eh-feed-badge-hit' : 'eh-feed-badge-miss')},
               (item.hits || 0) + ' 命中')
           ),
@@ -756,7 +771,7 @@
     if (!events.length) return h('div', {className: 'eh-action-later'}, '时间链会从现在开始累计：历史记录保留原始时间，不伪造“刚刚”。');
     return h('div', {className: 'eh-action-later'},
       h('div', {className: 'eh-action-eyebrow'}, '最近发生了什么'),
-      events.slice(0, 6).map(function (event, index) { return h('div', {key: index, className: 'eh-event-line'}, h('span', {className: 'eh-event-time'}, (event.occurred_at || '').replace('T', ' ').slice(0, 16)), h('span', null, labels[event.event_type] || event.event_type), event.reason ? h('span', {className: 'eh-event-reason'}, event.reason) : null); })
+      events.slice(0, 6).map(function (event, index) { return h('div', {key: index, className: 'eh-event-line'}, h('span', {className: 'eh-event-time'}, formatShanghaiTime(event.occurred_at)), h('span', null, labels[event.event_type] || event.event_type), event.reason ? h('span', {className: 'eh-event-reason'}, event.reason) : null); })
     );
   }
 
