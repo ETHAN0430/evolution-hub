@@ -1261,7 +1261,7 @@
 
     var TABS = ['架构图', '运行态', '决策工作台'];
     var tabChildren = [];
-    TABS = ['当前状态', '审查台', '架构图'];
+    TABS = ['认知概览', '复盘与修订', '系统蓝图'];
     if (activeTab === 2) {
       tabChildren.push(
         h('div', {ref: canvasRef, key: 'canvas', className: 'eh-canvas', onMouseDown: onMouseDown, onMouseMove: onMouseMove, onMouseUp: onMouseUp, onMouseLeave: onMouseLeave}, canvasChildren)

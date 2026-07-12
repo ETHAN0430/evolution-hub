@@ -632,7 +632,9 @@ def api_topic_map():
             "WHERE e.id NOT IN (SELECT object_id FROM topic_members WHERE object_type='evidence') GROUP BY COALESCE(es.status, 'active')"
         )
         recent_events = [dict(row) for row in _query_readonly(
-            "SELECT occurred_at, event_type, object_type, object_id, reason FROM cognitive_events ORDER BY occurred_at DESC LIMIT 8"
+            "SELECT occurred_at, event_type, object_type, object_id, reason FROM cognitive_events "
+            "WHERE event_type NOT IN ('topic_member_added', 'topic_suggested', 'topic_batch_cleared') "
+            "ORDER BY occurred_at DESC LIMIT 8"
         )]
         inbox = {row["status"]: int(row["count"]) for row in unclassified}
         return {"source": "Cognitive OS", "topics": topics, "unclassified": inbox, "recent_events": recent_events}
