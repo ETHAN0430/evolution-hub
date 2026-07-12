@@ -868,6 +868,26 @@
 
 .eh-graph-hub { margin-top: 14px; }
 
+.eh-overview-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(280px, .75fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.eh-overview-observe {
+  min-height: 420px;
+  padding: 14px;
+  border: 1px solid var(--eh-border);
+  border-top: 2px solid var(--eh-accent);
+  background: rgba(10, 29, 24, .62);
+}
+
+.eh-observe-heading { color: var(--eh-text); font: 600 15px var(--eh-font-mono); letter-spacing: .04em; }
+.eh-observe-note { margin: 7px 0 14px; color: var(--eh-muted); font-size: 11px; line-height: 1.55; }
+.eh-overview-observe .eh-action-later { margin-top: 0; padding: 0 0 12px; }
+.eh-overview-observe .eh-feed-panel { margin-top: 10px; }
+
 .eh-graph-lenses {
   display: flex;
   gap: 6px;
@@ -1072,4 +1092,6 @@
   .eh-si-section-wide {
     grid-column: span 1;
   }
+
+  .eh-overview-workbench { grid-template-columns: 1fr; }
 }

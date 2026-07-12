@@ -1261,7 +1261,7 @@
 
     var TABS = ['架构图', '运行态', '决策工作台'];
     var tabChildren = [];
-    TABS = ['认知概览', '复盘与修订', '系统蓝图'];
+    TABS = ['总览', '复盘', '蓝图'];
     if (activeTab === 2) {
       tabChildren.push(
         h('div', {ref: canvasRef, key: 'canvas', className: 'eh-canvas', onMouseDown: onMouseDown, onMouseMove: onMouseMove, onMouseUp: onMouseUp, onMouseLeave: onMouseLeave}, canvasChildren)
@@ -1271,9 +1271,15 @@
       tabChildren.push(
         h('div', {className: 'eh-feeds', key: 'feeds'},
           h(OverallStatusPanel, {health: health, review: review, map: relationshipMap}),
-          h(GraphHubPanel, {key: 'star-map', globalData: relationshipMap, detailData: detailMap, topicData: topicMap, onReview: function () { setActiveTab(1); }, onObjectSelect: setSelectedObject}),
-          h(TimelinePanel, {key: 'event-timeline', events: topicMap && topicMap.recent_events}),
-          h(PrefetchFeedPanel, {key: 'recall-observability', data: prefetchFeed}),
+          h('div', {className: 'eh-overview-workbench'},
+            h('div', {className: 'eh-overview-map'}, h(GraphHubPanel, {key: 'star-map', globalData: relationshipMap, detailData: detailMap, topicData: topicMap, onReview: function () { setActiveTab(1); }, onObjectSelect: setSelectedObject})),
+            h('aside', {className: 'eh-overview-observe'},
+              h('div', {className: 'eh-observe-heading'}, '观察'),
+              h('div', {className: 'eh-observe-note'}, '只显示真实发生时间：写入、修订、自动召回与 memory_search。'),
+              h(TimelinePanel, {key: 'event-timeline', events: topicMap && topicMap.recent_events}),
+              h(PrefetchFeedPanel, {key: 'recall-observability', data: prefetchFeed})
+            )
+          ),
           h(Collapsible, {title: '展开运行细节', defaultOpen: false},
             h('div', {className: 'eh-feeds-grid'},
               h('div', {className: 'eh-feeds-col'},
