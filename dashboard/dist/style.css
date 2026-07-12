@@ -887,6 +887,9 @@
 .eh-observe-note { margin: 7px 0 14px; color: var(--eh-muted); font-size: 11px; line-height: 1.55; }
 .eh-overview-observe .eh-action-later { margin-top: 0; padding: 0 0 12px; }
 .eh-overview-observe .eh-feed-panel { margin-top: 10px; }
+.eh-event-line { display: grid; grid-template-columns: 118px 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(120, 170, 154, .12); color: var(--eh-text); font-size: 12px; }
+.eh-event-time { color: var(--eh-muted); font-family: var(--eh-font-mono); font-size: 10px; }
+.eh-event-reason { grid-column: 2; color: var(--eh-muted); font-size: 11px; }
 
 .eh-graph-lenses {
   display: flex;

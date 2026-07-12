@@ -541,12 +541,9 @@
     var stats = data.stats || {};
     return h('div', {className: 'eh-feed-panel'},
       h('div', {className: 'eh-graph-caption'}, '召回观测：自动召回是系统在每轮前主动取回；memory_search 是模型显式发起的查询。这里记录真实查询、命中和耗时。'),
-      h('div', {className: 'eh-feed-header'}, '记忆预取情况'),
-      h('div', {className: 'eh-feed-stats'},
-        h('span', {className: 'eh-feed-stat'}, '1小时: ', h('b', null, stats.total_1h || 0)),
-        h('span', {className: 'eh-feed-stat'}, '今日: ', h('b', null, stats.total_today || 0))
-      ),
+      h('div', {className: 'eh-feed-header'}, '召回与检索'),
       h('div', {className: 'eh-feed-stats'}, '自动召回 ' + (stats.auto_recall || 0) + ' · memory_search ' + (stats.memory_search || 0) + ' · 失败 ' + (stats.errors || 0)),
+      recent.length === 0 ? h('div', {className: 'eh-feed-empty'}, '暂无真实召回记录：Cognitive OS Provider 产生调用后才会显示。') : null,
       recent.slice(0, 12).map(function (item, i) {
         return h('div', {key: i, className: 'eh-prefetch-item'},
           h('div', {className: 'eh-feed-meta'},
@@ -759,7 +756,7 @@
     if (!events.length) return h('div', {className: 'eh-action-later'}, '时间链会从现在开始累计：历史记录保留原始时间，不伪造“刚刚”。');
     return h('div', {className: 'eh-action-later'},
       h('div', {className: 'eh-action-eyebrow'}, '最近发生了什么'),
-      events.slice(0, 6).map(function (event, index) { return h('div', {key: index, className: 'eh-edge-chip'}, (event.occurred_at || '').replace('T', ' ').slice(0, 16) + ' · ' + (labels[event.event_type] || event.event_type) + (event.reason ? '：' + event.reason : '')); })
+      events.slice(0, 6).map(function (event, index) { return h('div', {key: index, className: 'eh-event-line'}, h('span', {className: 'eh-event-time'}, (event.occurred_at || '').replace('T', ' ').slice(0, 16)), h('span', null, labels[event.event_type] || event.event_type), event.reason ? h('span', {className: 'eh-event-reason'}, event.reason) : null); })
     );
   }
 
@@ -1280,7 +1277,7 @@
               h(PrefetchFeedPanel, {key: 'recall-observability', data: prefetchFeed})
             )
           ),
-          h(Collapsible, {title: '展开运行细节', defaultOpen: false},
+          false && h(Collapsible, {title: '展开运行细节', defaultOpen: false},
             h('div', {className: 'eh-feeds-grid'},
               h('div', {className: 'eh-feeds-col'},
                 h('div', {className: 'eh-graph-caption'}, 'Legacy / HY 诊断：仅用于旧系统排障，不参与 Cognitive OS Ledger 健康判断。'),
