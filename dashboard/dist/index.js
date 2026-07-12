@@ -820,11 +820,9 @@
   }
 
   function StarMapPanel(props) {
-    var data = props.data;
+    var data = props.data || {};
     var canvasRef = hooks.useRef(null);
     var _selected = hooks.useState(null), selected = _selected[0], setSelected = _selected[1];
-    if (!data) return h('div', {className: 'eh-feed-loading'}, '正在绘制认知星图…');
-    if (data.error) return h('div', {className: 'eh-feed-error'}, '星图加载失败：' + data.error);
     var nodes = data.nodes || [];
     var edges = data.edges || [];
     var layout = {
@@ -864,6 +862,8 @@
       canvas.onclick = function (event) { var r=canvas.getBoundingClientRect(), x=(event.clientX-r.left)/r.width, y=(event.clientY-r.top)/r.height, nearest=null, distance=Infinity; nodes.forEach(function(node){var q=positions[node.id], d=Math.pow(q[0]-x,2)+Math.pow(q[1]-y,2);if(d<distance){distance=d;nearest=node;}}); if(nearest && distance<0.015) { setSelected(nearest); if (props.onSelect) props.onSelect(nearest); } };
       return function () { canvas.onclick=null; gl.deleteProgram(pointProgram); gl.deleteProgram(lineProgram); };
     }, [data]);
+    if (!props.data) return h('div', {className: 'eh-feed-loading'}, '正在绘制认知星图…');
+    if (data.error) return h('div', {className: 'eh-feed-error'}, '星图加载失败：' + data.error);
     var isConflict = props.lens === 'conflict';
     return h('div', {className: 'eh-star-panel'},
       h('div', {className: 'eh-feed-header'}, '认知星图'),
