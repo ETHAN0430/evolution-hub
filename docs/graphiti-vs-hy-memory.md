@@ -2,7 +2,7 @@
 
 > 审计日期：2026-07-08
 > Graphiti 基线：本地 `D:/CS/graphiti-main`，`pyproject.toml` 版本 `0.29.2`；该目录不含 `.git`，无法记录 commit。
-> HY Memory 基线：本仓库保存的定制版 `1.2.19`，包含 `hy-memory/INDEX.md` 所列 P1-P13 patch。
+> HY Memory 基线：历史仓库快照中的定制版 `1.2.19`，包含原 `hy-memory/INDEX.md` 所列 P1-P13 patch；`hy-memory/` 源码目录已从本仓库移除。
 
 ## 1. 结论
 

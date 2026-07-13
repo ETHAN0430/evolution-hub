@@ -1,7 +1,7 @@
 # Evolution Hub 架构图审计
 
 > 审计日期：2026-07-08
-> 审计对象：`dashboard/dist/architecture.json`、`evolution_hub/architecture.svg` 及本仓库保存的 HY Memory 1.2.19 定制源码。
+> 审计对象：`dashboard/dist/architecture.json`、`evolution_hub/architecture.svg` 及历史仓库快照中的 HY Memory 1.2.19 定制源码；`hy-memory/` 源码目录已从本仓库移除。
 
 ## 1. 总体判断
 
