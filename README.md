@@ -1,19 +1,17 @@
 # Hermes Evolution Hub
 
-Hermes Dashboard plugin — architecture diagram + HY Memory evolution visualization.
+Hermes Dashboard plugin — Cognitive OS architecture, decision ledger, and runtime observability.
 
-适用于 Hermes Agent Dashboard 的插件 tab，展示架构图、HY Memory 进化引擎状态与系统健康度。
+适用于 Hermes Agent Dashboard 的插件 tab，用于展示 Hermes 架构图、Cognitive OS 决策账本、审查队列与系统健康状态。
 
-## Architecture audits
+## Architecture Audits
 
 - [Codex 与 Hermes Agent 执行层对比](docs/agent-execution-layer-comparison.md)
 - [Evolution Hub 架构图审计](docs/evolution-architecture-audit.md)
-- [Graphiti 与 HY Memory 源码对比](docs/graphiti-vs-hy-memory.md)
-- [HY Memory 认知演化闭环](docs/hy-cognitive-evolution-implementation.md)
 
 ## Structure
 
-```
+```text
 evolution-hub/
 ├── README.md
 ├── dashboard/                  # Hermes Dashboard plugin
@@ -29,59 +27,39 @@ evolution-hub/
 
 ## Dependencies
 
-- **Hermes Agent** (0.16+)
-- **hy-memory** SDK — install separately:
-  ```bash
-  pip install hy-memory
-  ```
-  Or follow the [HY Memory setup guide](https://hermesagent.org.cn/docs/developer-guide/memory-provider-plugin).
+- **Hermes Agent** with Dashboard plugin support
+- **Cognitive OS SQLite ledger**, resolved from `COGNITIVE_OS_DB` or `~/projects/cognitive-os/data/cognitive.db`
 
 ## Installation
 
-### Quick install (AI-assisted)
-
-Copy this repo to `~/.hermes/plugins/evolution-hub/` (or create a symlink),
-then restart the Hermes Dashboard.
+Copy this repo to `~/.hermes/plugins/evolution-hub/` or create a symlink, then restart the Hermes Dashboard.
 
 ```bash
-# Symlink from your local repo
 ln -s /path/to/your/evolution-hub ~/.hermes/plugins/evolution-hub
-
-# Restart dashboard
 hermes dashboard --host 0.0.0.0 --port 9119 --insecure --skip-build
 ```
 
-### Manual setup
+Then open the Dashboard and navigate to the "进化中枢" tab.
 
-1. Ensure `hy-memory` is installed (`pip install hy-memory`)
-2. Copy or symlink this directory to `~/.hermes/plugins/evolution-hub/`
-3. Restart the Hermes Dashboard
-4. Open the Dashboard and navigate to the "进化中枢" tab
+## Runtime Data
+
+The plugin backend is mounted by Hermes Dashboard at:
+
+```text
+/api/plugins/hermes-evolution-hub/
+```
+
+Main views read:
+
+- Cognitive OS ledger tables such as `evidence`, `claims`, `models`, `decisions`, `intents`, and `outcomes`
+- maintenance inbox data from `maintenance_issues`, `proposals`, and `projection_state`
+- Hermes runtime logs from `~/.hermes/logs/agent.log`
+- plugin architecture metadata from `dashboard/dist/architecture.json` and backend `/api/architecture`
+
+The review surfaces are read-only. They do not accept proposals, mutate ledger rows, or automatically repair data.
 
 ## Notes
 
-- The `plugin_api.py` paths are relative and should work on any Hermes installation
-- The SVG architecture diagram (`evolution_hub/architecture.svg`) is **instance-specific** — you may want to generate your own
-- The React bundle (`dist/index.js`) is pre-built. To modify the UI, edit `dashboard/dist/index.js` directly, or rebuild from source
-
-## Memory provider precedence
-
-When both the built-in `memory_tool` (local `MEMORY.md` / `USER.md`) and an external memory provider (e.g. HY Memory) are active, the system prompt is assembled as follows:
-
-```
-stable system prompt
-context files
-local memory block
-local user profile block
-external memory provider block   <-- HY Memory content goes here
-timestamp / model / provider info
-```
-
-HY Memory does **not** override the local memory block — it is **appended after it**. In practice, because the HY block is closer to the end of the prompt, the model usually weights it more heavily when the two sources conflict.
-
-## Customization
-
-Ask your AI assistant to:
-- Update `dist/index.js` colors to match your Dashboard theme
-- Replace `architecture.svg` with your own Hermes architecture
-- Add/remove nodes in the NODES map in `dist/index.js`
+- The React bundle is pre-built; edit `dashboard/dist/index.js` directly when changing the UI.
+- The SVG architecture diagram is instance-specific and may need regeneration if the runtime architecture changes.
+- Source-path lookup is local-environment aware and can be influenced with `HERMES_SOURCE_BASE`.
